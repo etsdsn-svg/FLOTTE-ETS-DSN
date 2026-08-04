@@ -1155,6 +1155,81 @@
   /* Safe area iOS (encoche) */
   @supports (padding: env(safe-area-inset-top)) {
     .topbar { padding-top: calc(12px + env(safe-area-inset-top)); }
+    #page-chauffeur-panne, #page-mecano-pannes {
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+  }
+
+  /* ═══ INTERFACES MOBILE (chauffeur / mécanicien) ════════ */
+  .mobile-only { display: none; }
+  .desktop-only { display: block; }
+
+  /* Sur mobile : plein écran, centré, pas de sidebar */
+  @media (max-width: 680px) {
+    .mobile-only  { display: block; }
+    .desktop-only { display: none; }
+
+    /* Pages chauffeur et mécanicien : plein écran propre */
+    #page-chauffeur-panne,
+    #page-mecano-pannes {
+      max-width: 100% !important;
+      padding: 12px !important;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    /* Bouton signaler : gros et facile à taper */
+    #page-chauffeur-panne .btn-primary {
+      font-size: 18px !important;
+      padding: 20px !important;
+      border-radius: 14px !important;
+      letter-spacing: 0.3px;
+    }
+
+    /* Photo et vidéo : boutons natifs bien visibles */
+    #ch-photo, #ch-video {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 10px;
+      color: var(--concrete);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Cards mécanicien : plus d'espace pour taper */
+    #mecano-liste-pannes .card {
+      padding: 16px !important;
+    }
+    #mecano-liste-pannes img {
+      width: 100%;
+      border-radius: 10px;
+    }
+  }
+
+  /* Barre d'actions mobile en bas (style app native) */
+  .mobile-action-bar {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--panel);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+    gap: 10px;
+  }
+  @media (max-width: 680px) {
+    .mobile-action-bar { display: flex; }
+  }
+
+  /* Indicateur de type d'appareil (debug, masqué en prod) */
+  #device-indicator {
+    font-size: 10px; color: var(--concrete);
+    position: fixed; bottom: 4px; right: 8px;
+    z-index: 9998; pointer-events: none;
+    font-family: monospace;
   }
 
   /* ROW ACTION BUTTONS */
@@ -1278,9 +1353,107 @@
 }
 .ech-soon { background: rgba(245,166,35,0.16); color:#F5A623; border:1px solid rgba(245,166,35,0.4); }
 .ech-out  { background: rgba(192,57,43,0.18);  color:#E05B4C; border:1px solid rgba(192,57,43,0.5); }
+
+/* ═══ ÉCRAN DE CONNEXION ═══════════════════════════════ */
+#login-screen {
+  position:fixed; inset:0; background:var(--bg,#0d1520);
+  display:flex; align-items:center; justify-content:center;
+  z-index:9999; flex-direction:column; gap:0;
+}
+#login-screen.hidden { display:none; }
+.login-box {
+  background:var(--panel,#1a2536); border-radius:18px;
+  padding:36px 32px; width:100%; max-width:380px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.4);
+}
+.login-logo { text-align:center; margin-bottom:28px; }
+.login-logo .icon { font-size:48px; }
+.login-logo .name { font-size:22px; font-weight:800; margin-top:8px; letter-spacing:0.5px; }
+.login-logo .sub  { font-size:12px; color:var(--concrete,#8494a8); margin-top:4px; }
+.login-field { margin-bottom:16px; }
+.login-field label { font-size:12px; color:var(--concrete,#8494a8); margin-bottom:6px; display:block; }
+.login-field input {
+  width:100%; padding:12px 14px; border-radius:10px;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+  color:var(--white,#e8edf5); font-size:15px; box-sizing:border-box;
+}
+.login-field input:focus { border-color:var(--accent,#F5A623); outline:none; }
+.login-btn {
+  width:100%; padding:14px; border-radius:10px; border:none;
+  background:var(--accent,#F5A623); color:#0d1520; font-size:15px;
+  font-weight:800; cursor:pointer; margin-top:8px; letter-spacing:0.3px;
+}
+.login-btn:hover { opacity:0.9; }
+.login-error { color:#E05B4C; font-size:13px; text-align:center; margin-top:10px; min-height:20px; }
+.role-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(245,166,35,0.15); border:1px solid rgba(245,166,35,0.3);
+  color:var(--accent,#F5A623); border-radius:20px; padding:4px 12px;
+  font-size:11px; font-weight:700; letter-spacing:0.5px; cursor:pointer;
+}
 </style>
 </head>
 <body>
+
+<!-- ═══ ÉCRAN DE CONNEXION ═══════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">🚛</div>
+      <div class="name">FLOTTE DSN</div>
+      <div class="sub">Accès sécurisé</div>
+    </div>
+    <div class="login-field">
+      <label id="login-label-login">Identifiant</label>
+      <input type="text" id="login-input" autocomplete="username"
+             placeholder="Immatriculation ou identifiant"
+             onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-pass" autocomplete="current-password"
+             placeholder="••••••••"
+             onkeydown="if(event.key==='Enter') tentativeConnexion()">
+    </div>
+    <button class="login-btn" onclick="tentativeConnexion()">Se connecter</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- MODAL UTILISATEUR -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-title" id="user-modal-title">Nouvel utilisateur</div>
+    <div class="form-group">
+      <label>Rôle</label>
+      <select id="u-role" onchange="majLoginLabel()">
+        <option value="chauffeur">🚛 Chauffeur</option>
+        <option value="mecano">🔧 Mécanicien</option>
+        <option value="dg">👔 DG</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Nom complet</label>
+      <input type="text" id="u-nom" placeholder="Ex: ADOU Kofi">
+    </div>
+    <div class="form-group" id="u-plate-group">
+      <label>Camion assigné</label>
+      <select id="u-plate"></select>
+    </div>
+    <div class="form-group">
+      <label id="u-login-label">Identifiant (immatriculation)</label>
+      <input type="text" id="u-login" placeholder="Ex: CC 7905 RB">
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="u-password" placeholder="Minimum 4 caractères">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-user')">Annuler</button>
+      <button class="btn btn-primary" onclick="sauvegarderUser()">Enregistrer</button>
+    </div>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
@@ -1291,8 +1464,9 @@
   </div>
   <nav class="nav">
     <div class="nav-section">Vue générale</div>
-    <div class="nav-item active" onclick="showPage('dashboard', this)">
+    <div class="nav-item active" onclick="showPage('dashboard', this)" style="position:relative;">
       <span class="nav-icon">📊</span> Tableau de bord
+      <span id="badge-pannes" style="display:none;background:#E05B4C;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;margin-left:auto;"></span>
     </div>
     <div class="nav-section">Flotte</div>
     <div class="nav-item" onclick="showPage('vehicles', this)">
@@ -1434,6 +1608,7 @@
     <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
     <div class="page-title" id="pageTitle">Tableau de bord</div>
       <div id="sb-status" style="font-size:11px;color:var(--concrete);margin-left:auto;padding-right:8px;cursor:default;" title="Connexion Supabase">⏳ Connexion…</div>
+      <div id="role-badge-top" class="role-badge" onclick="demanderDeconnexion()" title="Cliquer pour se déconnecter" style="display:none;">👤 <span id="role-nom-top"></span></div>
     <div class="topbar-right">
       <span class="badge" id="alertBadge">3 alertes</span>
       <span class="date-chip" id="dateChip"></span>
@@ -1443,6 +1618,52 @@
   <div class="content">
 
     <!-- DASHBOARD PAGE -->
+    <!-- ═══ PAGE CHAUFFEUR ════════════════════════════════ -->
+    <div id="page-chauffeur-panne" class="page" style="max-width:480px;margin:0 auto;padding:16px;">
+      <div style="text-align:center;padding:24px 0 16px;">
+        <div style="font-size:48px;">🚛</div>
+        <div style="font-size:20px;font-weight:800;margin-top:8px;" id="ch-plate-titre">Mon camion</div>
+        <div style="font-size:13px;color:var(--concrete);margin-top:4px;">Signalement de panne</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">📋 Décrire la panne</div>
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea id="ch-description" rows="4" placeholder="Ex: Le camion ne démarre plus, bruit anormal au moteur..." style="resize:vertical;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>📷 Photo (max 500 kb — compressée automatiquement)</label>
+          <input type="file" id="ch-photo" accept="image/*" capture="environment" onchange="chargerPhotoChauffeur(this)">
+          <div id="ch-photo-preview" style="margin-top:8px;"></div>
+          <div id="ch-photo-info" style="font-size:11px;color:var(--concrete);margin-top:4px;"></div>
+        </div>
+        <div class="form-group">
+          <label>🎥 Vidéo (max 10 secondes)</label>
+          <input type="file" id="ch-video" accept="video/*" capture="environment" onchange="verifierVideoChauffeur(this)">
+          <div id="ch-video-info" style="font-size:11px;color:var(--concrete);margin-top:4px;"></div>
+        </div>
+        <div id="ch-erreur" style="color:#E05B4C;font-size:13px;margin-bottom:12px;display:none;"></div>
+        <button class="btn btn-primary" style="width:100%;padding:16px;font-size:16px;" onclick="envoyerPanneChauffeur()">🚨 Signaler la panne</button>
+      </div>
+      <div id="ch-confirmation" style="display:none;">
+        <div class="placard"><div class="placard-in" style="text-align:center;padding:28px;">
+          <div style="font-size:48px;">✅</div>
+          <div style="font-size:18px;font-weight:800;margin-top:12px;">Panne signalée !</div>
+          <div style="font-size:14px;color:var(--concrete);margin-top:8px;">Le responsable a été notifié. Restez sur place.</div>
+          <button class="btn btn-ghost" style="margin-top:20px;" onclick="nouvelleSignalisation()">Signaler une autre panne</button>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE MÉCANICIEN ═══════════════════════════════ -->
+    <div id="page-mecano-pannes" class="page" style="max-width:480px;margin:0 auto;padding:16px;">
+      <div style="text-align:center;padding:24px 0 16px;">
+        <div style="font-size:48px;">🔧</div>
+        <div style="font-size:20px;font-weight:800;margin-top:8px;" id="mecano-nom-titre">Mes interventions</div>
+      </div>
+      <div id="mecano-liste-pannes"><p style="text-align:center;color:var(--concrete);">Chargement…</p></div>
+    </div>
+
     <div id="page-dashboard" class="page active">
       <!-- Centre d'alertes consolidé -->
       <div class="section" id="alerts-center" style="border-left:3px solid var(--red);">
@@ -1451,6 +1672,15 @@
           <span class="section-count" id="alerts-count">—</span>
         </div>
         <div id="alerts-list"></div>
+      </div>
+
+      <!-- Pannes signalées par les chauffeurs -->
+      <div class="card" id="card-pannes-signalees" style="display:none;">
+        <div class="card-header">
+          <div class="card-title">🚨 Pannes signalées</div>
+          <span id="count-pannes-signalees" class="tag tag-alert"></span>
+        </div>
+        <div id="liste-pannes-signalees"></div>
       </div>
 
       <div class="kpi-grid">
@@ -2476,11 +2706,33 @@
           </div>
         </div>
 
+        <!-- WhatsApp DG -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header"><div class="card-title">📱 Notifications WhatsApp</div></div>
+          <div class="form-group" style="padding:0 24px 16px;">
+            <label>Numéro WhatsApp du DG (avec indicatif, ex: 22996699999)</label>
+            <input type="tel" id="pref-whatsapp-dg" placeholder="Ex: 22996699999" style="margin-top:6px;">
+            <div style="font-size:11px;color:var(--concrete);margin-top:4px;">
+              Ce numéro reçoit une notification WhatsApp à chaque panne signalée par un chauffeur.
+            </div>
+          </div>
+        </div>
+
         <!-- SAVE BAR -->
         <div class="pref-save-bar">
           <span class="save-msg" id="save-msg">✅ Préférences sauvegardées</span>
           <button class="btn btn-ghost" onclick="resetPrefs()">Réinitialiser</button>
           <button class="btn btn-primary" onclick="savePrefs()">Enregistrer les préférences</button>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-header">
+            <div class="card-title">👥 Utilisateurs</div>
+            <button class="btn btn-primary" onclick="ouvrirModalUser()">+ Ajouter</button>
+          </div>
+          <p style="color:var(--concrete);font-size:13px;margin:0 0 12px;">
+            Chauffeurs, mécaniciens et DG. Vous créez leurs mots de passe — ils se connectent sur le lien partagé.
+          </p>
+          <div id="users-liste"></div>
         </div>
 
       </div>
@@ -3035,6 +3287,7 @@ function renderAll() {
 // ─── DASHBOARD ───────────────────────────────────────────
 function renderDashboard() {
   if (typeof renderAlertsCenter === 'function') renderAlertsCenter();
+  chargerPannesSignalees().catch(()=>{});
   const active = vehicles.filter(v => v.status === 'active').length;
   const maint = vehicles.filter(v => v.status === 'maintenance').length;
   const avail = vehicles.filter(v => v.status === 'available').length;
@@ -4046,6 +4299,7 @@ function populatePrefFields() {
   document.getElementById('notif-daily').checked = prefs.notifDaily;
   document.getElementById('notif-km').checked = prefs.notifKm;
   document.getElementById('pref-km-threshold').value = prefs.kmThreshold;
+  const waDGel = document.getElementById('pref-whatsapp-dg'); if(waDGel) waDGel.value = prefs.whatsappDG||'';
   const sa = document.getElementById('pref-seuil-auto'); if (sa) sa.value = prefs.seuilAuto;
   const sd = document.getElementById('pref-seuil-dir');  if (sd) sd.value = prefs.seuilDirection;
   const gj = document.getElementById('pref-garantie');   if (gj) gj.value = prefs.garantieJours;
@@ -4115,6 +4369,7 @@ function savePrefs() {
   prefs.notifKm = document.getElementById('notif-km').checked;
   prefs.kmThreshold = parseInt(document.getElementById('pref-km-threshold').value) || 200000;
   prefs.ctDays = parseInt(document.getElementById('pref-ct-days').value) || 60;
+  const waDG = document.getElementById('pref-whatsapp-dg'); if(waDG) prefs.whatsappDG = waDG.value.trim();
   prefs.seuilAuto = parseInt(document.getElementById('pref-seuil-auto').value) || 0;
   prefs.seuilDirection = parseInt(document.getElementById('pref-seuil-dir').value) || 0;
   prefs.garantieJours = parseInt(document.getElementById('pref-garantie').value) || 30;
@@ -7043,6 +7298,320 @@ function renderCaisse() {
   }
 }
 
+// ═════════════════════════════════════════════════════════
+//  INTERFACE CHAUFFEUR — SIGNALEMENT DE PANNE
+// ═════════════════════════════════════════════════════════
+let chPhotoBase64 = null;
+let chVideoFile = null;
+
+function afficherInterfaceChauffeur() {
+  const sidebar = document.querySelector('.sidebar');
+  const topbar  = document.querySelector('.topbar');
+  if (sidebar) sidebar.style.display = 'none';
+  if (topbar) {
+    topbar.style.background = 'var(--panel)';
+    topbar.style.justifyContent = 'flex-end';
+    topbar.style.padding = '10px 16px';
+  }
+  showPage('chauffeur-panne', null);
+  const el = document.getElementById('ch-plate-titre');
+  if (el && sessionUser) {
+    el.textContent = sessionUser.vehicle_plate || sessionUser.nom;
+  }
+  // Sur desktop, donner un peu plus de confort visuel
+  const page = document.getElementById('page-chauffeur-panne');
+  if (page && !estMobile()) {
+    page.style.maxWidth = '540px';
+    page.style.margin = '40px auto';
+  }
+  nouvelleSignalisation();
+}
+
+function nouvelleSignalisation() {
+  document.getElementById('ch-description').value = '';
+  document.getElementById('ch-photo-preview').innerHTML = '';
+  document.getElementById('ch-photo-info').textContent = '';
+  document.getElementById('ch-video-info').textContent = '';
+  document.getElementById('ch-erreur').style.display = 'none';
+  const conf = document.getElementById('ch-confirmation');
+  const card = document.querySelector('#page-chauffeur-panne .card');
+  if (conf) conf.style.display = 'none';
+  if (card) card.style.display = 'block';
+  chPhotoBase64 = null; chVideoFile = null;
+}
+
+// Compression automatique de la photo sous 500 kb
+async function chargerPhotoChauffeur(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const info = document.getElementById('ch-photo-info');
+  const preview = document.getElementById('ch-photo-preview');
+  info.textContent = 'Compression en cours…';
+
+  const MAX = 500 * 1024; // 500 kb
+  const b64 = await new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height, q = 0.85;
+        const canvas = document.createElement('canvas');
+        // Réduire la résolution si trop grand
+        const maxDim = 1600;
+        if (w > maxDim || h > maxDim) {
+          const ratio = Math.min(maxDim/w, maxDim/h);
+          w = Math.round(w*ratio); h = Math.round(h*ratio);
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        // Baisser la qualité jusqu'à passer sous 500kb
+        let data;
+        do { data = canvas.toDataURL('image/jpeg', q); q -= 0.05; } while (data.length*0.75 > MAX && q > 0.3);
+        res(data);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  chPhotoBase64 = b64;
+  const taille = Math.round(b64.length * 0.75 / 1024);
+  info.textContent = `✅ Photo prête — ${taille} kb`;
+  preview.innerHTML = `<img src="${b64}" style="max-width:100%;border-radius:8px;margin-top:6px;">`;
+}
+
+// Vérification durée vidéo ≤ 10 secondes
+function verifierVideoChauffeur(input) {
+  const file = input.files[0];
+  const info = document.getElementById('ch-video-info');
+  if (!file) { chVideoFile = null; return; }
+  const url = URL.createObjectURL(file);
+  const vid = document.createElement('video');
+  vid.src = url;
+  vid.onloadedmetadata = () => {
+    URL.revokeObjectURL(url);
+    if (vid.duration > 10) {
+      info.textContent = '❌ Vidéo trop longue (' + Math.round(vid.duration) + 's). Maximum : 10 secondes.';
+      info.style.color = '#E05B4C';
+      input.value = ''; chVideoFile = null;
+    } else {
+      info.textContent = '✅ Vidéo acceptée (' + Math.round(vid.duration) + 's)';
+      info.style.color = 'var(--green)';
+      chVideoFile = file;
+    }
+  };
+}
+
+async function envoyerPanneChauffeur() {
+  const desc = (document.getElementById('ch-description').value||'').trim();
+  const errEl = document.getElementById('ch-erreur');
+  errEl.style.display = 'none';
+  if (!desc) { errEl.textContent = 'Décrivez la panne avant d\'envoyer.'; errEl.style.display='block'; return; }
+
+  const plate = sessionUser ? sessionUser.vehicle_plate : '';
+  const panne = {
+    id: Date.now(),
+    vehicle_plate: plate,
+    chauffeur_id: sessionUser ? sessionUser.id : null,
+    description: desc,
+    photo_url: chPhotoBase64 || null,
+    video_url: null, // vidéo stockée localement pour l'instant
+    statut: 'en_attente',
+    signale_le: new Date().toISOString()
+  };
+
+  const r = await sb.upsert('pannes_signalees', [panne]);
+  if (!r) {
+    errEl.textContent = 'Erreur d\'envoi. Vérifiez votre connexion et réessayez.';
+    errEl.style.display = 'block'; return;
+  }
+
+  // Afficher la confirmation
+  const card = document.querySelector('#page-chauffeur-panne .card');
+  const conf = document.getElementById('ch-confirmation');
+  if (card) card.style.display = 'none';
+  if (conf) conf.style.display = 'block';
+}
+
+// ═════════════════════════════════════════════════════════
+//  INTERFACE MÉCANICIEN
+// ═════════════════════════════════════════════════════════
+function afficherInterfaceMecano() {
+  const sidebar = document.querySelector('.sidebar');
+  const topbar  = document.querySelector('.topbar');
+  if (sidebar) sidebar.style.display = 'none';
+  if (topbar) {
+    topbar.style.background = 'var(--panel)';
+    topbar.style.justifyContent = 'flex-end';
+    topbar.style.padding = '10px 16px';
+  }
+  showPage('mecano-pannes', null);
+  const el = document.getElementById('mecano-nom-titre');
+  if (el && sessionUser) el.textContent = sessionUser.nom + ' — Interventions';
+  const page = document.getElementById('page-mecano-pannes');
+  if (page && !estMobile()) {
+    page.style.maxWidth = '600px';
+    page.style.margin = '40px auto';
+  }
+  chargerPannesMecano();
+}
+
+async function chargerPannesMecano() {
+  const box = document.getElementById('mecano-liste-pannes');
+  if (!box) return;
+  // Le mécanicien voit les pannes en attente + les siennes
+  const rows = await sb.get('pannes_signalees?statut=not.eq.terminee&order=signale_le.desc');
+  const pannes = rows || [];
+  if (!pannes.length) {
+    box.innerHTML = '<div class="card" style="text-align:center;padding:28px;color:var(--concrete);">Aucune panne en attente. ✅</div>';
+    return;
+  }
+  box.innerHTML = pannes.map(p => `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;">🚛 ${p.vehicle_plate}</div>
+          <div style="font-size:11px;color:var(--concrete);">${new Date(p.signale_le).toLocaleString('fr-FR')}</div>
+        </div>
+        <span class="tag ${p.statut==='assignee'?'tag-warn':'tag-alert'}">${p.statut==='assignee'?'En cours':'En attente'}</span>
+      </div>
+      <p style="font-size:14px;margin:0 0 10px;">${p.description}</p>
+      ${p.photo_url ? `<img src="${p.photo_url}" style="max-width:100%;border-radius:8px;margin-bottom:10px;">` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <label class="btn btn-ghost" style="cursor:pointer;padding:8px 14px;font-size:13px;">
+          📷 Photo réparation
+          <input type="file" accept="image/*" capture="environment" style="display:none;"
+            onchange="ajouterPhotoReparation(this, ${p.id})">
+        </label>
+        <button class="btn btn-primary" style="font-size:13px;padding:8px 14px;" onclick="marquerTermineeMecano(${p.id})">✅ Terminée</button>
+      </div>
+      <div id="rep-photo-${p.id}"></div>
+    </div>`).join('');
+}
+
+async function ajouterPhotoReparation(input, panneId) {
+  const file = input.files[0];
+  if (!file) return;
+  // Compression identique à celle du chauffeur
+  const b64 = await new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w=img.width, h=img.height;
+        const maxDim=1600, ratio=Math.min(maxDim/w,maxDim/h);
+        if(ratio<1){w=Math.round(w*ratio);h=Math.round(h*ratio);}
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        let data,q=0.85;
+        do{data=canvas.toDataURL('image/jpeg',q);q-=0.05;}while(data.length*0.75>500*1024&&q>0.3);
+        res(data);
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  await sb.upsert('pannes_signalees',[{id:panneId, photo_reparation_url:b64, statut:'assignee'}]);
+  const div = document.getElementById('rep-photo-'+panneId);
+  if (div) div.innerHTML = `<img src="${b64}" style="max-width:100%;border-radius:8px;margin-top:8px;">`;
+  showToast('Photo ajoutée');
+}
+
+async function marquerTermineeMecano(panneId) {
+  if (!confirm('Marquer cette panne comme terminée ?')) return;
+  await sb.upsert('pannes_signalees',[{id:panneId, statut:'terminee', traite_le:new Date().toISOString()}]);
+  chargerPannesMecano();
+  showToast('Intervention marquée terminée');
+}
+
+// ═════════════════════════════════════════════════════════
+//  BADGE NOTIFICATION — PANNES EN ATTENTE (pour SARANA)
+// ═════════════════════════════════════════════════════════
+async function chargerBadgePannes() {
+  if (sessionRole !== 'admin') return;
+  const rows = await sb.get('pannes_signalees?statut=eq.en_attente&select=id');
+  const n = (rows||[]).length;
+  const el = document.getElementById('badge-pannes');
+  if (!el) return;
+  el.textContent = n > 0 ? n : '';
+  el.style.display = n > 0 ? 'inline-flex' : 'none';
+}
+
+// ═════════════════════════════════════════════════════════
+//  PANNES SIGNALÉES — VUE ADMIN (tableau de bord)
+// ═════════════════════════════════════════════════════════
+async function chargerPannesSignalees() {
+  if (sessionRole !== 'admin') return;
+  const rows = await sb.get('pannes_signalees?statut=not.eq.terminee&order=signale_le.desc');
+  const pannes = rows || [];
+
+  // Badge nav
+  const badge = document.getElementById('badge-pannes');
+  const enAttente = pannes.filter(p=>p.statut==='en_attente').length;
+  if (badge) { badge.textContent=enAttente||''; badge.style.display=enAttente?'inline-flex':'none'; }
+
+  // Carte dashboard
+  const card = document.getElementById('card-pannes-signalees');
+  const liste = document.getElementById('liste-pannes-signalees');
+  const count = document.getElementById('count-pannes-signalees');
+  if (!card || !liste) return;
+  if (!pannes.length) { card.style.display='none'; return; }
+  card.style.display='block';
+  if (count) count.textContent = pannes.length + ' en cours';
+
+  liste.innerHTML = pannes.map(p => `
+    <div style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:800;font-size:15px;">🚛 ${p.vehicle_plate}</div>
+          <div style="font-size:11px;color:var(--concrete);">${new Date(p.signale_le).toLocaleString('fr-FR')}</div>
+        </div>
+        <span class="tag ${p.statut==='en_attente'?'tag-alert':'tag-warn'}">${p.statut==='en_attente'?'En attente':'En cours'}</span>
+      </div>
+      <p style="font-size:13.5px;margin:0 0 10px;">${p.description}</p>
+      ${p.photo_url?`<img src="${p.photo_url}" style="max-width:100%;border-radius:8px;margin-bottom:10px;">`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;"
+          onclick="envoyerWhatsappDG(${JSON.stringify(p.vehicle_plate)}, ${JSON.stringify(p.description)}, '${new Date(p.signale_le).toLocaleString('fr-FR')}')">
+          📩 WhatsApp DG
+        </button>
+        <button class="btn btn-primary" style="font-size:12px;padding:6px 12px;"
+          onclick="validerPanneEnMaintenance(${p.id}, ${JSON.stringify(p.vehicle_plate)}, ${JSON.stringify(p.description)})">
+          ✅ Valider → Maintenance
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+// WhatsApp DG : ouvre WhatsApp avec le message pré-rempli
+function envoyerWhatsappDG(plate, description, date) {
+  const numDG = prefs.whatsappDG || '';
+  if (!numDG) {
+    alert('Numéro WhatsApp du DG non configuré.\nAllez dans Préférences et renseignez le numéro.');
+    return;
+  }
+  const msg = `🚨 *PANNE SIGNALÉE — FLOTTE DSN*\n\n🚛 Camion : *${plate}*\n🕐 Heure : ${date}\n📋 Description : ${description}\n\n_Envoyé depuis FLOTTE DSN_`;
+  const url = `https://wa.me/${numDG.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+// Valider une panne → crée une maintenance officielle
+async function validerPanneEnMaintenance(panneId, plate, description) {
+  if (!confirm('Valider cette panne et créer une maintenance ?')) return;
+  const maint = {
+    id: Date.now(), vehicle: plate, type: description,
+    category: 'mecanique', status: 'planned',
+    date: new Date().toISOString().slice(0,10),
+    cost: 0, garageId: null, notes: 'Signalée par le chauffeur'
+  };
+  maintenances.push(maint);
+  saveCore();
+  await sb.upsert('pannes_signalees', [{id:panneId, statut:'terminee', maintenance_id:maint.id, traite_le:new Date().toISOString()}]);
+  chargerPannesSignalees();
+  showToast('Panne validée → ajoutée aux maintenances');
+}
+
 // ─── SAUVEGARDE & RESTAURATION ───────────────────────────
 const BACKUP_KEYS = ['fleetbenne_vehicles','fleetbenne_drivers','fleetbenne_maintenances','fleetbenne_garages','fleetbenne_caisse','fleetbenne_workers','fleetbenne_expenses','fleetbenne_immobilized','fleetbenne_debts','fleetbenne_weekly_v2','fleetbenne_prefs'];
 
@@ -7751,8 +8320,285 @@ function closeLightbox() {
   document.getElementById('photo-lightbox').classList.remove('open');
 }
 
+// ═════════════════════════════════════════════════════════
+//  SYSTÈME DE RÔLES & CONNEXION
+// ═════════════════════════════════════════════════════════
+
+// Hash simple (sha256 via SubtleCrypto) — suffisant pour ce niveau de sécurité.
+async function hashMDP(mdp) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(mdp));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+let sessionRole = null;   // 'admin' | 'dg' | 'chauffeur' | 'mecano'
+let sessionUser = null;   // objet utilisateur connecté (null pour admin)
+let editingUser = null;
+
+// Au démarrage : admin direct (lien connu de SARANA seulement).
+// Les autres passent par l'écran de connexion.
+// ─── Détection de l'appareil ─────────────────────────────
+const MOBILE_BP = 680; // pixels — même breakpoint que le CSS
+
+function estMobile() {
+  return window.innerWidth <= MOBILE_BP ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+function estTabletteOuPlus() {
+  return window.innerWidth > MOBILE_BP;
+}
+
+// Adapte l'interface selon l'appareil SANS changer le rôle.
+function adapterEcran() {
+  const mobile = estMobile();
+  // Sur desktop : toujours la sidebar complète
+  const sidebar = document.querySelector('.sidebar');
+  const topbar  = document.querySelector('.topbar');
+  if (sessionRole === 'admin' || sessionRole === 'dg') {
+    if (sidebar) sidebar.style.display = '';
+    if (topbar)  topbar.style.display  = '';
+  }
+  // Indicateur discret (utile pour le debug)
+  let ind = document.getElementById('device-indicator');
+  if (!ind) {
+    ind = document.createElement('div');
+    ind.id = 'device-indicator';
+    document.body.appendChild(ind);
+  }
+  ind.textContent = mobile ? '📱 mobile' : '🖥️ desktop';
+}
+
+// Réagit au redimensionnement (rotation téléphone, fenêtre browser)
+window.addEventListener('resize', () => {
+  adapterEcran();
+  // Si un chauffeur/mécanicien retourne en paysage sur tablette,
+  // on adapte la mise en page sans changer la page affichée.
+  if (sessionRole === 'chauffeur' || sessionRole === 'mecano') {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.style.display = 'none';
+  }
+});
+
+function bootApp() {
+  loadPrefs(); loadWeeklyData(); renderWeekly();
+  loadExpenses(); loadWorkers(); loadImmobilized(); loadDebts(); initPWA();
+  loadCore();
+  // L'admin n'a pas d'écran de connexion — l'app s'ouvre directement.
+  sessionRole = 'admin';
+  document.getElementById('login-screen').classList.add('hidden');
+  majBadgeRole();
+  adapterEcran();
+  chargerUtilisateurs();
+  // Sur mobile, l'admin voit aussi un accès rapide aux pannes signalées
+  if (estMobile()) {
+    chargerPannesSignalees().catch(()=>{});
+  }
+}
+
+function majBadgeRole() {
+  const badge = document.getElementById('role-badge-top');
+  const nom = document.getElementById('role-nom-top');
+  if (!badge || !nom) return;
+  if (sessionRole === 'admin') { badge.style.display='none'; return; }
+  const labels = { dg:'DG', chauffeur:'Chauffeur', mecano:'Mécanicien' };
+  nom.textContent = (sessionUser ? sessionUser.nom : '') + ' — ' + (labels[sessionRole]||sessionRole);
+  badge.style.display = 'inline-flex';
+}
+
+async function tentativeConnexion() {
+  const login = (document.getElementById('login-input').value||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const mdp = document.getElementById('login-pass').value||'';
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!login || !mdp) { errEl.textContent = 'Renseignez votre identifiant et mot de passe.'; return; }
+
+  // Chercher dans Supabase
+  const users = await sb.get('utilisateurs?login=eq.' + encodeURIComponent(login) + '&actif=eq.true');
+  if (!users || users.length === 0) { errEl.textContent = 'Identifiant introuvable.'; return; }
+  const user = users[0];
+  const hash = await hashMDP(mdp);
+  if (hash !== user.password_hash) { errEl.textContent = 'Mot de passe incorrect.'; return; }
+
+  // Connexion réussie
+  sessionUser = user;
+  sessionRole = user.role;
+  document.getElementById('login-screen').classList.add('hidden');
+  majBadgeRole();
+
+  if (sessionRole === 'chauffeur') {
+    afficherInterfaceChauffeur();
+  } else if (sessionRole === 'mecano') {
+    afficherInterfaceMecano();
+  } else if (sessionRole === 'dg') {
+    afficherInterfaceDG();
+    loadPrefs(); loadWeeklyData(); renderWeekly();
+    loadExpenses(); loadWorkers(); loadImmobilized(); loadDebts();
+    loadCore();
+  }
+}
+
+function demanderDeconnexion() {
+  if (!confirm('Se déconnecter ?')) return;
+  sessionRole = null; sessionUser = null;
+  document.getElementById('login-input').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-screen').classList.remove('hidden');
+  majBadgeRole();
+}
+
+// ─── Interfaces selon le rôle ─────────────────────────────
+function afficherInterfaceDG() {
+  // Le DG voit tout mais ne peut rien modifier.
+  // On injecte un bandeau "lecture seule" bien visible.
+  const bandeau = document.createElement('div');
+  bandeau.id = 'dg-readonly-banner';
+  bandeau.innerHTML = '👔 Mode consultation DG — lecture seule';
+  bandeau.style.cssText = [
+    'position:fixed','top:0','left:0','right:0','z-index:8000',
+    'background:var(--accent)','color:#0d1520',
+    'text-align:center','padding:8px','font-size:12px',
+    'font-weight:800','letter-spacing:0.5px'
+  ].join(';');
+  document.body.prepend(bandeau);
+  // Décaler le topbar pour ne pas masquer le bandeau
+  const topbar = document.querySelector('.topbar');
+  if (topbar) topbar.style.marginTop = '32px';
+
+  // Désactiver tous les boutons de modification
+  setTimeout(()=>{
+    document.querySelectorAll('button, input[type="file"], input[type="submit"]').forEach(el => {
+      const txt = (el.textContent||'').trim();
+      // Garder les boutons de navigation (nav-item) et de déconnexion
+      if (el.closest('.nav-item') || el.id === 'role-badge-top') return;
+      if (['Modifier','Supprimer','Ajouter','Enregistrer','Clôturer',
+           'Approvisionnement','+ Recette','+ Apport','+ Caisse'].some(k=>txt.includes(k))) {
+        el.disabled = true;
+        el.style.opacity = '0.35';
+        el.style.pointerEvents = 'none';
+        el.title = 'Lecture seule — DG';
+      }
+    });
+  }, 800); // après le rendu complet
+
+  showPage('dashboard', null);
+  adapterEcran();
+}
+
+function afficherInterfaceChauffeur() {
+  // Interface chauffeur : page dédiée uniquement.
+  document.querySelector('.sidebar').style.display = 'none';
+  document.querySelector('.topbar').style.display = 'none';
+  showPage('chauffeur-panne', null);
+}
+
+function afficherInterfaceMecano() {
+  document.querySelector('.sidebar').style.display = 'none';
+  document.querySelector('.topbar').style.display = 'none';
+  showPage('mecano-pannes', null);
+}
+
+// ─── Gestion des utilisateurs (page prefs) ───────────────
+let utilisateurs = [];
+
+async function chargerUtilisateurs() {
+  const rows = await sb.get('utilisateurs?order=nom.asc');
+  utilisateurs = rows || [];
+  renderUtilisateurs();
+}
+
+function renderUtilisateurs() {
+  const box = document.getElementById('users-liste');
+  if (!box) return;
+  if (!utilisateurs.length) {
+    box.innerHTML = '<p style="color:var(--concrete);font-size:13px;">Aucun utilisateur. Ajoutez les chauffeurs, mécaniciens et le DG.</p>';
+    return;
+  }
+  const roleIcon = { chauffeur:'🚛', mecano:'🔧', dg:'👔' };
+  box.innerHTML = `<table class="data-table"><thead><tr>
+    <th>Rôle</th><th>Nom</th><th>Identifiant</th><th>Camion</th><th></th>
+  </tr></thead><tbody>` +
+  utilisateurs.map(u => `<tr>
+    <td>${roleIcon[u.role]||'👤'} ${u.role}</td>
+    <td><strong>${u.nom}</strong></td>
+    <td style="font-family:monospace;font-size:12px;">${u.login}</td>
+    <td>${u.vehicle_plate||'—'}</td>
+    <td><div class="row-actions">
+      <button class="btn-icon" onclick="ouvrirModalUser(${u.id})" title="Modifier">✏️</button>
+      <button class="btn-icon danger" onclick="supprimerUser(${u.id})" title="Supprimer">🗑️</button>
+    </div></td>
+  </tr>`).join('') + '</tbody></table>';
+}
+
+function majLoginLabel() {
+  const role = document.getElementById('u-role').value;
+  const label = document.getElementById('u-login-label');
+  const pg = document.getElementById('u-plate-group');
+  if (role === 'chauffeur') {
+    label.textContent = 'Identifiant (immatriculation du camion)';
+    if (pg) pg.style.display = 'block';
+    // Remplir le select camions
+    const sel = document.getElementById('u-plate');
+    if (sel) sel.innerHTML = vehicles.map(v=>`<option value="${v.plate}">${v.plate} — ${v.model||''}</option>`).join('');
+  } else {
+    label.textContent = 'Identifiant (nom d\'utilisateur)';
+    if (pg) pg.style.display = 'none';
+  }
+}
+
+function ouvrirModalUser(id=null) {
+  editingUser = id;
+  document.getElementById('user-modal-title').textContent = id ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur';
+  document.getElementById('u-nom').value = '';
+  document.getElementById('u-login').value = '';
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-role').value = 'chauffeur';
+  majLoginLabel();
+  if (id) {
+    const u = utilisateurs.find(x=>x.id===id);
+    if (u) {
+      document.getElementById('u-role').value = u.role;
+      document.getElementById('u-nom').value = u.nom;
+      document.getElementById('u-login').value = u.login;
+      majLoginLabel();
+      if (u.vehicle_plate) document.getElementById('u-plate').value = u.vehicle_plate;
+    }
+  }
+  document.getElementById('modal-user').classList.add('open');
+}
+
+async function sauvegarderUser() {
+  const role = document.getElementById('u-role').value;
+  const nom = document.getElementById('u-nom').value.trim();
+  const mdp = document.getElementById('u-password').value;
+  let login = document.getElementById('u-login').value.trim();
+  if (role === 'chauffeur') login = plaqueLisible(login);
+  else login = login.toUpperCase();
+  const plate = role === 'chauffeur' ? (document.getElementById('u-plate').value||login) : null;
+
+  if (!nom || !login) { alert('Nom et identifiant obligatoires.'); return; }
+  if (!editingUser && !mdp) { alert('Mot de passe obligatoire pour un nouvel utilisateur.'); return; }
+  if (mdp && mdp.length < 4) { alert('Mot de passe trop court (minimum 4 caractères).'); return; }
+
+  const id = editingUser || Date.now();
+  const hash = mdp ? await hashMDP(mdp) : (utilisateurs.find(u=>u.id===editingUser)||{}).password_hash;
+
+  const row = { id, nom, role, login, password_hash:hash, vehicle_plate:plate, actif:true };
+  await sb.upsert('utilisateurs', [row]);
+  closeModal('modal-user');
+  chargerUtilisateurs();
+  showToast('Utilisateur enregistré');
+}
+
+async function supprimerUser(id) {
+  const u = utilisateurs.find(x=>x.id===id);
+  if (!u || !confirm('Supprimer ' + u.nom + ' ?')) return;
+  await sb.del('utilisateurs', id);
+  chargerUtilisateurs();
+}
+
 // ─── BOOT ────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => { loadPrefs(); loadWeeklyData(); renderWeekly(); loadExpenses(); loadWorkers(); loadImmobilized(); loadDebts(); initPWA(); });
+document.addEventListener("DOMContentLoaded", bootApp);
 </script>
 </body>
 </html>
