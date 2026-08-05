@@ -1651,6 +1651,8 @@ html, body { touch-action: manipulation; }
 <main class="main">
   <div class="topbar">
     <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+    <button id="btn-retour" onclick="retourPagePrecedente()" title="Retour" aria-label="Retour"
+      style="display:none; background:none; border:none; color:var(--paper); font-size:20px; padding:0 10px 0 0; cursor:pointer; line-height:1;">←</button>
     <div class="page-title" id="pageTitle">Tableau de bord</div>
       <div id="sb-status" style="font-size:11px;color:var(--concrete);margin-left:auto;padding-right:8px;cursor:default;" title="Connexion Supabase">⏳ Connexion…</div>
       <div id="role-badge-top" class="role-badge" onclick="demanderDeconnexion()" title="Cliquer pour se déconnecter" style="display:none;">👤 <span id="role-nom-top"></span></div>
@@ -1919,7 +1921,6 @@ html, body { touch-action: manipulation; }
               <th>Permis</th>
               <th>Véhicule affecté</th>
               <th>Statut</th>
-              <th>Expiration permis</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2743,13 +2744,6 @@ html, body { touch-action: manipulation; }
           </div>
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="toggle-label">Expiration de permis chauffeur</div>
-              <div class="toggle-desc">Alerte si un permis expire dans moins de 90 jours</div>
-            </div>
-            <label class="toggle"><input type="checkbox" id="notif-license" checked><span class="toggle-slider"></span></label>
-          </div>
-          <div class="toggle-row">
-            <div class="toggle-info">
               <div class="toggle-label">Résumé quotidien IA</div>
               <div class="toggle-desc">Message de l'assistant au démarrage avec l'état de la flotte</div>
             </div>
@@ -2938,10 +2932,6 @@ html, body { touch-action: manipulation; }
     <div class="form-group">
       <label>Numéro de permis</label>
       <input type="text" id="d-license" placeholder="Ex: 75-12-345678-00">
-    </div>
-    <div class="form-group">
-      <label>Expiration du permis</label>
-      <input type="date" id="d-expiry">
     </div>
     <div class="form-group">
       <label>Véhicule affecté</label>
@@ -3438,7 +3428,7 @@ function renderDashboard() {
   // Les deux sont des tiroirs séparés dans l'app mais c'est le même argent
   // réel dans les mains de SARANA — le tableau de bord doit les additionner.
   if (typeof soldeCaisse === 'function') {
-    const soldeCaisseFlotte = soldeCaisse();
+    const soldeCaisseFlotte = (typeof soldeCaisseSansDoublons === 'function') ? soldeCaisseSansDoublons() : soldeCaisse();
     const wdCourante = (typeof currentWeekData === 'function') ? currentWeekData() : null;
     // Même formule que renderWeekly() : le report reçu de la semaine
     // précédente fait partie du solde disponible, soldeFinalSemaine()
@@ -3639,11 +3629,8 @@ function filterVehicles(f, btn) {
 // ─── DRIVERS ─────────────────────────────────────────────
 function renderDriversTable(list) {
   const tbody = document.getElementById('drivers-table-body');
-  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--concrete);padding:24px;">Aucun chauffeur enregistré</td></tr>'; return; }
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--concrete);padding:24px;">Aucun chauffeur enregistré</td></tr>'; return; }
   tbody.innerHTML = list.map(d => {
-    const exp = new Date(d.expiry);
-    const diff = (exp - new Date()) / 86400000;
-    const expiryTag = diff < 0 ? 'tag-alert' : diff < 60 ? 'tag-warn' : 'tag-ok';
     return `
     <tr>
       <td><strong>${d.name}</strong></td>
@@ -3651,7 +3638,6 @@ function renderDriversTable(list) {
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--concrete);">${d.license}</td>
       <td>${d.vehicle || '<span style="color:var(--concrete)">—</span>'}</td>
       <td>${d.status === 'En mission' ? statusBadge('active') : statusBadge('available')}</td>
-      <td><span class="tag ${expiryTag}">${d.expiry}</span></td>
       <td><div class="row-actions"><button class="btn-icon" onclick="openEditDriverModal(${d.id})" title="Modifier">✏️</button><button class="btn-icon danger" onclick="deleteDriver(${d.id})" title="Supprimer">🗑️</button></div></td>
     </tr>`;
   }).join('');
@@ -3987,8 +3973,17 @@ function filterMaint(f, btn) {
 }
 
 // ─── NAVIGATION ──────────────────────────────────────────
-function showPage(id, navEl) {
+// ─── Historique de navigation — retour étape par étape ───
+let pageStack = [];
+
+function showPage(id, navEl, viaRetour) {
   closeSidebar();
+  // On empile la page qu'on quitte, sauf si ce changement de page
+  // est lui-même un retour (sinon avancer et reculer boucleraient).
+  const pageActuelle = document.querySelector('.page.active');
+  if (!viaRetour && pageActuelle && pageActuelle.id !== 'page-' + id) {
+    pageStack.push(pageActuelle.id.replace('page-', ''));
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (id === 'weekly' && typeof renderWeekly === 'function') setTimeout(renderWeekly, 30);
@@ -4003,16 +3998,29 @@ function showPage(id, navEl) {
   if (id === 'caisse' && typeof renderCaisse === 'function') renderCaisse();
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
+  // Revenir au tableau de bord repart de zéro — l'historique n'a plus de sens.
+  if (id === 'dashboard') pageStack = [];
   // Le bouton de saisie express ne doit apparaître que sur le tableau de bord —
   // ailleurs il masque des informations que SARANA a besoin de lire en entier.
   const fab = document.getElementById('express-fab');
   if (fab) fab.style.display = (id === 'dashboard') ? '' : 'none';
+  // Le bouton retour n'apparaît que s'il y a effectivement un historique.
+  const btnRetour = document.getElementById('btn-retour');
+  if (btnRetour) btnRetour.style.display = pageStack.length ? '' : 'none';
   // Ouvrir automatiquement le sous-menu parent de la page affichée.
   const parentDeSousMenu = { maintenance:'pannes', garages:'pannes', immobilized:'pannes',
     weekly:'bilans', monthly:'bilans', annual:'bilans' };
   if (parentDeSousMenu[id]) ouvrirSousMenu(parentDeSousMenu[id]);
   const titles = {dashboard:'Tableau de bord', vehicles:'Véhicules', drivers:'Chauffeurs', workers:'Ouvriers & main-d\'œuvre', maintenance:'Maintenance', ai:'Assistant IA', prefs:'Préférences', weekly:'Bilan hebdomadaire', monthly:'Rapport mensuel', annual:'Bilan annuel', analysis:'Analyse des pannes & rapports', expenses:'Dépenses diverses', immobilized:'Camions immobilisés', debts:'Dettes fournisseurs', garages:'Garages & taux de retour', caisse:'Caisse flotte'};
   document.getElementById('pageTitle').textContent = titles[id] || id;
+}
+
+// Dépile une étape et affiche la page précédente — sans la réempiler.
+function retourPagePrecedente() {
+  if (!pageStack.length) return;
+  const precedente = pageStack.pop();
+  const navEl = document.querySelector('.nav-item[onclick*="\'' + precedente + '\'"]');
+  showPage(precedente, navEl, true);
 }
 
 // ─── Sous-menus dépliables (Pannes / Bilans) ─────────────
@@ -4054,7 +4062,7 @@ async function syncCoreSB() {
   // Chauffeurs
   if (drivers.length) await sb.upsert('drivers', drivers.map(d=>({
     id:d.id, name:d.name, phone:d.phone||'', license:d.license||'',
-    expiry:d.expiry||null, vehicle_plate:d.vehicle||'', status:d.status||'actif'
+    vehicle_plate:d.vehicle||'', status:d.status||'actif'
   })));
   // Garages
   if (garages.length) await sb.upsert('garages', garages.map(g=>({
@@ -4113,7 +4121,7 @@ async function loadCoreSB() {
   }));
   drivers = (ds||[]).map(d=>({
     id:d.id, name:d.name, phone:d.phone, license:d.license,
-    expiry:d.expiry, vehicle:d.vehicle_plate, status:d.status
+    vehicle:d.vehicle_plate, status:d.status
   }));
   garages = (gs||[]).map(g=>({ id:g.id, nom:g.nom, ville:g.ville||'' }));
   maintenances = (ms||[]).map(m=>({
@@ -4194,7 +4202,7 @@ function openEditVehicleModal(id) {
 function openAddDriverModal() {
   editingDriver = null;
   document.querySelector('#modal-driver .modal-title').textContent = 'Ajouter un chauffeur';
-  ['d-name','d-phone','d-license','d-expiry'].forEach(i => document.getElementById(i).value = '');
+  ['d-name','d-phone','d-license'].forEach(i => document.getElementById(i).value = '');
   const sel = document.getElementById('d-vehicle');
   sel.innerHTML = '<option value="">— Aucun —</option>' + vehicles.map(v => `<option value="${v.plate}">${v.plate}</option>`).join('');
   document.getElementById('modal-driver').classList.add('open');
@@ -4208,7 +4216,6 @@ function openEditDriverModal(id) {
   document.getElementById('d-name').value = d.name;
   document.getElementById('d-phone').value = d.phone || '';
   document.getElementById('d-license').value = d.license || '';
-  document.getElementById('d-expiry').value = d.expiry || '';
   const sel = document.getElementById('d-vehicle');
   sel.innerHTML = '<option value="">— Aucun —</option>' + vehicles.map(v => `<option value="${v.plate}">${v.plate}</option>`).join('');
   sel.value = d.vehicle || '';
@@ -4317,7 +4324,6 @@ function addDriver() {
   const v = document.getElementById('d-vehicle').value;
   const phone = document.getElementById('d-phone').value;
   const license = document.getElementById('d-license').value;
-  const expiry = document.getElementById('d-expiry').value;
   if (editingDriver !== null) {
     const d = drivers.find(x => x.id === editingDriver);
     if (d) {
@@ -4326,11 +4332,11 @@ function addDriver() {
         const old = vehicles.find(x => x.plate === d.vehicle);
         if (old) { old.driver = '—'; if (old.status === 'active') old.status = 'available'; }
       }
-      d.name = name; d.phone = phone; d.license = license; d.expiry = expiry; d.vehicle = v;
+      d.name = name; d.phone = phone; d.license = license; d.vehicle = v;
       d.status = v ? 'En mission' : 'Disponible';
     }
   } else {
-    drivers.push({ id: Date.now(), name, phone, license, vehicle: v, status: v ? 'En mission' : 'Disponible', expiry });
+    drivers.push({ id: Date.now(), name, phone, license, vehicle: v, status: v ? 'En mission' : 'Disponible' });
   }
   if (v) {
     const veh = vehicles.find(x => x.plate === v);
@@ -4463,7 +4469,7 @@ VEHICULES (${vehicles.length} au total) :
 - Disponibles (${availV.length}) : ${availV.map(v => v.plate + ' (' + v.model + ')').join(' | ') || 'Aucun'}
 
 CHAUFFEURS (${drivers.length}) :
-${drivers.map(d => '- ' + d.name + ' : ' + (d.vehicle ? 'Affecte a ' + d.vehicle : 'Disponible') + ', permis expire le ' + d.expiry).join('\n')}
+${drivers.map(d => '- ' + d.name + ' : ' + (d.vehicle ? 'Affecte a ' + d.vehicle : 'Disponible')).join('\n')}
 
 MAINTENANCES PLANIFIEES :
 ${maintenances.filter(m => m.status !== 'done').map(m => '- ' + m.vehicle + ' : ' + m.type + ' le ' + m.date + ' (priorite: ' + m.priority + ', cout: ' + m.cost + 'FCFA)').join('\n')}
@@ -4549,7 +4555,7 @@ let prefs = {
   logoData: '',
   theme: 'dark',
   accent: '#F5A623',
-  notifCT: true, notifMaint: true, notifLicense: true, notifDaily: false, notifKm: true,
+  notifCT: true, notifMaint: true, notifDaily: false, notifKm: true,
   kmThreshold: 200000, ctDays: 60,
   seuilAuto: 25000, seuilDirection: 150000, garantieJours: 30,
   intervals: { mecanique:180, hydraulique:120, electricite:365, soudure:90 }
@@ -4574,7 +4580,6 @@ function populatePrefFields() {
   document.getElementById('pref-address').value = prefs.address || '';
   document.getElementById('notif-ct').checked = prefs.notifCT;
   document.getElementById('notif-maint').checked = prefs.notifMaint;
-  document.getElementById('notif-license').checked = prefs.notifLicense;
   document.getElementById('notif-daily').checked = prefs.notifDaily;
   document.getElementById('notif-km').checked = prefs.notifKm;
   document.getElementById('pref-km-threshold').value = prefs.kmThreshold;
@@ -4643,7 +4648,6 @@ function savePrefs() {
   prefs.address = document.getElementById('pref-address').value.trim();
   prefs.notifCT = document.getElementById('notif-ct').checked;
   prefs.notifMaint = document.getElementById('notif-maint').checked;
-  prefs.notifLicense = document.getElementById('notif-license').checked;
   prefs.notifDaily = document.getElementById('notif-daily').checked;
   prefs.notifKm = document.getElementById('notif-km').checked;
   prefs.kmThreshold = parseInt(document.getElementById('pref-km-threshold').value) || 200000;
@@ -4669,7 +4673,7 @@ function savePrefs() {
 
 function resetPrefs() {
   localStorage.removeItem('fleetbenne_prefs');
-  prefs = { companyName:'', siret:'', manager:'', phone:'', email:'', address:'', logoData:'', theme:'dark', accent:'#F5A623', notifCT:true, notifMaint:true, notifLicense:true, notifDaily:false, notifKm:true, kmThreshold:200000, ctDays:60, intervals:{mecanique:180,hydraulique:120,electricite:365,soudure:90} };
+  prefs = { companyName:'', siret:'', manager:'', phone:'', email:'', address:'', logoData:'', theme:'dark', accent:'#F5A623', notifCT:true, notifMaint:true, notifDaily:false, notifKm:true, kmThreshold:200000, ctDays:60, intervals:{mecanique:180,hydraulique:120,electricite:365,soudure:90} };
   applyPrefs();
   populatePrefFields();
   document.getElementById('logo-preview-box').innerHTML = '🚛';
@@ -6985,6 +6989,20 @@ function soldeCaisse() {
   return caisseFlotte.reduce((s, m) => s + (m.type === 'entree' ? m.montant : -m.montant), 0);
 }
 
+// Le solde de la caisse flotte, sans les sorties automatiques liées aux
+// dépenses de maintenance (maintId renseigné) : ces dépenses sont déjà
+// comptées dans le suivi hebdomadaire (soldeFinalSemaine). Les additionner
+// aussi ici ferait payer la même dépense deux fois dans le total du
+// tableau de bord. Les apports (DG/DSN/recette) et les sorties manuelles
+// depuis la page Caisse (sans lien maintenance) restent comptés.
+function soldeCaisseSansDoublons() {
+  return caisseFlotte.reduce((s, m) => {
+    if (m.type === 'entree') return s + m.montant;
+    if (m.maintId) return s; // déjà compté dans le bilan hebdomadaire
+    return s - m.montant;
+  }, 0);
+}
+
 function sortirCaisse(montant, motif, maintId) {
   caisseFlotte.push({
     id: Date.now() + Math.floor(Math.random() * 1000),
@@ -8327,14 +8345,6 @@ function buildAlerts() {
     if (d === null) return;
     if (d < 0) alerts.push({ sev:'high', icon:'🚗', page:'vehicles', title:`CT dépassé — ${v.plate}`, detail:`Contrôle technique en retard de ${-d} j` });
     else if (d <= ctDays) alerts.push({ sev:'mid', icon:'🚗', page:'vehicles', title:`CT bientôt — ${v.plate}`, detail:`Contrôle technique dans ${d} j` });
-  });
-
-  // Permis chauffeurs
-  drivers.forEach(dr => {
-    const d = daysUntil(dr.expiry);
-    if (d === null) return;
-    if (d < 0) alerts.push({ sev:'high', icon:'🪪', page:'drivers', title:`Permis périmé — ${dr.name}`, detail:`Expiré depuis ${-d} j` });
-    else if (d <= 90) alerts.push({ sev:'mid', icon:'🪪', page:'drivers', title:`Permis bientôt périmé — ${dr.name}`, detail:`Expire dans ${d} j` });
   });
 
   // Camions immobilisés
