@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -3268,13 +3269,6 @@ let drivers = []; // vos chauffeurs
 let maintenances = []; // l'historique se construit à l'usage
 
 // ─── INIT ────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('dateChip').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
-  loadCore();
-  renderAll();
-  // loadPrefs called separately below
-});
-
 function renderAll() {
   renderDashboard();
   renderVehiclesTable(vehicles);
@@ -5910,12 +5904,19 @@ function closeSidebar() {
 
 // ─── PWA : installation & hors-ligne ─────────────────────
 function initPWA() {
+  // Le lien d'installation doit garder son mode (admin ou terrain) :
+  // sans ça, l'icône installée démarre toujours sur l'URL racine,
+  // et un chauffeur qui installe depuis ?role=terrain se retrouve
+  // admin au prochain lancement.
+  const params = new URLSearchParams(window.location.search);
+  const startUrl = params.get('role') === 'terrain' ? '?role=terrain' : '.';
+
   // Manifest généré à la volée
   const manifest = {
     name: (typeof prefs!=='undefined' && prefs.companyName) ? prefs.companyName : 'FLOTTE DSN',
     short_name: 'FLOTTE DSN',
     description: 'Gestion de flotte de camions bennes',
-    start_url: '.',
+    start_url: startUrl,
     display: 'standalone',
     background_color: '#1A2332',
     theme_color: '#111C2A',
@@ -8380,19 +8381,37 @@ window.addEventListener('resize', () => {
 });
 
 function bootApp() {
+  // Décider du mode AVANT de charger quoi que ce soit côté admin :
+  // charger les données admin en premier créait un flash de contenu
+  // (renderAll() dans loadCore) même quand le mode terrain était actif.
+  const params = new URLSearchParams(window.location.search);
+  const modeT = params.get('role') === 'terrain';
+
+  const dateChip = document.getElementById('dateChip');
+  if (dateChip) dateChip.textContent = new Date().toLocaleDateString('fr-FR', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+
+  if (modeT) {
+    // ─── Chauffeur / mécanicien / DG : écran de connexion ───
+    // On ne charge AUCUNE donnée admin tant que la personne
+    // ne s'est pas identifiée avec succès.
+    document.getElementById('login-screen').classList.remove('hidden');
+    const label = document.getElementById('login-label-login');
+    if (label) label.textContent = 'Immatriculation ou identifiant';
+    adapterEcran();
+    initPWA();
+    return; // ── stop ici : rien d'autre ne se charge en mode terrain
+  }
+
+  // ─── Admin (SARANA) : accès direct, comportement d'origine ───
+  sessionRole = 'admin';
+  document.getElementById('login-screen').classList.add('hidden');
   loadPrefs(); loadWeeklyData(); renderWeekly();
   loadExpenses(); loadWorkers(); loadImmobilized(); loadDebts(); initPWA();
   loadCore();
-  // L'admin n'a pas d'écran de connexion — l'app s'ouvre directement.
-  sessionRole = 'admin';
-  document.getElementById('login-screen').classList.add('hidden');
   majBadgeRole();
   adapterEcran();
   chargerUtilisateurs();
-  // Sur mobile, l'admin voit aussi un accès rapide aux pannes signalées
-  if (estMobile()) {
-    chargerPannesSignalees().catch(()=>{});
-  }
+  if (estMobile()) chargerPannesSignalees().catch(()=>{});
 }
 
 function majBadgeRole() {
