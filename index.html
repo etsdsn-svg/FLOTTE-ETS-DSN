@@ -1714,12 +1714,12 @@ html, body { touch-action: manipulation; }
     </div>
 
     <div id="page-dashboard" class="page active">
-      <!-- Solde caisse — en tout premier, c'est le chiffre que SARANA vient chercher en premier -->
-      <div class="kpi-card blue" id="kpi-solde-card" onclick="showPage('caisse', document.querySelector('.nav-item[onclick*=caisse]'))" style="cursor:pointer; margin-bottom:16px;" title="Voir le détail de la caisse">
+      <!-- Solde de la semaine — en tout premier, c'est le chiffre que SARANA vient chercher en premier -->
+      <div class="kpi-card blue" id="kpi-solde-card" onclick="showPage('weekly', document.querySelector('.nav-item[onclick*=weekly]'))" style="cursor:pointer; margin-bottom:16px;" title="Voir le détail du bilan hebdomadaire">
         <div class="kpi-icon">💰</div>
-        <div class="kpi-label">Solde caisse</div>
+        <div class="kpi-label">Solde de la semaine</div>
         <div class="kpi-value" id="kpi-solde-dash">0 FCFA</div>
-        <div class="kpi-sub" id="kpi-solde-dash-sub">disponible pour les pannes</div>
+        <div class="kpi-sub" id="kpi-solde-dash-sub">après toutes dépenses</div>
       </div>
 
       <!-- Centre d'alertes consolidé -->
@@ -3422,20 +3422,12 @@ function renderDashboard() {
   document.getElementById('kpi-alerts').textContent = alerts;
   document.getElementById('kpi-avail').textContent = avail;
 
-  // Argent total réellement disponible = caisse flotte (recette/DG/DSN
-  // mise de côté pour les pannes) + solde du suivi hebdomadaire (recette
-  // de la semaine + report des semaines précédentes − dépenses).
-  // Les deux sont des tiroirs séparés dans l'app mais c'est le même argent
-  // réel dans les mains de SARANA — le tableau de bord doit les additionner.
-  if (typeof soldeCaisse === 'function') {
-    const soldeCaisseFlotte = (typeof soldeCaisseSansDoublons === 'function') ? soldeCaisseSansDoublons() : soldeCaisse();
-    const wdCourante = (typeof currentWeekData === 'function') ? currentWeekData() : null;
-    // Même formule que renderWeekly() : le report reçu de la semaine
-    // précédente fait partie du solde disponible, soldeFinalSemaine()
-    // seule ne le compte pas (elle sert à additionner l'historique sans
-    // double-compter les reports d'une semaine à l'autre).
-    const soldeHebdo = wdCourante ? (wdCourante.reportRecu || 0) + soldeFinalSemaine(wdCourante) : 0;
-    const solde = soldeCaisseFlotte + soldeHebdo;
+  // Solde du bilan hebdomadaire — même formule que la page Bilan hebdomadaire :
+  // report reçu de la semaine précédente + recette de la semaine en cours
+  // − dépenses camions − ouvriers − autres dépenses.
+  if (typeof currentWeekData === 'function' && typeof soldeFinalSemaine === 'function') {
+    const wdCourante = currentWeekData();
+    const solde = (wdCourante.reportRecu || 0) + soldeFinalSemaine(wdCourante);
     suivreCaisseVide(solde);
     const seuilAlerte = (typeof prefs !== 'undefined' && prefs.seuilAuto) ? prefs.seuilAuto : 25000;
     const valEl = document.getElementById('kpi-solde-dash');
@@ -3446,7 +3438,7 @@ function renderDashboard() {
       cardEl.classList.remove('green','orange','red','blue');
       if (solde <= 0) { cardEl.classList.add('red'); if (subEl) subEl.textContent = 'épuisé — apport nécessaire'; }
       else if (solde < seuilAlerte) { cardEl.classList.add('orange'); if (subEl) subEl.textContent = 'bas — à surveiller'; }
-      else { cardEl.classList.add('green'); if (subEl) subEl.textContent = 'disponible au total'; }
+      else { cardEl.classList.add('green'); if (subEl) subEl.textContent = 'après toutes dépenses'; }
     }
 
     // Carte + escalade WhatsApp après 24h.
@@ -3457,8 +3449,8 @@ function renderDashboard() {
       if (etat.vide) {
         carteVide.style.display = 'block';
         texteVide.textContent = etat.depuisH < 1
-          ? "L'argent total disponible (caisse + suivi hebdomadaire) vient de tomber à zéro. Un apport du DG permettra de continuer à couvrir les pannes."
-          : `L'argent disponible est épuisé depuis ${etat.depuisH} heure${etat.depuisH>1?'s':''}.` +
+          ? "Le solde de la semaine vient de tomber à zéro. Un apport du DG permettra de continuer à couvrir les pannes."
+          : `Le solde est épuisé depuis ${etat.depuisH} heure${etat.depuisH>1?'s':''}.` +
             (etat.alerteWhatsapp ? ' Le DG a été notifié par WhatsApp.' : ' Le DG sera notifié par WhatsApp après 24h sans apport.');
       } else {
         carteVide.style.display = 'none';
