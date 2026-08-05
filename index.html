@@ -1721,6 +1721,14 @@ html, body { touch-action: manipulation; }
         <div id="alerts-list"></div>
       </div>
 
+      <!-- Caisse vide — notification immédiate, visible SARANA et DG -->
+      <div class="card" id="card-caisse-vide" style="display:none; border-left:3px solid var(--red);">
+        <div class="card-header">
+          <div class="card-title">🔴 Caisse flotte vide</div>
+        </div>
+        <div id="texte-caisse-vide" style="font-size:14px;color:var(--concrete);"></div>
+      </div>
+
       <!-- Pannes signalées par les chauffeurs -->
       <div class="card" id="card-pannes-signalees" style="display:none;">
         <div class="card-header">
@@ -1754,6 +1762,12 @@ html, body { touch-action: manipulation; }
           <div class="kpi-label">Alertes critiques</div>
           <div class="kpi-value" id="kpi-alerts">0</div>
           <div class="kpi-sub">interventions requises</div>
+        </div>
+        <div class="kpi-card blue" id="kpi-solde-card" onclick="showPage('caisse', document.querySelector('.nav-item[onclick*=caisse]'))" style="cursor:pointer;" title="Voir le détail de la caisse">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-label">Solde caisse</div>
+          <div class="kpi-value" id="kpi-solde-dash">0 FCFA</div>
+          <div class="kpi-sub" id="kpi-solde-dash-sub">disponible pour les pannes</div>
         </div>
         <div class="kpi-card blue">
           <div class="kpi-icon">💤</div>
@@ -3416,6 +3430,40 @@ function renderDashboard() {
   document.getElementById('kpi-alerts').textContent = alerts;
   document.getElementById('kpi-avail').textContent = avail;
 
+  // Solde de la caisse flotte — pour ne plus avoir à aller le chercher.
+  if (typeof soldeCaisse === 'function') {
+    const solde = soldeCaisse();
+    suivreCaisseVide(solde);
+    const seuilAlerte = (typeof prefs !== 'undefined' && prefs.seuilAuto) ? prefs.seuilAuto : 25000;
+    const valEl = document.getElementById('kpi-solde-dash');
+    const subEl = document.getElementById('kpi-solde-dash-sub');
+    const cardEl = document.getElementById('kpi-solde-card');
+    if (valEl) valEl.textContent = solde.toLocaleString('fr-FR') + ' FCFA';
+    if (cardEl) {
+      cardEl.classList.remove('green','orange','red','blue');
+      if (solde <= 0) { cardEl.classList.add('red'); if (subEl) subEl.textContent = 'épuisée — apport nécessaire'; }
+      else if (solde < seuilAlerte) { cardEl.classList.add('orange'); if (subEl) subEl.textContent = 'bas — à surveiller'; }
+      else { cardEl.classList.add('green'); if (subEl) subEl.textContent = 'disponible pour les pannes'; }
+    }
+
+    // Carte + escalade WhatsApp après 24h.
+    const etat = etatCaisseVide();
+    const carteVide = document.getElementById('card-caisse-vide');
+    const texteVide = document.getElementById('texte-caisse-vide');
+    if (carteVide && texteVide) {
+      if (etat.vide) {
+        carteVide.style.display = 'block';
+        texteVide.textContent = etat.depuisH < 1
+          ? "La caisse vient de tomber à zéro. Un apport du DG permettra de continuer à couvrir les pannes."
+          : `La caisse est vide depuis ${etat.depuisH} heure${etat.depuisH>1?'s':''}.` +
+            (etat.alerteWhatsapp ? ' Le DG a été notifié par WhatsApp.' : ' Le DG sera notifié par WhatsApp après 24h sans apport.');
+      } else {
+        carteVide.style.display = 'none';
+      }
+    }
+    if (sessionRole === 'admin' || sessionRole === 'dg') verifierEscaladeCaisseVide();
+  }
+
   // Les pannes qui reviennent : le seul chiffre qui dise si on répare
   // vraiment, ou si on repaie deux fois la même chose.
   const retours = maintenances.filter(m => m.retour);
@@ -4434,7 +4482,7 @@ async function sendAiMessage() {
   const loadingEl = appendMsg('…', 'loading');
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(SB_URL + '/functions/v1/ai-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -5450,7 +5498,7 @@ Rédige une synthèse concise et professionnelle en français (250 mots max), sa
 4. 2 recommandations concrètes`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(SB_URL + '/functions/v1/ai-proxy', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1200, messages:[{role:'user',content:prompt}] })
     });
@@ -5899,7 +5947,7 @@ Rédige un RAPPORT D'ANALYSE DE MAINTENANCE professionnel et très pertinent en 
 Sois concret, technique et orienté terrain (vocabulaire poids lourd / benne). Pas de markdown, texte structuré avec titres en majuscules et sauts de ligne. 500 mots max.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(SB_URL + '/functions/v1/ai-proxy', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:2000, messages:[{role:'user',content:prompt}] })
     });
@@ -7820,7 +7868,7 @@ Ton rôle : donner en 3-4 phrases, en français simple et concret, des pistes de
 Ne donne jamais de conseil qui l'inciterait à réparer lui-même une pièce de sécurité (freins, direction). Dans le doute, dis-lui de signaler et d'attendre les instructions.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(SB_URL + '/functions/v1/ai-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -7939,7 +7987,7 @@ Tu n'as PAS accès aux données financières de l'entreprise (caisse, salaires, 
 Donne en 4-5 phrases concrètes : par où commencer le diagnostic, les points à vérifier en priorité, et si l'historique suggère une cause récurrente plutôt qu'une panne isolée.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(SB_URL + '/functions/v1/ai-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -8103,6 +8151,71 @@ function envoyerWhatsappDG(plate, description, date) {
   const msg = `🚨 *PANNE SIGNALÉE — FLOTTE DSN*\n\n🚛 Camion : *${plate}*\n🕐 Heure : ${date}\n📋 Description : ${description}\n\n_Envoyé depuis FLOTTE DSN_`;
   const url = `https://wa.me/${numDG.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
+}
+
+// ═════════════════════════════════════════════════════════
+//  CAISSE VIDE — ESCALADE EN 2 TEMPS
+//  1. Solde ≤ 0 : notification immédiate sur l'interface DG
+//  2. 24h sans réapprovisionnement : WhatsApp s'ouvre tout seul
+//     à la prochaine ouverture de l'app (SARANA ou DG)
+//
+//  L'horodatage vit dans prefs (synchronisé via Supabase), pas
+//  dans localStorage seul : SARANA est sur PC, le DG sur mobile —
+//  un compteur local à chaque appareil donnerait des 24h différentes.
+// ═════════════════════════════════════════════════════════
+
+// Doit être appelée à chaque calcul du solde (dashboard, caisse...).
+// Gère l'horodatage partagé : le pose quand la caisse tombe à vide,
+// le retire dès qu'elle repasse au-dessus de zéro.
+function suivreCaisseVide(solde) {
+  if (typeof prefs === 'undefined') return;
+  if (solde <= 0) {
+    if (!prefs.caisseVideDepuis) {
+      prefs.caisseVideDepuis = new Date().toISOString();
+      localStorage.setItem('fleetbenne_prefs', JSON.stringify(prefs));
+      if (navigator.onLine && typeof sb !== 'undefined') sb.upsert('prefs', [{ id:1, data:prefs }]).catch(()=>{});
+    }
+  } else {
+    if (prefs.caisseVideDepuis) {
+      prefs.caisseVideDepuis = null;
+      prefs.whatsappCaisseEnvoyeLe = null;
+      localStorage.setItem('fleetbenne_prefs', JSON.stringify(prefs));
+      if (navigator.onLine && typeof sb !== 'undefined') sb.upsert('prefs', [{ id:1, data:prefs }]).catch(()=>{});
+    }
+  }
+}
+
+// Renvoie { vide, depuisH, alerteWhatsapp } — combien de temps la caisse
+// est vide, et si le seuil de 24h est dépassé.
+function etatCaisseVide() {
+  if (typeof prefs === 'undefined' || !prefs.caisseVideDepuis) return { vide:false, depuisH:0, alerteWhatsapp:false };
+  const depuisH = (new Date() - new Date(prefs.caisseVideDepuis)) / 3600000;
+  return { vide:true, depuisH: Math.floor(depuisH), alerteWhatsapp: depuisH >= 24 };
+}
+
+// Le message WhatsApp d'escalade — distinct de celui des pannes.
+function envoyerWhatsappCaisseVide() {
+  const numDG = (typeof prefs !== 'undefined' && prefs.whatsappDG) ? prefs.whatsappDG : '';
+  if (!numDG) return; // pas de numéro configuré, on n'insiste pas silencieusement
+  const solde = (typeof soldeCaisse === 'function') ? soldeCaisse() : 0;
+  const msg = `🔴 *CAISSE FLOTTE VIDE — FLOTTE DSN*\n\nLa caisse est épuisée depuis plus de 24h (solde actuel : ${solde.toLocaleString('fr-FR')} FCFA).\nUn apport est nécessaire pour continuer à couvrir les pannes de la semaine.\n\n_Envoyé automatiquement depuis FLOTTE DSN_`;
+  const url = `https://wa.me/${numDG.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  // On note que l'alerte 24h a été envoyée pour ne pas la redéclencher
+  // à chaque ouverture d'app dans la même journée — partagé via prefs.
+  prefs.whatsappCaisseEnvoyeLe = new Date().toDateString();
+  localStorage.setItem('fleetbenne_prefs', JSON.stringify(prefs));
+  if (navigator.onLine && typeof sb !== 'undefined') sb.upsert('prefs', [{ id:1, data:prefs }]).catch(()=>{});
+}
+
+// À appeler au chargement de l'app (admin et DG) : déclenche le WhatsApp
+// automatique si 24h sont dépassées et qu'il n'a pas déjà été envoyé aujourd'hui.
+function verifierEscaladeCaisseVide() {
+  const etat = etatCaisseVide();
+  if (!etat.alerteWhatsapp) return;
+  const dejaEnvoyeAujourdhui = (typeof prefs !== 'undefined') && prefs.whatsappCaisseEnvoyeLe === new Date().toDateString();
+  if (dejaEnvoyeAujourdhui) return;
+  envoyerWhatsappCaisseVide();
 }
 
 // Valider une panne → crée une maintenance officielle
