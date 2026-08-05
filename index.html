@@ -1712,6 +1712,14 @@ html, body { touch-action: manipulation; }
     </div>
 
     <div id="page-dashboard" class="page active">
+      <!-- Solde caisse — en tout premier, c'est le chiffre que SARANA vient chercher en premier -->
+      <div class="kpi-card blue" id="kpi-solde-card" onclick="showPage('caisse', document.querySelector('.nav-item[onclick*=caisse]'))" style="cursor:pointer; margin-bottom:16px;" title="Voir le détail de la caisse">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-label">Solde caisse</div>
+        <div class="kpi-value" id="kpi-solde-dash">0 FCFA</div>
+        <div class="kpi-sub" id="kpi-solde-dash-sub">disponible pour les pannes</div>
+      </div>
+
       <!-- Centre d'alertes consolidé -->
       <div class="section" id="alerts-center" style="border-left:3px solid var(--red);">
         <div class="section-header">
@@ -1762,12 +1770,6 @@ html, body { touch-action: manipulation; }
           <div class="kpi-label">Alertes critiques</div>
           <div class="kpi-value" id="kpi-alerts">0</div>
           <div class="kpi-sub">interventions requises</div>
-        </div>
-        <div class="kpi-card blue" id="kpi-solde-card" onclick="showPage('caisse', document.querySelector('.nav-item[onclick*=caisse]'))" style="cursor:pointer;" title="Voir le détail de la caisse">
-          <div class="kpi-icon">💰</div>
-          <div class="kpi-label">Solde caisse</div>
-          <div class="kpi-value" id="kpi-solde-dash">0 FCFA</div>
-          <div class="kpi-sub" id="kpi-solde-dash-sub">disponible pour les pannes</div>
         </div>
         <div class="kpi-card blue">
           <div class="kpi-icon">💤</div>
@@ -3430,9 +3432,20 @@ function renderDashboard() {
   document.getElementById('kpi-alerts').textContent = alerts;
   document.getElementById('kpi-avail').textContent = avail;
 
-  // Solde de la caisse flotte — pour ne plus avoir à aller le chercher.
+  // Argent total réellement disponible = caisse flotte (recette/DG/DSN
+  // mise de côté pour les pannes) + solde du suivi hebdomadaire (recette
+  // de la semaine + report des semaines précédentes − dépenses).
+  // Les deux sont des tiroirs séparés dans l'app mais c'est le même argent
+  // réel dans les mains de SARANA — le tableau de bord doit les additionner.
   if (typeof soldeCaisse === 'function') {
-    const solde = soldeCaisse();
+    const soldeCaisseFlotte = soldeCaisse();
+    const wdCourante = (typeof currentWeekData === 'function') ? currentWeekData() : null;
+    // Même formule que renderWeekly() : le report reçu de la semaine
+    // précédente fait partie du solde disponible, soldeFinalSemaine()
+    // seule ne le compte pas (elle sert à additionner l'historique sans
+    // double-compter les reports d'une semaine à l'autre).
+    const soldeHebdo = wdCourante ? (wdCourante.reportRecu || 0) + soldeFinalSemaine(wdCourante) : 0;
+    const solde = soldeCaisseFlotte + soldeHebdo;
     suivreCaisseVide(solde);
     const seuilAlerte = (typeof prefs !== 'undefined' && prefs.seuilAuto) ? prefs.seuilAuto : 25000;
     const valEl = document.getElementById('kpi-solde-dash');
@@ -3441,9 +3454,9 @@ function renderDashboard() {
     if (valEl) valEl.textContent = solde.toLocaleString('fr-FR') + ' FCFA';
     if (cardEl) {
       cardEl.classList.remove('green','orange','red','blue');
-      if (solde <= 0) { cardEl.classList.add('red'); if (subEl) subEl.textContent = 'épuisée — apport nécessaire'; }
+      if (solde <= 0) { cardEl.classList.add('red'); if (subEl) subEl.textContent = 'épuisé — apport nécessaire'; }
       else if (solde < seuilAlerte) { cardEl.classList.add('orange'); if (subEl) subEl.textContent = 'bas — à surveiller'; }
-      else { cardEl.classList.add('green'); if (subEl) subEl.textContent = 'disponible pour les pannes'; }
+      else { cardEl.classList.add('green'); if (subEl) subEl.textContent = 'disponible au total'; }
     }
 
     // Carte + escalade WhatsApp après 24h.
@@ -3454,8 +3467,8 @@ function renderDashboard() {
       if (etat.vide) {
         carteVide.style.display = 'block';
         texteVide.textContent = etat.depuisH < 1
-          ? "La caisse vient de tomber à zéro. Un apport du DG permettra de continuer à couvrir les pannes."
-          : `La caisse est vide depuis ${etat.depuisH} heure${etat.depuisH>1?'s':''}.` +
+          ? "L'argent total disponible (caisse + suivi hebdomadaire) vient de tomber à zéro. Un apport du DG permettra de continuer à couvrir les pannes."
+          : `L'argent disponible est épuisé depuis ${etat.depuisH} heure${etat.depuisH>1?'s':''}.` +
             (etat.alerteWhatsapp ? ' Le DG a été notifié par WhatsApp.' : ' Le DG sera notifié par WhatsApp après 24h sans apport.');
       } else {
         carteVide.style.display = 'none';
@@ -3990,6 +4003,10 @@ function showPage(id, navEl) {
   if (id === 'caisse' && typeof renderCaisse === 'function') renderCaisse();
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
+  // Le bouton de saisie express ne doit apparaître que sur le tableau de bord —
+  // ailleurs il masque des informations que SARANA a besoin de lire en entier.
+  const fab = document.getElementById('express-fab');
+  if (fab) fab.style.display = (id === 'dashboard') ? '' : 'none';
   // Ouvrir automatiquement le sous-menu parent de la page affichée.
   const parentDeSousMenu = { maintenance:'pannes', garages:'pannes', immobilized:'pannes',
     weekly:'bilans', monthly:'bilans', annual:'bilans' };
@@ -8198,7 +8215,7 @@ function envoyerWhatsappCaisseVide() {
   const numDG = (typeof prefs !== 'undefined' && prefs.whatsappDG) ? prefs.whatsappDG : '';
   if (!numDG) return; // pas de numéro configuré, on n'insiste pas silencieusement
   const solde = (typeof soldeCaisse === 'function') ? soldeCaisse() : 0;
-  const msg = `🔴 *CAISSE FLOTTE VIDE — FLOTTE DSN*\n\nLa caisse est épuisée depuis plus de 24h (solde actuel : ${solde.toLocaleString('fr-FR')} FCFA).\nUn apport est nécessaire pour continuer à couvrir les pannes de la semaine.\n\n_Envoyé automatiquement depuis FLOTTE DSN_`;
+  const msg = `🔴 *CAISSE VIDE — FLOTTE DSN*\n\nL'argent disponible (caisse + solde hebdomadaire) est épuisé depuis plus de 24h (total actuel : ${solde.toLocaleString('fr-FR')} FCFA).\nUn apport est nécessaire pour continuer à couvrir les pannes de la semaine.\n\n_Envoyé automatiquement depuis FLOTTE DSN_`;
   const url = `https://wa.me/${numDG.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
   // On note que l'alerte 24h a été envoyée pour ne pas la redéclencher
