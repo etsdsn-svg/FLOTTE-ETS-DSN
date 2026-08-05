@@ -3,7 +3,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
 <meta name="theme-color" content="#111C2A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1392,6 +1392,30 @@
   color:var(--accent,#F5A623); border-radius:20px; padding:4px 12px;
   font-size:11px; font-weight:700; letter-spacing:0.5px; cursor:pointer;
 }
+
+/* ═══ ZOOM MAÎTRISÉ ═════════════════════════════════════ */
+/* Empêche le double-tap zoom accidentel sur les boutons et
+   la sidebar, sans bloquer le pincement volontaire ailleurs. */
+html, body { touch-action: manipulation; }
+.sidebar, .nav-item, .btn, .btn-icon, .topbar { touch-action: manipulation; }
+
+/* ═══ SOUS-MENUS DÉPLIABLES (Pannes / Bilans) ═══════════ */
+.nav-parent { display:flex; align-items:center; cursor:pointer; }
+.nav-chevron {
+  margin-left:auto; font-size:11px; color:var(--concrete,#8494a8);
+  transition:transform 0.2s ease;
+}
+.nav-parent.open .nav-chevron { transform:rotate(90deg); }
+.nav-submenu {
+  max-height:0; overflow:hidden;
+  transition:max-height 0.25s ease;
+}
+.nav-submenu.open { max-height:300px; }
+.nav-item.nav-sub {
+  padding-left:38px !important;
+  font-size:13.5px;
+  opacity:0.92;
+}
 </style>
 </head>
 <body>
@@ -1480,26 +1504,46 @@
       <span class="nav-icon">🔧</span> Ouvriers
     </div>
     <div class="nav-section">Opérations</div>
-    <div class="nav-item" onclick="showPage('maintenance', this)">
-      <span class="nav-icon">🔧</span> Maintenance
+
+    <!-- ═══ SOUS-MENU : PANNES ═══════════════════════════ -->
+    <div class="nav-item nav-parent" onclick="toggleSousMenu('pannes', this)">
+      <span class="nav-icon">🔧</span> Pannes
+      <span class="nav-chevron" id="chev-pannes">▸</span>
     </div>
-    <div class="nav-item" onclick="showPage('weekly', this)">
-      <span class="nav-icon">📅</span> Bilan hebdo
+    <div class="nav-submenu" id="submenu-pannes">
+      <div class="nav-item nav-sub" onclick="showPage('maintenance', this)">
+        <span class="nav-icon">🔧</span> Maintenance
+      </div>
+      <div class="nav-item nav-sub" onclick="showPage('garages', this)">
+        <span class="nav-icon">🏭</span> Garages
+      </div>
+      <div class="nav-item nav-sub" onclick="showPage('immobilized', this)">
+        <span class="nav-icon">🛑</span> Camions immobilisés
+      </div>
     </div>
-    <div class="nav-item" onclick="showPage('monthly', this)">
-      <span class="nav-icon">📆</span> Rapport mensuel
+
+    <!-- ═══ SOUS-MENU : BILANS ═══════════════════════════ -->
+    <div class="nav-item nav-parent" onclick="toggleSousMenu('bilans', this)">
+      <span class="nav-icon">📊</span> Bilans
+      <span class="nav-chevron" id="chev-bilans">▸</span>
     </div>
+    <div class="nav-submenu" id="submenu-bilans">
+      <div class="nav-item nav-sub" onclick="showPage('weekly', this)">
+        <span class="nav-icon">📅</span> Bilan hebdo
+      </div>
+      <div class="nav-item nav-sub" onclick="showPage('monthly', this)">
+        <span class="nav-icon">📆</span> Rapport mensuel
+      </div>
+      <div class="nav-item nav-sub" onclick="showPage('annual', this)">
+        <span class="nav-icon">🗓️</span> Bilan annuel
+      </div>
+    </div>
+
     <div class="nav-item" onclick="showPage('analysis', this)">
       <span class="nav-icon">🩺</span> Analyse pannes
     </div>
-    <div class="nav-item" onclick="showPage('garages', this)">
-      <span class="nav-icon">🔧</span><span>Garages</span>
-    </div>
     <div class="nav-item" onclick="showPage('caisse', this)">
       <span class="nav-icon">💰</span><span>Caisse flotte</span>
-    </div>
-    <div class="nav-item" onclick="showPage('immobilized', this)">
-      <span class="nav-icon">🛑</span> Camions immobilisés
     </div>
     <div class="nav-item" onclick="showPage('expenses', this)">
       <span class="nav-icon">💸</span> Dépenses diverses
@@ -1632,6 +1676,8 @@
           <label>Description *</label>
           <textarea id="ch-description" rows="4" placeholder="Ex: Le camion ne démarre plus, bruit anormal au moteur..." style="resize:vertical;"></textarea>
         </div>
+        <button class="btn btn-secondary" style="width:100%;margin-bottom:16px;" onclick="demanderDiagnosticChauffeur()">🔍 Que faire ? (avant de signaler)</button>
+        <div id="ch-diagnostic-ia"></div>
         <div class="form-group">
           <label>📷 Photo (max 500 kb — compressée automatiquement)</label>
           <input type="file" id="ch-photo" accept="image/*" capture="environment" onchange="chargerPhotoChauffeur(this)">
@@ -2317,9 +2363,15 @@
         </div>
         <div class="kpi-card red">
           <div class="kpi-icon">👷</div>
-          <div class="kpi-label">Ouvriers + autres</div>
+          <div class="kpi-label">Main-d'œuvre (MOD)</div>
+          <div class="kpi-value" id="mo-wpay">0 FCFA</div>
+          <div class="kpi-sub">paiement des ouvriers</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon">💸</div>
+          <div class="kpi-label">Autres dépenses</div>
           <div class="kpi-value" id="mo-otherexp">0 FCFA</div>
-          <div class="kpi-sub">main-d'œuvre & divers</div>
+          <div class="kpi-sub">hors MOD</div>
         </div>
         <div class="kpi-card blue">
           <div class="kpi-icon">📊</div>
@@ -2346,6 +2398,77 @@
           <div class="section-title">Performance par camion sur le mois</div>
         </div>
         <div id="monthly-trucks" style="padding:8px 0;"></div>
+      </div>
+    </div>
+
+    <!-- ANNUAL REPORT PAGE -->
+    <div id="page-annual" class="page">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div class="form-group" style="margin:0;">
+          <label style="margin-bottom:4px;">Année</label>
+          <input type="number" id="year-picker" onchange="renderAnnual()" style="width:120px;" min="2020" max="2100">
+        </div>
+        <button class="btn btn-ghost" onclick="exportAnnualPDF()">🖨️ Exporter en PDF</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card green">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-label">Recettes de l'année</div>
+          <div class="kpi-value" id="an-revenue">0 FCFA</div>
+          <div class="kpi-sub" id="an-months">— mois actifs</div>
+        </div>
+        <div class="kpi-card orange">
+          <div class="kpi-icon">🔧</div>
+          <div class="kpi-label">Dépenses camions</div>
+          <div class="kpi-value" id="an-truckexp">0 FCFA</div>
+          <div class="kpi-sub" id="an-split-sub">imprévu / week-end</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon">👷</div>
+          <div class="kpi-label">Main-d'œuvre (MOD)</div>
+          <div class="kpi-value" id="an-wpay">0 FCFA</div>
+          <div class="kpi-sub">paiement des ouvriers</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon">💸</div>
+          <div class="kpi-label">Autres dépenses</div>
+          <div class="kpi-value" id="an-otherexp">0 FCFA</div>
+          <div class="kpi-sub">hors MOD</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-icon">📊</div>
+          <div class="kpi-label">Solde de l'année</div>
+          <div class="kpi-value" id="an-solde">0 FCFA</div>
+          <div class="kpi-sub">résultat net</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Détail par mois</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Mois</th><th class="num">Recette</th><th class="num">Dép. camions</th><th class="num">MOD</th><th class="num">Autres</th><th class="num">Solde</th></tr>
+          </thead>
+          <tbody id="annual-months-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Classement — même logique que le rapport mensuel -->
+      <div class="section" id="annual-palmares-section" style="display:none;">
+        <div class="section-header">
+          <div class="section-title">Classement de l'année</div>
+        </div>
+        <div id="annual-palmares"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Performance par camion sur l'année</div>
+        </div>
+        <div id="annual-trucks" style="padding:8px 0;"></div>
       </div>
     </div>
 
@@ -2832,7 +2955,7 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
       <div class="form-group">
         <label>Catégorie</label>
-        <select id="m-category" onchange="updateSubcatOptions(); majPlacardRetour()">
+        <select id="m-category" onchange="updateSubcatOptions(); majPlacardRetour(); majDiagnosticSuggere()">
           <option value="mecanique">⚙️ Mécanique</option>
           <option value="hydraulique">💧 Hydraulique</option>
           <option value="electricite">⚡ Électricité</option>
@@ -2900,8 +3023,9 @@
     </div>
     <div class="form-group">
       <label>Notes</label>
-      <input type="text" id="m-notes" placeholder="Observations complémentaires…">
+      <input type="text" id="m-notes" placeholder="Observations complémentaires…" oninput="majDiagnosticSuggere()">
     </div>
+    <div id="m-diagnostic-suggere"></div>
     <div class="form-group">
       <label>📸 Photo (panne / facture)</label>
       <div class="photo-field">
@@ -3703,6 +3827,41 @@ function remplirGarages(selId) {
 }
 
 // ─── Le placard : ce qui remplace neuf appels ────────────
+// ─── Suggestion de diagnostic en direct ──────────────────
+// Croise le texte tapé dans les notes avec la bibliothèque technique,
+// selon la catégorie de panne déjà sélectionnée.
+function majDiagnosticSuggere() {
+  const zone = document.getElementById('m-diagnostic-suggere');
+  if (!zone) return;
+  const catEl = document.getElementById('m-category');
+  const notesEl = document.getElementById('m-notes');
+  if (!catEl || !notesEl) return;
+  const cat = catEl.value;
+  const texte = notesEl.value.trim();
+
+  if (!texte || texte.length < 4 || typeof chercherDiagnostic !== 'function') {
+    zone.innerHTML = '';
+    return;
+  }
+  const res = chercherDiagnostic(cat, texte);
+  if (!res || !res.matches || !res.matches.length) {
+    zone.innerHTML = '';
+    return;
+  }
+  zone.innerHTML = res.matches.map(d => `
+    <div class="placard" style="margin:10px 0;">
+      <div class="placard-in">
+        <div class="placard-title amb">🔍 ${d.symptome}</div>
+        <div class="placard-body">
+          <strong>Causes probables (${res.bib.source}) :</strong>
+          <ul style="margin:6px 0 0; padding-left:18px;">
+            ${d.causes.map(c => `<li style="margin-bottom:3px;">${c}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
 function majPlacardRetour() {
   const zone = document.getElementById('m-placard-retour');
   if (!zone) return;
@@ -3773,6 +3932,7 @@ function showPage(id, navEl) {
   document.getElementById('page-' + id).classList.add('active');
   if (id === 'weekly' && typeof renderWeekly === 'function') setTimeout(renderWeekly, 30);
   if (id === 'monthly' && typeof renderMonthly === 'function') renderMonthly();
+  if (id === 'annual' && typeof renderAnnual === 'function') renderAnnual();
   if (id === 'analysis' && typeof renderAnalysis === 'function') renderAnalysis();
   if (id === 'expenses' && typeof renderExpenses === 'function') renderExpenses();
   if (id === 'workers' && typeof renderWorkers === 'function') renderWorkers();
@@ -3782,8 +3942,27 @@ function showPage(id, navEl) {
   if (id === 'caisse' && typeof renderCaisse === 'function') renderCaisse();
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = {dashboard:'Tableau de bord', vehicles:'Véhicules', drivers:'Chauffeurs', workers:'Ouvriers & main-d\'œuvre', maintenance:'Maintenance', ai:'Assistant IA', prefs:'Préférences', weekly:'Bilan hebdomadaire', monthly:'Rapport mensuel', analysis:'Analyse des pannes & rapports', expenses:'Dépenses diverses', immobilized:'Camions immobilisés', debts:'Dettes fournisseurs', garages:'Garages & taux de retour', caisse:'Caisse flotte'};
+  // Ouvrir automatiquement le sous-menu parent de la page affichée.
+  const parentDeSousMenu = { maintenance:'pannes', garages:'pannes', immobilized:'pannes',
+    weekly:'bilans', monthly:'bilans', annual:'bilans' };
+  if (parentDeSousMenu[id]) ouvrirSousMenu(parentDeSousMenu[id]);
+  const titles = {dashboard:'Tableau de bord', vehicles:'Véhicules', drivers:'Chauffeurs', workers:'Ouvriers & main-d\'œuvre', maintenance:'Maintenance', ai:'Assistant IA', prefs:'Préférences', weekly:'Bilan hebdomadaire', monthly:'Rapport mensuel', annual:'Bilan annuel', analysis:'Analyse des pannes & rapports', expenses:'Dépenses diverses', immobilized:'Camions immobilisés', debts:'Dettes fournisseurs', garages:'Garages & taux de retour', caisse:'Caisse flotte'};
   document.getElementById('pageTitle').textContent = titles[id] || id;
+}
+
+// ─── Sous-menus dépliables (Pannes / Bilans) ─────────────
+function toggleSousMenu(nom, el) {
+  const sub = document.getElementById('submenu-' + nom);
+  const chev = document.getElementById('chev-' + nom);
+  const estOuvert = sub.classList.contains('open');
+  if (estOuvert) { sub.classList.remove('open'); el.classList.remove('open'); }
+  else { sub.classList.add('open'); el.classList.add('open'); }
+}
+function ouvrirSousMenu(nom) {
+  const sub = document.getElementById('submenu-' + nom);
+  const parent = sub ? sub.previousElementSibling : null;
+  if (sub && !sub.classList.contains('open')) sub.classList.add('open');
+  if (parent) parent.classList.add('open');
 }
 
 // ─── MODALS ──────────────────────────────────────────────
@@ -4184,23 +4363,64 @@ function buildFleetContext() {
   const maintV = vehicles.filter(v => v.status === 'maintenance');
   const availV = vehicles.filter(v => v.status === 'available');
   const urgentM = maintenances.filter(m => m.priority === 'urgent' && m.status !== 'done');
-  return `Tu es un assistant expert en gestion de flotte de camions bennes. Voici l'état actuel de la flotte en temps réel :
 
-VÉHICULES (${vehicles.length} au total) :
+  const garagesLignes = (typeof garages !== 'undefined' ? garages : []).map(g => {
+    const s = (typeof scoreGarage === 'function') ? scoreGarage(g.id) : {total:0,retours:0,taux:null};
+    const taux = s.taux === null ? 'pas assez de recul' : Math.round(s.taux*100) + '% de retours (' + s.retours + '/' + s.total + ')';
+    return '- ' + g.nom + (g.ville?' ('+g.ville+')':'') + ' : ' + taux;
+  }).join('\n') || 'Aucun garage référencé.';
+
+  const retours = maintenances.filter(m => m.retour);
+  const retoursLignes = retours.slice(-8).map(m =>
+    '- ' + m.vehicle + ' — ' + m.type + ' : revenue ' + m.retour.jours + 'j après une réparation de ' +
+    (m.retour.coutPrecedent||0) + 'FCFA' + (m.retour.sousGarantie ? ' [SOUS GARANTIE]' : '')
+  ).join('\n') || 'Aucune panne répétée détectée récemment.';
+
+  const solde = (typeof soldeCaisse === 'function') ? soldeCaisse() : 0;
+  const totRecette = (typeof totalSource === 'function') ? totalSource('recette') : 0;
+  const totDG = (typeof totalSource === 'function') ? totalSource('dg') : 0;
+
+  const pannesEnAttente = (typeof pannesSignaleesCache !== 'undefined' ? pannesSignaleesCache : [])
+    .filter(p => p && p.statut === 'en_attente').length;
+
+  let modInfo = '';
+  try {
+    const wd = currentWeekData();
+    const wpay = (wd.workers||[]).reduce((s,w)=>s+(w.amount||0),0);
+    modInfo = "Main-d'oeuvre (MOD) cette semaine : " + wpay.toLocaleString('fr-FR') + ' FCFA';
+  } catch(e) {}
+
+  return `Tu es un assistant expert en gestion de flotte de camions bennes pour ETS DSN (Cotonou, Benin). Voici l'etat actuel de la flotte en temps reel :
+
+VEHICULES (${vehicles.length} au total) :
 - En mission (${activeV.length}) : ${activeV.map(v => v.plate + ' (' + v.model + ', ' + v.km.toLocaleString('fr-FR') + ' km, chauffeur: ' + v.driver + ')').join(' | ')}
 - En maintenance (${maintV.length}) : ${maintV.map(v => v.plate + ' (' + v.model + ')').join(' | ') || 'Aucun'}
 - Disponibles (${availV.length}) : ${availV.map(v => v.plate + ' (' + v.model + ')').join(' | ') || 'Aucun'}
 
 CHAUFFEURS (${drivers.length}) :
-${drivers.map(d => '- ' + d.name + ' : ' + (d.vehicle ? 'Affecté à ' + d.vehicle : 'Disponible') + ', permis expire le ' + d.expiry).join('\n')}
+${drivers.map(d => '- ' + d.name + ' : ' + (d.vehicle ? 'Affecte a ' + d.vehicle : 'Disponible') + ', permis expire le ' + d.expiry).join('\n')}
 
-MAINTENANCES PLANIFIÉES :
-${maintenances.filter(m => m.status !== 'done').map(m => '- ' + m.vehicle + ' : ' + m.type + ' le ' + m.date + ' (priorité: ' + m.priority + ', coût: ' + m.cost + 'FCFA)').join('\n')}
+MAINTENANCES PLANIFIEES :
+${maintenances.filter(m => m.status !== 'done').map(m => '- ' + m.vehicle + ' : ' + m.type + ' le ' + m.date + ' (priorite: ' + m.priority + ', cout: ' + m.cost + 'FCFA)').join('\n')}
 
 ALERTES URGENTES (${urgentM.length}) :
 ${urgentM.map(m => '- ' + m.vehicle + ' : ' + m.type + ' — ' + m.notes).join('\n') || 'Aucune alerte urgente'}
 
-Réponds en français de manière concise et professionnelle. Donne des conseils pratiques et actionnables basés sur ces données réelles.`;
+GARAGES — taux de retour (une panne qui revient sous 30j signifie que la cause n'a pas ete traitee) :
+${garagesLignes}
+
+PANNES QUI REVIENNENT (les 8 dernieres) :
+${retoursLignes}
+
+CAISSE FLOTTE :
+Solde actuel : ${solde.toLocaleString('fr-FR')} FCFA — dont ${totRecette.toLocaleString('fr-FR')} FCFA de recette gardee et ${totDG.toLocaleString('fr-FR')} FCFA d'apport du DG.
+${modInfo}
+
+PANNES SIGNALEES PAR LES CHAUFFEURS EN ATTENTE DE TRAITEMENT : ${pannesEnAttente}
+
+REFERENCES TECHNIQUES DISPONIBLES : tu disposes d'une bibliotheque de diagnostic issue de manuels constructeurs (moteur diesel, freinage a air, hydraulique de benne, electricite). Quand on te decrit une panne, croise TOUJOURS ces deux sources : (1) les causes techniques connues pour ce type de symptome, et (2) l'historique reel de CE camion et de CE garage dans les donnees ci-dessus. Une panne hydraulique qui revient chez le meme garage n'est pas juste "a reparer" — c'est un signal que la cause n'a pas ete traitee la premiere fois.
+
+Reponds en francais de maniere concise et professionnelle. Donne des conseils pratiques et actionnables bases sur ces donnees reelles, en citant le camion ou le garage concerne quand c'est pertinent.`;
 }
 
 async function sendAiMessage() {
@@ -5242,6 +5462,163 @@ Rédige une synthèse concise et professionnelle en français (250 mots max), sa
 }
 
 // ─── MAINTENANCE ANALYSIS ────────────────────────────────
+// ═════════════════════════════════════════════════════════
+//  BIBLIOTHÈQUE TECHNIQUE DE DIAGNOSTIC
+//  Condensé de manuels de référence (freinage à air, moteur diesel,
+//  hydraulique benne). Sert de base à l'assistant IA pour croiser
+//  la panne décrite avec des causes connues et éprouvées.
+// ═════════════════════════════════════════════════════════
+const BIBLIOTHEQUE_TECHNIQUE = {
+  mecanique: {
+    label: "Mécanique / Moteur diesel",
+    source: "Guide d'entretien moteur diesel (gamme industrielle)",
+    diagnostics: [
+      { symptome:"Le moteur ne démarre pas", causes:[
+        "Vitesse de démarrage trop faible (batterie faible, démarreur usé)",
+        "Air dans le système d'injection — purger la vis de dégazage du filtre",
+        "Canalisation de carburant obstruée",
+        "Filtre à carburant colmaté",
+        "Injecteur mal atomisé ou pression d'injection insuffisante",
+        "Mauvais contact balai/collecteur du démarreur"
+      ]},
+      { symptome:"Puissance de sortie insuffisante", causes:[
+        "Filtre à air obstrué (nettoyer ou remplacer)",
+        "Fuite sur les tuyaux du turbocompresseur",
+        "Turbocompresseur encrassé ou palier défectueux",
+        "Piston de la pompe d'injection très usé",
+        "Fuite du joint d'étanchéité de culasse — vérifier le couple de serrage",
+        "Mauvaise étanchéité des soupapes"
+      ]},
+      { symptome:"Bruit métallique anormal", causes:[
+        "Délai d'injection prématuré ou tardif — régler l'angle d'avance",
+        "Coussinet de bielle ou de palier usé (bruit de choc dans le carter)",
+        "Jeu trop important entre piston et cylindre",
+        "Jeu d'entredent des pignons de distribution trop important",
+        "Jeu de soupape trop important"
+      ]},
+      { symptome:"Fumée noire à l'échappement", causes:[
+        "Filtre à air obstrué",
+        "Carburant de mauvaise qualité",
+        "Réglage de l'injection incorrect",
+        "Mauvaise atomisation de l'injecteur",
+        "Turbocompresseur défectueux"
+      ]},
+      { symptome:"Fumée bleue ou blanche à l'échappement", causes:[
+        "Eau dans le carburant",
+        "Température du liquide de refroidissement trop basse (thermostat)",
+        "Segments de piston usés ou mal orientés — combustion incomplète",
+        "Bague d'étanchéité du turbocompresseur usée"
+      ]},
+      { symptome:"Pression d'huile trop basse", causes:[
+        "Huile inadaptée ou trop claire",
+        "Rotors de la pompe à huile usés",
+        "Filtre à huile obstrué",
+        "Jeu des coussinets de palier trop important",
+        "Tuyau d'entrée d'huile fendu ou fixation desserrée"
+      ]},
+      { symptome:"Température ou consommation d'huile trop élevée", causes:[
+        "Surcharge du moteur",
+        "Segment de piston grippé ou très usé",
+        "Alésage du cylindre très usé",
+        "Fuite du tuyau de graissage externe"
+      ]}
+    ],
+    entretien: "Vidange toutes les 250h ou 10 000 km. Filtre à air : nettoyer toutes les 100-200h selon indicateur. Filtre à carburant : remplacer toutes les 400h. Jeu des soupapes à vérifier toutes les 100h."
+  },
+  hydraulique: {
+    label: "Hydraulique (vérins, benne, servomoteurs)",
+    source: "Notice technique camion-benne (constructeur)",
+    diagnostics: [
+      { symptome:"Le servomoteur (vérin) n'avance pas au levage", causes:[
+        "Prise de force (PTO) non activée",
+        "Pompe hydraulique ne fournit pas d'huile — vérifier au raccord",
+        "Pas d'huile dans le réservoir, ou robinet de coupure fermé",
+        "Pression d'air trop basse pour la commande pneumatique",
+        "Servomoteur mal connecté à la vanne de répartition"
+      ]},
+      { symptome:"La benne se lève mais ne descend pas ou trop lentement", causes:[
+        "Vis de réglage de la vitesse de descente trop dévissée",
+        "Filtre de retour d'huile bloqué — le remplacer",
+        "Huile trop visqueuse pour la température ambiante",
+        "Soupape de disjoncteur qui fonctionne mal"
+      ]},
+      { symptome:"Le vérin tire ou avance de façon saccadée pendant le levage", causes:[
+        "Présence d'air dans l'huile alimentée — purger la pompe",
+        "Pompe endommagée ou pression d'air trop basse"
+      ]},
+      { symptome:"Le vérin ne se soulève pas jusqu'en fin de course", causes:[
+        "Vanne de déversement qui s'ouvre trop tôt — charge trop lourde ou mal répartie",
+        "Niveau d'huile insuffisant dans le réservoir"
+      ]},
+      { symptome:"La benne tombe trop vite en descente", causes:[
+        "Régulateur de vitesse de descente complètement dévissé — resserrer progressivement"
+      ]},
+      { symptome:"Fuite visible au niveau d'un vérin ou flexible", causes:[
+        "Joint d'étanchéité usé (tige de piston exposée aux intempéries)",
+        "Conduit hydraulique fissuré ou usé par frottement",
+        "Raccord desserré"
+      ]}
+    ],
+    entretien: "Contrôle visuel quotidien de l'étanchéité. Niveau d'huile hydraulique à vérifier benne complètement abaissée. Graissage des points d'articulation selon plan constructeur (quotidien à annuel selon le point). Ne jamais faire l'appoint d'huile benne relevée."
+  },
+  electricite: {
+    label: "Électricité (batterie, alternateur, démarreur)",
+    source: "Manuel technique électricité automobile/poids lourd",
+    diagnostics: [
+      { symptome:"La batterie se décharge rapidement ou ne tient pas la charge", causes:[
+        "Alternateur qui ne charge pas correctement — vérifier tension de sortie",
+        "Courroie d'alternateur trop lâche (glisse, réduit la charge)",
+        "Électrolyte de la batterie sous le niveau minimal",
+        "Borne ou cosse corrodée / mauvais contact"
+      ]},
+      { symptome:"Voyant batterie allumé moteur tournant", causes:[
+        "Alternateur ne débite pas (courroie cassée ou distendue)",
+        "Régulateur de tension défectueux",
+        "Connexion défaillante entre alternateur et batterie"
+      ]},
+      { symptome:"Démarreur qui peine ou ne tourne pas", causes:[
+        "Batterie insuffisamment chargée",
+        "Mauvais contact entre balai et collecteur du démarreur",
+        "Branchements des bornes desserrés ou corrodés",
+        "Ne jamais insister plus de 5 secondes par tentative — risque de griller le démarreur"
+      ]}
+    ],
+    entretien: "Vérifier la tension de la courroie d'alternateur (10-15mm de flexion à pression modérée). Contrôler le niveau d'électrolyte régulièrement. Nettoyer les bornes de batterie et graisser légèrement contre la corrosion."
+  },
+  soudure: {
+    label: "Soudure / Châssis / Carrosserie",
+    source: "Bonnes pratiques d'entretien flotte",
+    diagnostics: [
+      { symptome:"Fissure ou fissuration au niveau d'un point de soudure", causes:[
+        "Surcharge répétée de la benne (au-delà du poids nominal)",
+        "Chargement mal réparti concentrant les contraintes",
+        "Fatigue du métal sur un point déjà réparé (soudure de moindre qualité)",
+        "Vibrations prolongées sur route dégradée"
+      ]},
+      { symptome:"Point de soudure qui revient après réparation", causes:[
+        "Cause structurelle non traitée (surcharge répétée continue)",
+        "Préparation de surface insuffisante lors de la réparation précédente",
+        "Zone mal accessible pour un cordon de soudure complet"
+      ]}
+    ],
+    entretien: "Inspection visuelle du châssis et des points de structure à chaque grande maintenance du week-end. Signaler toute fissure naissante avant qu'elle ne s'aggrave."
+  }
+};
+
+// Renvoie le diagnostic pertinent pour une catégorie + un mot-clé du symptôme.
+function chercherDiagnostic(categorie, texteLibre) {
+  const bib = BIBLIOTHEQUE_TECHNIQUE[categorie];
+  if (!bib) return null;
+  const t = (texteLibre || '').toLowerCase();
+  if (!t) return { bib, matches: [] };
+  // Recherche simple par mots-clés communs entre le texte et le symptôme.
+  const matches = bib.diagnostics.filter(d => {
+    const motsSymptome = d.symptome.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    return motsSymptome.some(m => t.includes(m));
+  });
+  return { bib, matches };
+}
+
 const CAT_META = {
   mecanique:   { label:'Mécanique',   icon:'⚙️', color:'#3498DB' },
   hydraulique: { label:'Hydraulique', icon:'💧', color:'#1ABC9C' },
@@ -7334,6 +7711,8 @@ function nouvelleSignalisation() {
   document.getElementById('ch-photo-info').textContent = '';
   document.getElementById('ch-video-info').textContent = '';
   document.getElementById('ch-erreur').style.display = 'none';
+  const diagZone = document.getElementById('ch-diagnostic-ia');
+  if (diagZone) diagZone.innerHTML = '';
   const conf = document.getElementById('ch-confirmation');
   const card = document.querySelector('#page-chauffeur-panne .card');
   if (conf) conf.style.display = 'none';
@@ -7403,6 +7782,67 @@ function verifierVideoChauffeur(input) {
   };
 }
 
+// ─── Assistant IA — chauffeur (portée restreinte) ────────
+// Ne voit QUE la bibliothèque technique + son propre camion.
+// Aucun accès à la caisse, aux autres camions, aux salaires.
+async function demanderDiagnosticChauffeur() {
+  const desc = (document.getElementById('ch-description').value || '').trim();
+  const zone = document.getElementById('ch-diagnostic-ia');
+  if (!desc || desc.length < 4) {
+    zone.innerHTML = '<p style="color:#E05B4C;font-size:13px;">Décrivez d\'abord la panne pour obtenir des pistes.</p>';
+    return;
+  }
+  zone.innerHTML = '<p style="color:var(--concrete);font-size:13px;">🔍 Recherche en cours…</p>';
+
+  // Suggestion locale immédiate (bibliothèque technique, sans appel réseau)
+  let suggestionLocale = '';
+  if (typeof BIBLIOTHEQUE_TECHNIQUE !== 'undefined') {
+    for (const cat of Object.keys(BIBLIOTHEQUE_TECHNIQUE)) {
+      const r = chercherDiagnostic(cat, desc);
+      if (r && r.matches && r.matches.length) {
+        suggestionLocale += r.matches.map(d =>
+          `<div class="placard" style="margin:8px 0;"><div class="placard-in">
+            <div class="placard-title amb">🔍 ${d.symptome}</div>
+            <div class="placard-body"><ul style="margin:6px 0 0;padding-left:18px;">
+              ${d.causes.map(c=>`<li style="margin-bottom:3px;">${c}</li>`).join('')}
+            </ul></div>
+          </div></div>`
+        ).join('');
+      }
+    }
+  }
+
+  const plate = sessionUser ? sessionUser.vehicle_plate : '';
+  const contexte = `Tu es un assistant technique pour un chauffeur de camion benne au Bénin.
+Il vient de constater une panne sur son camion ${plate} et te la décrit.
+Tu n'as accès qu'à des connaissances techniques générales (mécanique, hydraulique, électricité poids lourd) — tu n'as PAS accès aux données financières ni aux autres camions de la flotte.
+Ton rôle : donner en 3-4 phrases, en français simple et concret, des pistes de ce qu'il peut vérifier lui-même sans danger (niveau d'huile, bruit, fuite visible...), et lui dire clairement s'il doit continuer à rouler ou s'arrêter immédiatement pour sa sécurité.
+Ne donne jamais de conseil qui l'inciterait à réparer lui-même une pièce de sécurité (freins, direction). Dans le doute, dis-lui de signaler et d'attendre les instructions.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        system: contexte,
+        messages: [{ role: 'user', content: desc }]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(b => b.text || '').join('') || '';
+    zone.innerHTML = suggestionLocale + (reply ? `
+      <div class="card" style="margin-top:10px;">
+        <div style="font-size:12px;color:var(--concrete);margin-bottom:6px;">🤖 Assistant technique</div>
+        <div style="font-size:14px;line-height:1.5;">${reply.replace(/\\n/g,'<br>')}</div>
+      </div>` : '');
+  } catch(e) {
+    // Hors ligne ou erreur réseau : la bibliothèque locale suffit souvent.
+    zone.innerHTML = suggestionLocale || '<p style="color:var(--concrete);font-size:13px;">Pas de connexion — signalez la panne, le responsable vous rappellera.</p>';
+  }
+}
+
 async function envoyerPanneChauffeur() {
   const desc = (document.getElementById('ch-description').value||'').trim();
   const errEl = document.getElementById('ch-erreur');
@@ -7457,6 +7897,70 @@ function afficherInterfaceMecano() {
   chargerPannesMecano();
 }
 
+// ─── Assistant IA — mécanicien (portée restreinte) ───────
+// Bibliothèque technique + historique de CE camion uniquement.
+// Aucun accès à la caisse, aux salaires, aux autres pannes financières.
+async function demanderDiagnosticMecano(panneId, plate, description) {
+  const zone = document.getElementById('diag-mecano-' + panneId);
+  if (!zone) return;
+  zone.innerHTML = '<p style="color:var(--concrete);font-size:13px;margin-top:8px;">🔍 Recherche en cours…</p>';
+
+  let suggestionLocale = '';
+  if (typeof BIBLIOTHEQUE_TECHNIQUE !== 'undefined') {
+    for (const cat of Object.keys(BIBLIOTHEQUE_TECHNIQUE)) {
+      const r = chercherDiagnostic(cat, description);
+      if (r && r.matches && r.matches.length) {
+        suggestionLocale += r.matches.map(d =>
+          `<div class="placard" style="margin:8px 0;"><div class="placard-in">
+            <div class="placard-title amb">🔍 ${d.symptome}</div>
+            <div class="placard-body"><ul style="margin:6px 0 0;padding-left:18px;">
+              ${d.causes.map(c=>`<li style="margin-bottom:3px;">${c}</li>`).join('')}
+            </ul></div>
+          </div></div>`
+        ).join('');
+      }
+    }
+  }
+
+  // Historique technique du camion (pas financier) si disponible localement.
+  let historique = '';
+  if (typeof maintenances !== 'undefined' && Array.isArray(maintenances)) {
+    const passees = maintenances.filter(m => m.vehicle === plate && m.status === 'done').slice(-3);
+    if (passees.length) {
+      historique = 'Interventions récentes sur ce camion : ' +
+        passees.map(m => m.type + ' (' + m.date + ')').join(', ') + '.';
+    }
+  }
+
+  const contexte = `Tu es un assistant technique pour un mécanicien travaillant sur des camions bennes au Bénin.
+Il intervient sur le camion ${plate}. Panne signalée par le chauffeur : "${description}"
+${historique}
+Tu n'as PAS accès aux données financières de l'entreprise (caisse, salaires, coûts) — reste strictement technique.
+Donne en 4-5 phrases concrètes : par où commencer le diagnostic, les points à vérifier en priorité, et si l'historique suggère une cause récurrente plutôt qu'une panne isolée.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: contexte,
+        messages: [{ role: 'user', content: description }]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(b => b.text || '').join('') || '';
+    zone.innerHTML = suggestionLocale + (reply ? `
+      <div class="card" style="margin-top:8px;">
+        <div style="font-size:12px;color:var(--concrete);margin-bottom:6px;">🤖 Assistant technique</div>
+        <div style="font-size:13.5px;line-height:1.5;">${reply.replace(/\\n/g,'<br>')}</div>
+      </div>` : '');
+  } catch(e) {
+    zone.innerHTML = suggestionLocale || '<p style="color:var(--concrete);font-size:13px;">Pas de connexion — bibliothèque indisponible.</p>';
+  }
+}
+
 async function chargerPannesMecano() {
   const box = document.getElementById('mecano-liste-pannes');
   if (!box) return;
@@ -7479,6 +7983,7 @@ async function chargerPannesMecano() {
       <p style="font-size:14px;margin:0 0 10px;">${p.description}</p>
       ${p.photo_url ? `<img src="${p.photo_url}" style="max-width:100%;border-radius:8px;margin-bottom:10px;">` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" style="font-size:13px;padding:8px 14px;" onclick="demanderDiagnosticMecano(${p.id}, ${JSON.stringify(p.vehicle_plate)}, ${JSON.stringify(p.description)})">🔍 Diagnostic</button>
         <label class="btn btn-ghost" style="cursor:pointer;padding:8px 14px;font-size:13px;">
           📷 Photo réparation
           <input type="file" accept="image/*" capture="environment" style="display:none;"
@@ -7486,6 +7991,7 @@ async function chargerPannesMecano() {
         </label>
         <button class="btn btn-primary" style="font-size:13px;padding:8px 14px;" onclick="marquerTermineeMecano(${p.id})">✅ Terminée</button>
       </div>
+      <div id="diag-mecano-${p.id}"></div>
       <div id="rep-photo-${p.id}"></div>
     </div>`).join('');
 }
@@ -7542,10 +8048,12 @@ async function chargerBadgePannes() {
 // ═════════════════════════════════════════════════════════
 //  PANNES SIGNALÉES — VUE ADMIN (tableau de bord)
 // ═════════════════════════════════════════════════════════
+let pannesSignaleesCache = [];
 async function chargerPannesSignalees() {
   if (sessionRole !== 'admin') return;
   const rows = await sb.get('pannes_signalees?statut=not.eq.terminee&order=signale_le.desc');
   const pannes = rows || [];
+  pannesSignaleesCache = pannes;
 
   // Badge nav
   const badge = document.getElementById('badge-pannes');
@@ -8090,7 +8598,8 @@ function renderMonthly() {
 
   document.getElementById('mo-revenue').textContent = tRev.toLocaleString('fr-FR')+' FCFA';
   document.getElementById('mo-truckexp').textContent = tExp.toLocaleString('fr-FR')+' FCFA';
-  document.getElementById('mo-otherexp').textContent = (tWpay+tOth).toLocaleString('fr-FR')+' FCFA';
+  document.getElementById('mo-wpay').textContent = tWpay.toLocaleString('fr-FR')+' FCFA';
+  document.getElementById('mo-otherexp').textContent = tOth.toLocaleString('fr-FR')+' FCFA';
   document.getElementById('mo-solde').textContent = solde.toLocaleString('fr-FR')+' FCFA';
   document.getElementById('mo-weeks').textContent = keys.length + ' semaine' + (keys.length>1?'s':'');
   document.getElementById('mo-pieces-sub').textContent = tPieces>0 ? `dont 🔩 pièces : ${tPieces.toLocaleString('fr-FR')} FCFA` : 'pannes & achats';
@@ -8133,6 +8642,245 @@ function renderMonthly() {
     </div>`).join('') : '<div class="empty-state">Aucun camion sur ce mois</div>';
 
   return { year, month, keys, tRev, tExp, tWpay, tOth, tPieces, solde, ranked };
+}
+
+// ═════════════════════════════════════════════════════════
+//  BILAN ANNUEL — même logique que le mensuel, sur 12 mois
+// ═════════════════════════════════════════════════════════
+function currentAnnualSel() {
+  const picker = document.getElementById('year-picker');
+  return { year: parseInt(picker.value) || new Date().getFullYear() };
+}
+
+// Agrège une année en 12 blocs mensuels réutilisant weeksInMonth/weekAgg.
+function monthAgg(year, month) {
+  const keys = weeksInMonth(year, month);
+  let rev=0, exp=0, wpay=0, oth=0, pieces=0;
+  const perTruck = {};
+  keys.forEach(k => {
+    const a = weekAgg(k);
+    rev+=a.rev; exp+=a.exp; wpay+=a.wpay; oth+=a.oth; pieces+=a.pieces;
+    (weeklyData[k].trucks||[]).forEach(t => {
+      const cle = clePlaque(t.plate);
+      if (!cle) return;
+      if (!perTruck[cle]) perTruck[cle] = { rev:0, exp:0, impr:0, wknd:0, plate: plaqueLisible(t.plate) };
+      perTruck[cle].rev += (t.revenue||0);
+      perTruck[cle].exp += truckExpenses(t);
+      perTruck[cle].impr += truckImprevu(t);
+      perTruck[cle].wknd += truckWeekend(t);
+    });
+  });
+  return { keys, rev, exp, wpay, oth, pieces, solde: rev-exp-wpay-oth, perTruck };
+}
+
+function renderAnnual() {
+  const picker = document.getElementById('year-picker');
+  if (!picker.value) picker.value = new Date().getFullYear();
+  const { year } = currentAnnualSel();
+
+  let tRev=0, tExp=0, tWpay=0, tOth=0, tImpr=0, tWknd=0, moisActifs=0;
+  const perTruckAn = {};
+  const parMois = [];
+
+  for (let m=0; m<12; m++) {
+    const a = monthAgg(year, m);
+    if (a.keys.length) moisActifs++;
+    tRev+=a.rev; tExp+=a.exp; tWpay+=a.wpay; tOth+=a.oth;
+    Object.entries(a.perTruck).forEach(([cle,d]) => {
+      tImpr += d.impr; tWknd += d.wknd;
+      if (!perTruckAn[cle]) perTruckAn[cle] = { rev:0, exp:0, plate:d.plate };
+      perTruckAn[cle].rev += d.rev;
+      perTruckAn[cle].exp += d.exp;
+    });
+    parMois.push({ m, ...a });
+  }
+  const solde = tRev - tExp - tWpay - tOth;
+
+  const set = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('an-revenue', tRev.toLocaleString('fr-FR')+' FCFA');
+  set('an-truckexp', tExp.toLocaleString('fr-FR')+' FCFA');
+  set('an-wpay', tWpay.toLocaleString('fr-FR')+' FCFA');
+  set('an-otherexp', tOth.toLocaleString('fr-FR')+' FCFA');
+  set('an-solde', solde.toLocaleString('fr-FR')+' FCFA');
+  set('an-months', moisActifs + ' mois actif' + (moisActifs>1?'s':''));
+  const splitEl = document.getElementById('an-split-sub');
+  if (splitEl) splitEl.innerHTML = `⚡ ${tImpr.toLocaleString('fr-FR')} · 🔧 ${tWknd.toLocaleString('fr-FR')}`;
+
+  // Tableau détail par mois
+  const NOMS_MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const tbody = document.getElementById('annual-months-body');
+  const moisAvecDonnees = parMois.filter(p => p.keys.length);
+  if (!moisAvecDonnees.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--concrete);padding:24px;">Aucune donnée pour cette année</td></tr>';
+  } else {
+    tbody.innerHTML = parMois.map(p => {
+      if (!p.keys.length) return '';
+      return `<tr>
+        <td><strong>${NOMS_MOIS[p.m]}</strong></td>
+        <td class="num km-val">${p.rev.toLocaleString('fr-FR')}</td>
+        <td class="num km-val">${p.exp.toLocaleString('fr-FR')}</td>
+        <td class="num km-val">${p.wpay.toLocaleString('fr-FR')}</td>
+        <td class="num km-val">${p.oth.toLocaleString('fr-FR')}</td>
+        <td class="num" style="font-weight:700; color:${p.solde>=0?'var(--green)':'var(--red)'}">${p.solde.toLocaleString('fr-FR')}</td>
+      </tr>`;
+    }).join('') + `<tr style="background:rgba(255,255,255,0.04); font-weight:700;">
+        <td>TOTAL ANNÉE</td>
+        <td class="num km-val">${tRev.toLocaleString('fr-FR')}</td>
+        <td class="num km-val">${tExp.toLocaleString('fr-FR')}</td>
+        <td class="num km-val">${tWpay.toLocaleString('fr-FR')}</td>
+        <td class="num km-val">${tOth.toLocaleString('fr-FR')}</td>
+        <td class="num" style="color:${solde>=0?'var(--green)':'var(--red)'}">${solde.toLocaleString('fr-FR')}</td>
+      </tr>`;
+  }
+
+  // Classement — identique à celui du mensuel (top/flop par solde, MOD exclue du solde camion)
+  const ranked = Object.entries(perTruckAn).map(([cle,d])=>({...d, plate:d.plate||cle, solde:d.rev-d.exp})).sort((a,b)=>b.solde-a.solde);
+  const palmSection = document.getElementById('annual-palmares-section');
+  const palmBox = document.getElementById('annual-palmares');
+  if (ranked.length >= 2) {
+    const n = ranked.length;
+    const nb = Math.min(3, Math.floor(n/2));
+    const top = ranked.slice(0, nb);
+    const bottom = ranked.slice(-nb).reverse();
+    const medaille = ['🥇','🥈','🥉'];
+    const ligne = (r,i,estTop) => `<div style="display:flex;justify-content:space-between;padding:8px 14px;${i>0?'border-top:1px solid rgba(255,255,255,0.06);':''}">
+        <span>${estTop?(medaille[i]||(i+1)):'⚠️'} <strong>${r.plate}</strong></span>
+        <span style="font-family:monospace;font-weight:700;color:${estTop?'var(--green)':'var(--red)'};">${r.solde.toLocaleString('fr-FR')} FCFA</span>
+      </div>`;
+    palmBox.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="border:1px solid rgba(46,125,50,0.3);border-radius:10px;overflow:hidden;">
+        <div style="background:#1a7a3f;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;">🏆 Les plus performants</div>
+        ${top.map((r,i)=>ligne(r,i,true)).join('')}
+      </div>
+      <div style="border:1px solid rgba(192,57,43,0.3);border-radius:10px;overflow:hidden;">
+        <div style="background:#c0392b;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;">⚠️ À surveiller</div>
+        ${bottom.map((r,i)=>ligne(r,i,false)).join('')}
+      </div>
+    </div>`;
+    palmSection.style.display = 'block';
+  } else {
+    palmSection.style.display = 'none';
+  }
+
+  // Liste complète par camion
+  const maxRev = Math.max(...ranked.map(r=>r.rev), 1);
+  document.getElementById('annual-trucks').innerHTML = ranked.length ? ranked.map((r,i)=>`
+    <div style="padding:12px 20px; border-top:1px solid rgba(255,255,255,0.04);">
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+        <span style="font-weight:700; color:var(--white);">${i+1}. ${r.plate}</span>
+        <span style="color:var(--concrete);">Rec. ${r.rev.toLocaleString('fr-FR')} · Dép. ${r.exp.toLocaleString('fr-FR')} · Solde <strong style="color:${r.solde>=0?'var(--green)':'var(--red)'}">${r.solde.toLocaleString('fr-FR')}</strong></span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${r.rev/maxRev*100}%; background:var(--yellow);"></div></div>
+    </div>`).join('') : '<div class="empty-state">Aucun camion sur cette année</div>';
+
+  return { year, tRev, tExp, tWpay, tOth, tImpr, tWknd, solde, ranked, moisActifs };
+}
+
+function exportAnnualPDF() {
+  const agg = renderAnnual();
+  const f = n => (n||0).toLocaleString('fr-FR')+' FCFA';
+  const company = (typeof prefs!=='undefined' && prefs.companyName) ? prefs.companyName : 'FLOTTE DSN';
+  const manager = (typeof prefs!=='undefined' && prefs.manager) ? prefs.manager : '';
+  const logo = (typeof prefs!=='undefined' && prefs.logoData) ? prefs.logoData : '';
+  const today = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  const NOMS_MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+  let tRev=0,tExp=0,tWpay=0,tOth=0;
+  const moisRows = [];
+  for (let m=0; m<12; m++) {
+    const a = monthAgg(agg.year, m);
+    if (!a.keys.length) continue;
+    tRev+=a.rev; tExp+=a.exp; tWpay+=a.wpay; tOth+=a.oth;
+    moisRows.push(`<tr><td>${NOMS_MOIS[m]}</td><td class="num">${a.rev.toLocaleString('fr-FR')}</td><td class="num">${a.exp.toLocaleString('fr-FR')}</td><td class="num">${a.wpay.toLocaleString('fr-FR')}</td><td class="num">${a.oth.toLocaleString('fr-FR')}</td><td class="num ${a.solde>=0?'pos':'neg'}">${a.solde.toLocaleString('fr-FR')}</td></tr>`);
+  }
+  const monthRowsHtml = moisRows.join('') || '<tr><td colspan="6" style="text-align:center;color:#999">Aucune donnée</td></tr>';
+
+  const truckRows = agg.ranked.map((r,i) => `<tr><td>${i+1}. <strong>${r.plate}</strong></td><td class="num">${r.rev.toLocaleString('fr-FR')}</td><td class="num">${r.exp.toLocaleString('fr-FR')}</td><td class="num ${r.solde>=0?'pos':'neg'}">${r.solde.toLocaleString('fr-FR')}</td></tr>`).join('');
+
+  let palmaresHtml = '';
+  if (agg.ranked.length >= 2) {
+    const n = agg.ranked.length;
+    const nb = Math.min(3, Math.floor(n / 2));
+    const top = agg.ranked.slice(0, nb);
+    const bottom = agg.ranked.slice(-nb).reverse();
+    const medaille = ['🥇','🥈','🥉'];
+    const ligneTop = top.map((r,i) => `<tr><td style="width:34px;font-size:16px;">${medaille[i]||(i+1)}</td><td><strong>${r.plate}</strong></td><td class="num">${r.rev.toLocaleString('fr-FR')}</td><td class="num pos">${r.solde.toLocaleString('fr-FR')}</td></tr>`).join('');
+    const ligneBottom = bottom.map((r) => `<tr><td style="width:34px;">${r.solde<0?'🔴':'⚠️'}</td><td><strong>${r.plate}</strong></td><td class="num">${r.rev.toLocaleString('fr-FR')}</td><td class="num ${r.solde>=0?'':'neg'}">${r.solde.toLocaleString('fr-FR')}</td></tr>`).join('');
+    palmaresHtml = `<h2>Classement de l'année</h2>
+      <div class="palmares">
+        <div class="palm-col"><div class="palm-titre palm-top">Les plus performants</div>
+          <table class="palm-tab"><thead><tr><th></th><th>Camion</th><th class="num">Recette</th><th class="num">Solde</th></tr></thead><tbody>${ligneTop}</tbody></table></div>
+        <div class="palm-col"><div class="palm-titre palm-bot">À surveiller</div>
+          <table class="palm-tab"><thead><tr><th></th><th>Camion</th><th class="num">Recette</th><th class="num">Solde</th></tr></thead><tbody>${ligneBottom}</tbody></table></div>
+      </div>`;
+  }
+
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Bilan annuel — ${agg.year}</title>
+  <style>
+    *{box-sizing:border-box;} body{font-family:'Segoe UI',Arial,sans-serif;color:#1a2332;margin:0;padding:28px 32px;font-size:13px;}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a2332;padding-bottom:14px;margin-bottom:18px;}
+    .head-left{display:flex;align-items:center;gap:14px;} .logo{width:54px;height:54px;border-radius:10px;object-fit:cover;}
+    .logo-fallback{width:54px;height:54px;border-radius:10px;background:#1a2332;color:#F5A623;display:flex;align-items:center;justify-content:center;font-size:26px;}
+    h1{font-size:20px;margin:0;} .company{font-size:15px;font-weight:700;} .sub{color:#666;font-size:12px;margin-top:2px;}
+    .meta{text-align:right;font-size:11px;color:#555;}
+    h2{font-size:14px;margin:22px 0 8px;padding-bottom:5px;border-bottom:1px solid #ddd;}
+    table{width:100%;border-collapse:collapse;margin-bottom:6px;} th{background:#1a2332;color:#fff;text-align:left;padding:7px 9px;font-size:11px;text-transform:uppercase;}
+    td{padding:6px 9px;border-bottom:1px solid #eee;} .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+    .pos{color:#1a7a3f;font-weight:700;} .neg{color:#c0392b;font-weight:700;}
+    .total{background:#f5f5f5;font-weight:700;}
+    .summary{width:60%;margin-left:auto;border:1px solid #1a2332;border-radius:8px;overflow:hidden;}
+    .summary div{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #eee;} .summary div:last-child{border-bottom:none;}
+    .summary .final{background:#1a2332;color:#fff;font-size:16px;font-weight:700;}
+    .sign{margin-top:40px;display:flex;justify-content:space-between;font-size:12px;} .sign div{width:45%;} .sign .line{margin-top:42px;border-top:1px solid #999;padding-top:4px;color:#666;}
+    .foot{margin-top:24px;text-align:center;color:#999;font-size:10px;border-top:1px solid #eee;padding-top:10px;}
+    .palmares{display:flex;gap:16px;margin-bottom:8px;}
+    .palm-col{flex:1;border:1px solid #ddd;border-radius:8px;overflow:hidden;}
+    .palm-titre{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:7px 10px;color:#fff;}
+    .palm-top{background:#1a7a3f;} .palm-bot{background:#c0392b;}
+    .palm-tab{margin:0;} .palm-tab th{background:#f0f0f0;color:#555;padding:5px 8px;} .palm-tab td{padding:6px 8px;}
+    body { padding:16px 20px !important; font-size:12px !important; }
+    .head { padding-bottom:9px !important; margin-bottom:11px !important; }
+    h1 { font-size:18px !important; }
+    h2 { font-size:13px !important; margin:12px 0 5px !important; padding-bottom:3px !important; }
+    table { margin-bottom:4px !important; } th { padding:5px 8px !important; } td { padding:4px 8px !important; }
+    .summary div { padding:6px 13px !important; }
+    .sign { margin-top:22px !important; } .sign .line { margin-top:26px !important; }
+    .foot { margin-top:14px !important; padding-top:7px !important; }
+    @media print{body{padding:0;} @page{margin:1cm;}}
+  </style></head><body>
+    <div class="head">
+      <div class="head-left">
+        ${logo ? `<img src="${logo}" class="logo">` : `<div class="logo-fallback">🚛</div>`}
+        <div><div class="company">${company}</div><h1>Bilan annuel</h1><div class="sub">${agg.year} · ${agg.moisActifs} mois actif(s)</div></div>
+      </div>
+      <div class="meta">Édité le ${today}<br>${manager?'Responsable : '+manager+'<br>':''}À l'attention de la Direction</div>
+    </div>
+    <h2>Synthèse de l'année</h2>
+    <div class="summary">
+      <div><span>Recettes camions</span><span class="num revenue">${f(tRev)}</span></div>
+      <div><span>− Dépenses sur camions</span><span class="num expense">${f(tExp)}</span></div>
+      <div><span>− Main-d'œuvre (MOD)</span><span class="num expense">${f(tWpay)}</span></div>
+      <div><span>− Autres dépenses</span><span class="num expense">${f(tOth)}</span></div>
+      <div class="final"><span>SOLDE DE L'ANNÉE</span><span class="num">${f(tRev-tExp-tWpay-tOth)}</span></div>
+    </div>
+    <h2>Détail par mois</h2>
+    <table><thead><tr><th>Mois</th><th class="num">Recette</th><th class="num">Dép. camions</th><th class="num">MOD</th><th class="num">Autres</th><th class="num">Solde</th></tr></thead>
+    <tbody>${monthRowsHtml}<tr class="total"><td>TOTAL</td><td class="num">${tRev.toLocaleString('fr-FR')}</td><td class="num">${tExp.toLocaleString('fr-FR')}</td><td class="num">${tWpay.toLocaleString('fr-FR')}</td><td class="num">${tOth.toLocaleString('fr-FR')}</td><td class="num">${(tRev-tExp-tWpay-tOth).toLocaleString('fr-FR')}</td></tr></tbody></table>
+    ${palmaresHtml}
+    ${truckRows ? `<h2>Performance par camion</h2><table><thead><tr><th>Camion</th><th class="num">Recette</th><th class="num">Dépenses</th><th class="num">Solde</th></tr></thead><tbody>${truckRows}</tbody></table>` : ''}
+    <div class="sign"><div><div class="line">Le Responsable de flotte</div></div><div><div class="line">La Direction</div></div></div>
+    <div class="foot">Document généré automatiquement par ${company} — FLOTTE DSN · ${today}</div>
+  </body></html>`;
+
+  let frame = document.getElementById('pdf-frame');
+  if (frame) frame.remove();
+  frame = document.createElement('iframe');
+  frame.id = 'pdf-frame';
+  frame.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+  document.body.appendChild(frame);
+  const doc = frame.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  frame.onload = () => { setTimeout(() => { frame.contentWindow.focus(); frame.contentWindow.print(); }, 300); };
 }
 
 function exportMonthlyPDF() {
