@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -9444,13 +9445,15 @@ function bootApp() {
   sessionRole = 'admin';
   document.getElementById('login-screen').classList.add('hidden');
   reinitialiserPartieFinanciereUneFois();
-  loadPrefs(); loadWeeklyData(); renderWeekly();
-  loadExpenses(); loadWorkers(); loadImmobilized(); loadDebts(); initPWA();
-  loadCore();
-  majBadgeRole();
-  adapterEcran();
-  chargerUtilisateurs();
-  if (estMobile()) chargerPannesSignalees().catch(()=>{});
+  reinitialiserFlotteEtPannesUneFois().then(() => {
+    loadPrefs(); loadWeeklyData(); renderWeekly();
+    loadExpenses(); loadWorkers(); loadImmobilized(); loadDebts(); initPWA();
+    loadCore();
+    majBadgeRole();
+    adapterEcran();
+    chargerUtilisateurs();
+    if (estMobile()) chargerPannesSignalees().catch(()=>{});
+  });
 }
 
 // Remise à zéro ponctuelle de la partie financière, demandée par SARANA
@@ -9478,6 +9481,47 @@ function reinitialiserPartieFinanciereUneFois() {
     sb.get('weekly_data').then(rows => {
       (rows||[]).forEach(r => sb.req('DELETE', 'weekly_data?week_key=eq.' + encodeURIComponent(r.week_key)).catch(()=>{}));
     }).catch(()=>{});
+  }
+}
+
+// Remise à zéro plus large, demandée par SARANA pour repartir sur une
+// app totalement vierge à compter du 1er janvier 2026 : véhicules,
+// chauffeurs, maintenances, garages, camions immobilisés, dettes
+// fournisseurs, en plus de la partie financière déjà couverte ci-dessus.
+// Ne touche PAS aux ouvriers/mécaniciens, aux comptes utilisateurs, ni
+// aux préférences (logo, coordonnées DSN, seuils) — ceux-là restent.
+// Se déclenche une seule fois, marqueur séparé de la purge d'août.
+async function reinitialiserFlotteEtPannesUneFois() {
+  const MARQUEUR = 'fleetbenne_reset_flotte_pannes_2026';
+  if (localStorage.getItem(MARQUEUR)) return; // déjà fait, on ne touche plus à rien
+  try {
+    localStorage.removeItem('fleetbenne_vehicles');
+    localStorage.removeItem('fleetbenne_drivers');
+    localStorage.removeItem('fleetbenne_maintenances');
+    localStorage.removeItem('fleetbenne_garages');
+    localStorage.removeItem('fleetbenne_immobilized');
+    localStorage.removeItem('fleetbenne_debts');
+    vehicles = [];
+    drivers = [];
+    maintenances = [];
+    garages = [];
+    immobilized = [];
+    debts = [];
+    localStorage.setItem(MARQUEUR, new Date().toISOString());
+  } catch(e) {}
+  // Purge côté Supabase pour vehicles/drivers/maintenances/garages —
+  // seules ces 4 tables y sont synchronisées ; immobilized/debts sont
+  // uniquement locales et n'ont donc rien à purger côté serveur.
+  // On ATTEND que la purge finisse avant de continuer le démarrage,
+  // pour éviter que loadCoreSB() ne re-tire les anciennes données
+  // pendant que la suppression est encore en cours côté serveur.
+  if (navigator.onLine && typeof sb !== 'undefined') {
+    await Promise.all(['vehicles', 'drivers', 'maintenances', 'garages'].map(async table => {
+      try {
+        const rows = await sb.get(table);
+        await Promise.all((rows || []).map(r => sb.del(table, r.id).catch(() => {})));
+      } catch(e) {}
+    }));
   }
 }
 
