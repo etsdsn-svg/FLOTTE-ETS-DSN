@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
-<meta name="theme-color" content="#111C2A">
+<meta name="theme-color" content="#0E0F12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FLOTTE DSN">
@@ -12,27 +11,27 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%23111C2A'/%3E%3Ctext x='90' y='120' font-size='90' text-anchor='middle'%3E%F0%9F%9A%9B%3C/text%3E%3C/svg%3E">
 <title>FLOTTE DSN — Gestion de Flotte</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
   :root {
-    --steel: #1A2332;
-    --steel-mid: #243447;
-    --steel-light: #2E4057;
-    --yellow: #F5A623;
-    --yellow-dim: #C4841B;
-    --concrete: #8A9BAE;
-    --offwhite: #F0F4F8;
+    --steel: #16181C;
+    --steel-mid: #1E2126;
+    --steel-light: #262A31;
+    --yellow: #FBBF24;
+    --yellow-dim: #B8790C;
+    --concrete: #7A7F88;
+    --offwhite: #E4E6EA;
     --white: #FFFFFF;
-    --green: #2ECC71;
-    --orange: #E67E22;
-    --red: #E74C3C;
-    --blue: #3498DB;
+    --green: #4ADE80;
+    --orange: #FBBF24;
+    --red: #F87171;
+    --blue: #4ADE80;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow', sans-serif;
     background: var(--steel);
     color: var(--offwhite);
     min-height: 100vh;
@@ -42,7 +41,7 @@
   /* SIDEBAR */
   .sidebar {
     width: 220px;
-    background: #111C2A;
+    background: #0E0F12;
     display: flex;
     flex-direction: column;
     padding: 0;
@@ -103,7 +102,7 @@
   }
 
   .nav-item:hover { background: var(--steel-light); color: var(--white); }
-  .nav-item.active { background: rgba(245,166,35,0.12); color: var(--yellow); border-left-color: var(--yellow); }
+  .nav-item.active { background: rgba(251,191,36,0.12); color: var(--yellow); border-left-color: var(--yellow); }
 
   .nav-icon { font-size: 15px; width: 18px; text-align: center; }
 
@@ -132,7 +131,8 @@
   }
 
   .page-title {
-    font-size: 16px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 17px;
     font-weight: 700;
     color: var(--white);
   }
@@ -205,7 +205,7 @@
 
   .kpi-card {
     background: var(--steel-mid);
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 18px;
     border: 1px solid var(--steel-light);
     position: relative;
@@ -255,10 +255,16 @@
     opacity: 0.4;
   }
 
+  .gauge-svg {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
   /* TABLE */
   .section {
     background: var(--steel-mid);
-    border-radius: 12px;
+    border-radius: 4px;
     border: 1px solid var(--steel-light);
     overflow: hidden;
   }
@@ -272,7 +278,8 @@
   }
 
   .section-title {
-    font-size: 14px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
     font-weight: 700;
     color: var(--white);
   }
@@ -283,6 +290,27 @@
     background: var(--steel-light);
     padding: 3px 10px;
     border-radius: 20px;
+  }
+
+  .card {
+    background: var(--steel-mid);
+    border: 1px solid var(--steel-light);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--white);
   }
 
   .btn {
@@ -417,7 +445,7 @@
   /* AI CHAT */
   .ai-panel {
     background: var(--steel-mid);
-    border-radius: 12px;
+    border-radius: 4px;
     border: 1px solid var(--steel-light);
     display: flex;
     flex-direction: column;
@@ -471,11 +499,11 @@
   }
 
   .msg-user {
-    background: rgba(245,166,35,0.18);
+    background: rgba(251,191,36,0.18);
     color: var(--offwhite);
     border-radius: 10px 10px 2px 10px;
     align-self: flex-end;
-    border: 1px solid rgba(245,166,35,0.3);
+    border: 1px solid rgba(251,191,36,0.3);
   }
 
   .msg-loading {
@@ -501,7 +529,7 @@
     padding: 9px 14px;
     color: var(--white);
     font-size: 13px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow', sans-serif;
     outline: none;
     transition: border-color 0.15s;
   }
@@ -577,7 +605,7 @@
     padding: 9px 14px;
     color: var(--white);
     font-size: 13px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow', sans-serif;
     outline: none;
     transition: border-color 0.15s;
   }
@@ -624,7 +652,7 @@
     transition: all 0.15s;
   }
 
-  .chip:hover { background: rgba(245,166,35,0.2); color: var(--yellow); }
+  .chip:hover { background: rgba(251,191,36,0.2); color: var(--yellow); }
 
   /* PREFERENCES */
   .prefs-grid {
@@ -635,7 +663,7 @@
 
   .pref-section {
     background: var(--steel-mid);
-    border-radius: 12px;
+    border-radius: 4px;
     border: 1px solid var(--steel-light);
     overflow: hidden;
   }
@@ -656,7 +684,7 @@
     align-items: center;
     justify-content: center;
     font-size: 16px;
-    background: rgba(245,166,35,0.15);
+    background: rgba(251,191,36,0.15);
     flex-shrink: 0;
   }
 
@@ -693,7 +721,7 @@
     padding: 9px 14px;
     color: var(--white);
     font-size: 13px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow', sans-serif;
     outline: none;
     transition: border-color 0.15s;
     width: 100%;
@@ -747,7 +775,7 @@
     transition: all 0.2s;
   }
 
-  .toggle input:checked + .toggle-slider { background: rgba(245,166,35,0.3); }
+  .toggle input:checked + .toggle-slider { background: rgba(251,191,36,0.3); }
   .toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--yellow); }
 
   /* Theme picker */
@@ -852,7 +880,7 @@
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow', sans-serif;
     transition: all 0.15s;
   }
 
@@ -865,7 +893,7 @@
     gap: 12px;
     padding: 16px 24px;
     background: var(--steel-mid);
-    border-radius: 12px;
+    border-radius: 4px;
     border: 1px solid var(--steel-light);
   }
 
@@ -941,7 +969,7 @@
     background: var(--steel-light);
     color: var(--concrete);
   }
-  .rank-badge.gold { background: rgba(245,166,35,0.25); color: var(--yellow); }
+  .rank-badge.gold { background: rgba(251,191,36,0.25); color: var(--yellow); }
   .rank-badge.silver { background: rgba(189,195,199,0.2); color: #BDC3C7; }
   .rank-badge.bronze { background: rgba(205,127,50,0.2); color: #CD7F32; }
 
@@ -962,7 +990,7 @@
 
   .ai-synth-box {
     background: var(--steel-mid);
-    border-radius: 12px;
+    border-radius: 4px;
     border: 1px solid var(--steel-light);
     padding: 0;
     overflow: hidden;
@@ -1001,7 +1029,7 @@
   }
   .cat-card {
     background: var(--steel-mid);
-    border-radius: 12px;
+    border-radius: 4px;
     border: 1px solid var(--steel-light);
     padding: 18px;
     position: relative;
@@ -1295,7 +1323,7 @@
 /* Le placard reprend le marquage de danger des camions :
    c'est un avertissement, il doit se voir comme tel. */
 .placard {
-  background: repeating-linear-gradient(45deg, #151A21 0 11px, var(--accent, #F5A623) 11px 22px);
+  background: repeating-linear-gradient(45deg, #151A21 0 11px, var(--accent, #FBBF24) 11px 22px);
   padding: 4px; border-radius: 8px; margin: 14px 0;
 }
 .placard.rouge {
@@ -1309,15 +1337,15 @@
   font-weight: 800; margin-bottom: 7px; color: #E05B4C;
   font-family: ui-monospace, Menlo, monospace;
 }
-.placard-title.amb { color: var(--accent, #F5A623); }
+.placard-title.amb { color: var(--accent, #FBBF24); }
 .placard-body { font-size: 13.5px; line-height: 1.5; }
 
 .badge-retour {
   display: inline-block; margin-top: 4px;
   font-family: ui-monospace, Menlo, monospace; font-size: 9.5px;
   font-weight: 800; letter-spacing: 0.6px; padding: 2px 6px;
-  border-radius: 4px; background: rgba(245,166,35,0.18); color: #F5A623;
-  border: 1px solid rgba(245,166,35,0.45);
+  border-radius: 4px; background: rgba(251,191,36,0.18); color: #FBBF24;
+  border: 1px solid rgba(251,191,36,0.45);
 }
 .badge-retour.garantie {
   background: rgba(192,57,43,0.18); color: #E05B4C;
@@ -1346,13 +1374,13 @@
 .lbl-im, .lbl-wk {
   font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; white-space: nowrap;
 }
-.lbl-im { background: rgba(245,166,35,0.16); color: #F5A623; border: 1px solid rgba(245,166,35,0.4); }
+.lbl-im { background: rgba(251,191,36,0.16); color: #FBBF24; border: 1px solid rgba(251,191,36,0.4); }
 .lbl-wk { background: rgba(74,144,226,0.16); color: #4A90E2; border: 1px solid rgba(74,144,226,0.4); }
 .ech-pill {
   display:inline-block; font-size:9.5px; font-weight:700; padding:1px 6px;
   border-radius:4px; margin-top:3px; white-space:nowrap;
 }
-.ech-soon { background: rgba(245,166,35,0.16); color:#F5A623; border:1px solid rgba(245,166,35,0.4); }
+.ech-soon { background: rgba(251,191,36,0.16); color:#FBBF24; border:1px solid rgba(251,191,36,0.4); }
 .ech-out  { background: rgba(192,57,43,0.18);  color:#E05B4C; border:1px solid rgba(192,57,43,0.5); }
 
 /* ═══ ÉCRAN DE CONNEXION ═══════════════════════════════ */
@@ -1378,18 +1406,18 @@
   background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
   color:var(--white,#e8edf5); font-size:15px; box-sizing:border-box;
 }
-.login-field input:focus { border-color:var(--accent,#F5A623); outline:none; }
+.login-field input:focus { border-color:var(--accent,#FBBF24); outline:none; }
 .login-btn {
   width:100%; padding:14px; border-radius:10px; border:none;
-  background:var(--accent,#F5A623); color:#0d1520; font-size:15px;
+  background:var(--accent,#FBBF24); color:#0d1520; font-size:15px;
   font-weight:800; cursor:pointer; margin-top:8px; letter-spacing:0.3px;
 }
 .login-btn:hover { opacity:0.9; }
 .login-error { color:#E05B4C; font-size:13px; text-align:center; margin-top:10px; min-height:20px; }
 .role-badge {
   display:inline-flex; align-items:center; gap:6px;
-  background:rgba(245,166,35,0.15); border:1px solid rgba(245,166,35,0.3);
-  color:var(--accent,#F5A623); border-radius:20px; padding:4px 12px;
+  background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3);
+  color:var(--accent,#FBBF24); border-radius:20px; padding:4px 12px;
   font-size:11px; font-weight:700; letter-spacing:0.5px; cursor:pointer;
 }
 
@@ -1541,9 +1569,6 @@ html, body { touch-action: manipulation; }
 
     <div class="nav-item" onclick="showPage('analysis', this)">
       <span class="nav-icon">🩺</span> Analyse pannes
-    </div>
-    <div class="nav-item" onclick="showPage('caisse', this)">
-      <span class="nav-icon">💰</span><span>Caisse flotte</span>
     </div>
     <div class="nav-item" onclick="showPage('expenses', this)">
       <span class="nav-icon">💸</span> Dépenses diverses
@@ -1749,32 +1774,32 @@ html, body { touch-action: manipulation; }
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi-card green">
-          <div class="kpi-icon">✅</div>
+        <div class="kpi-card green" style="text-align:center;">
+          <div class="gauge-svg" id="gauge-active"></div>
           <div class="kpi-label">En mission</div>
           <div class="kpi-value" id="kpi-active">0</div>
           <div class="kpi-sub">camions actifs aujourd'hui</div>
         </div>
-        <div class="kpi-card orange">
-          <div class="kpi-icon">🔧</div>
+        <div class="kpi-card orange" style="text-align:center;">
+          <div class="gauge-svg" id="gauge-maint"></div>
           <div class="kpi-label">En maintenance</div>
           <div class="kpi-value" id="kpi-maint">0</div>
           <div class="kpi-sub">immobilisés</div>
         </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon">🔁</div>
+        <div class="kpi-card red" style="text-align:center;">
+          <div class="gauge-svg" id="gauge-retours"></div>
           <div class="kpi-label">Pannes qui reviennent</div>
           <div class="kpi-value" id="kpi-dash-retours">0</div>
           <div class="kpi-sub" id="kpi-dash-retours-sub">réparations à refaire</div>
         </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon">⚠️</div>
+        <div class="kpi-card red" style="text-align:center;">
+          <div class="gauge-svg" id="gauge-alerts"></div>
           <div class="kpi-label">Alertes critiques</div>
           <div class="kpi-value" id="kpi-alerts">0</div>
           <div class="kpi-sub">interventions requises</div>
         </div>
-        <div class="kpi-card blue">
-          <div class="kpi-icon">💤</div>
+        <div class="kpi-card blue" style="text-align:center;">
+          <div class="gauge-svg" id="gauge-avail"></div>
           <div class="kpi-label">Disponibles</div>
           <div class="kpi-value" id="kpi-avail">0</div>
           <div class="kpi-sub">prêts à partir</div>
@@ -2106,74 +2131,6 @@ html, body { touch-action: manipulation; }
       </div>
     </div>
 
-    <!-- ═══ CAISSE FLOTTE ═════════════════════════════════ -->
-    <div id="page-caisse" class="page">
-      <div class="kpi-grid">
-        <div class="kpi-card green">
-          <div class="kpi-icon">💰</div>
-          <div class="kpi-label">Solde de la caisse</div>
-          <div class="kpi-value" id="kpi-solde">0</div>
-          <div class="kpi-sub">disponible</div>
-        </div>
-        <div class="kpi-card orange">
-          <div class="kpi-icon">📉</div>
-          <div class="kpi-label">Sorti sur 30 jours</div>
-          <div class="kpi-value" id="kpi-sorties">0</div>
-          <div class="kpi-sub">dépenses flotte</div>
-        </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon">🧾</div>
-          <div class="kpi-label">Reçus manquants</div>
-          <div class="kpi-value" id="kpi-sansrecu">0</div>
-          <div class="kpi-sub">à justifier</div>
-        </div>
-        <div class="kpi-card blue">
-          <div class="kpi-icon">🏦</div>
-          <div class="kpi-label">Apport DG + Solde final camion</div>
-          <div class="kpi-value" id="kpi-dg">0</div>
-          <div class="kpi-sub" id="kpi-dg-sub">apport DG + soldes des semaines</div>
-        </div>
-      </div>
-
-      <!-- D'où vient l'argent : le point que le DG veut voir -->
-      <div class="card" id="caisse-sources-card">
-        <div class="card-header"><div class="card-title">Ce que devient l'argent des pannes</div></div>
-        <div id="caisse-sources"></div>
-      </div>
-
-      <!-- Rubrique dédiée : les fonds mis à disposition par le DG -->
-      <div class="card" id="apport-dg-card" style="border-left:3px solid #1565C0;">
-        <div class="card-header">
-          <div class="card-title">🏦 Apport du DG — le point</div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-secondary" id="btn-point-dg" onclick="pointPourDG()">📩 Point pour le DG</button>
-            <button class="btn btn-ghost" id="btn-print-dg" onclick="imprimerPointDGComplet()">🖨️ Imprimer tout</button>
-          </div>
-        </div>
-        <p style="color:var(--concrete); font-size:13px; margin:0 0 16px;">
-          Quand la part de recette gardée pour les pannes est épuisée, le DG avance de quoi continuer la semaine.
-          Voici le relevé de ce qu'il a mis à disposition.
-        </p>
-        <div id="apport-dg-liste"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Mouvements</div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-secondary" onclick="entrerCaisse('recette')" title="Part de la recette chauffeurs gardée pour les pannes">+ Recette</button>
-            <button class="btn btn-secondary" onclick="entrerCaisse('dg')" title="Argent que le DG met de sa poche">+ Apport DG</button>
-            <button class="btn btn-primary" onclick="entrerCaisse('dsn')" title="Approvisionnement par la direction">+ Caisse DSN</button>
-          </div>
-        </div>
-        <p style="color:var(--concrete); font-size:13px; margin:0 0 16px;">
-          L'argent des camions ne dort plus dans une poche. Chaque sortie porte un motif,
-          une date et un reçu — vérifiable à tout moment.
-        </p>
-        <div id="caisse-liste"></div>
-      </div>
-    </div>
-
     <div id="page-immobilized" class="page">
       <div class="kpi-grid">
         <div class="kpi-card red">
@@ -2498,10 +2455,19 @@ html, body { touch-action: manipulation; }
           <button class="week-nav-btn" id="week-next" onclick="changeWeek(1)">›</button>
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="entrerCaisse('dg')" title="Argent que le DG met de sa poche">+ Apport DG</button>
+          <button class="btn btn-secondary" onclick="entrerCaisse('dsn')" title="Approvisionnement par la direction">+ Caisse DSN</button>
           <button class="btn btn-ghost" onclick="exportWeeklyPDF()" title="Imprimer sans clôturer">🖨️ PDF</button>
           <button class="btn btn-ghost" id="btn-cloture" onclick="cloturerSemaine()">✅ Clôturer la semaine</button>
           <button class="btn btn-primary" onclick="generateWeeklySynthesis()">🤖 Générer la synthèse IA</button>
         </div>
+      </div>
+
+      <!-- Historique des apports DG/DSN de la semaine — visible sans quitter le Bilan hebdo -->
+      <div id="weekly-apports-dg" style="margin-top:10px;"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+        <button class="btn btn-ghost" style="font-size:12.5px;" onclick="pointPourDG()" title="Récapitulatif des apports du DG">📩 Point pour le DG</button>
+        <button class="btn btn-ghost" style="font-size:12.5px;" onclick="imprimerPointDGComplet()" title="Imprimer le relevé complet des apports DG">🖨️ Imprimer apports DG</button>
       </div>
 
       <!-- KPI summary : structure du tableau manuel -->
@@ -2593,7 +2559,7 @@ html, body { touch-action: manipulation; }
           </div>
           <div class="form-group" style="margin:0;">
             <label>Explication de l'écart / du solde incomplet</label>
-            <textarea id="wk-justif-note" rows="3" placeholder="Ex: 15 000 avancés au chauffeur Armand non remboursés ; 5 000 en attente de recette CG5470…" oninput="onSoldeJustifChange()" style="width:100%; background:var(--steel); border:1px solid var(--steel-light); border-radius:8px; padding:9px 14px; color:var(--white); font-size:13px; font-family:'Inter',sans-serif; outline:none; resize:vertical;"></textarea>
+            <textarea id="wk-justif-note" rows="3" placeholder="Ex: 15 000 avancés au chauffeur Armand non remboursés ; 5 000 en attente de recette CG5470…" oninput="onSoldeJustifChange()" style="width:100%; background:var(--steel); border:1px solid var(--steel-light); border-radius:8px; padding:9px 14px; color:var(--white); font-size:13px; font-family:'Barlow',sans-serif; outline:none; resize:vertical;"></textarea>
           </div>
         </div>
       </div>
@@ -2681,8 +2647,8 @@ html, body { touch-action: manipulation; }
           <div class="theme-picker" id="theme-picker">
             <div class="theme-option selected" data-theme="dark" onclick="selectTheme('dark', this)">
               <div class="theme-preview selected">
-                <div class="theme-swatch-l" style="background:#111C2A"></div>
-                <div class="theme-swatch-r" style="background:#243447"></div>
+                <div class="theme-swatch-l" style="background:#0E0F12"></div>
+                <div class="theme-swatch-r" style="background:#1E2126"></div>
               </div>
               <div class="theme-name">Acier (défaut)</div>
             </div>
@@ -2710,7 +2676,7 @@ html, body { touch-action: manipulation; }
           </div>
           <div class="accent-picker">
             <span class="accent-label">Couleur d'accent</span>
-            <div class="accent-dot selected" style="background:#F5A623" data-color="#F5A623" onclick="selectAccent('#F5A623', this)" title="Ambre"></div>
+            <div class="accent-dot selected" style="background:#FBBF24" data-color="#FBBF24" onclick="selectAccent('#FBBF24', this)" title="Ambre"></div>
             <div class="accent-dot" style="background:#3498DB" data-color="#3498DB" onclick="selectAccent('#3498DB', this)" title="Bleu"></div>
             <div class="accent-dot" style="background:#2ECC71" data-color="#2ECC71" onclick="selectAccent('#2ECC71', this)" title="Vert"></div>
             <div class="accent-dot" style="background:#E74C3C" data-color="#E74C3C" onclick="selectAccent('#E74C3C', this)" title="Rouge"></div>
@@ -3387,9 +3353,107 @@ function majIndicateurSB(ok) {
   el.title = ok ? 'Données synchronisées avec Supabase' : 'Mode hors ligne — données locales uniquement';
 }
 
-// ─── GARAGES (entité) & CAISSE FLOTTE ────────────────────
+// ─── GARAGES (entité) ─────────────────────────────────────
 let garages = [];
-let caisseFlotte = [];
+
+// ═════════════════════════════════════════════════════════
+//  CAISSE UNIFIÉE — source unique de vérité pour tout l'argent
+//  de la flotte. Un seul historique de mouvements ; le Bilan
+//  hebdomadaire, le rapport mensuel, le bilan annuel et le
+//  tableau de bord en sont tous des VUES FILTRÉES sur une
+//  période, jamais des calculs séparés. Le solde = somme de
+//  tous les mouvements du début à aujourd'hui — pas de notion
+//  de "report" à calculer, c'est la suite naturelle de l'historique.
+//
+//  Chaque mouvement : { id, date (AAAA-MM-JJ), type ('entree'|'sortie'),
+//    origine ('recette'|'depense_maintenance'|'ouvrier'|'autre'|'apport_dg'|'apport_dsn'),
+//    plate (camion associé, ou '' si non applicable), montant, motif,
+//    maintId (si liée à une fiche maintenance, pour affichage croisé) }
+// ═════════════════════════════════════════════════════════
+let caisseUnifiee = [];
+
+const ORIGINES_CAISSE = {
+  recette:            { label: 'Recette camion',        sens: 'entree', icon: '💰' },
+  reserve_recette:    { label: 'Recette mise en réserve',sens: 'entree', icon: '🏛️' },
+  depense_maintenance:{ label: 'Dépense maintenance',    sens: 'sortie', icon: '🔧' },
+  ouvrier:            { label: 'Paiement ouvrier',       sens: 'sortie', icon: '👷' },
+  autre:              { label: 'Autre dépense',          sens: 'sortie', icon: '📋' },
+  apport_dg:          { label: 'Apport du DG',           sens: 'entree', icon: '🏦' },
+  apport_dsn:         { label: 'Apport DSN',             sens: 'entree', icon: '🏢' },
+};
+
+// Ajoute un mouvement à la caisse unifiée. C'est le SEUL point d'entrée
+// pour faire varier l'argent de la flotte — toute saisie (recette,
+// dépense, apport) doit passer par ici pour que le solde reste cohérent
+// partout dans l'app.
+function ajouterMouvementCaisse({ date, origine, montant, plate, motif, maintId, saisieRef, trancheId }) {
+  const meta = ORIGINES_CAISSE[origine];
+  if (!meta) { console.error('Origine de mouvement caisse inconnue :', origine); return null; }
+  if (!montant || montant <= 0) return null;
+  const mvt = {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    date: date || new Date().toISOString().slice(0, 10),
+    type: meta.sens,
+    origine,
+    plate: plate || '',
+    montant,
+    motif: motif || meta.label,
+    maintId: maintId || null,
+    trancheId: trancheId || null,
+    saisieRef: saisieRef || null,
+  };
+  caisseUnifiee.push(mvt);
+  saveCore();
+  if (navigator.onLine && typeof sb !== 'undefined') sb.upsert('caisse', [mvt]).catch(()=>{});
+  return mvt;
+}
+
+// Solde de la caisse à une date donnée (ou aujourd'hui) — somme de tous
+// les mouvements du début jusqu'à cette date incluse.
+function soldeCaisseA(dateLimite) {
+  const lim = dateLimite ? new Date(dateLimite) : new Date();
+  lim.setHours(23,59,59,999);
+  return caisseUnifiee.reduce((s, m) => {
+    if (new Date(m.date) > lim) return s;
+    return s + (m.type === 'entree' ? m.montant : -m.montant);
+  }, 0);
+}
+
+// Solde actuel de la caisse — le chiffre affiché partout dans l'app.
+function soldeCaisse() {
+  return caisseUnifiee.reduce((s, m) => s + (m.type === 'entree' ? m.montant : -m.montant), 0);
+}
+
+// Mouvements dans une fenêtre de dates [debut, fin[ (fin exclue).
+function mouvementsPeriode(debut, fin) {
+  const d = new Date(debut); d.setHours(0,0,0,0);
+  const f = new Date(fin); f.setHours(0,0,0,0);
+  return caisseUnifiee.filter(m => { const x = new Date(m.date); return x >= d && x < f; });
+}
+
+// Mouvements de la semaine démarrant à `debutSemaine` (7 jours).
+function mouvementsSemaine(debutSemaine) {
+  const d = new Date(debutSemaine); d.setHours(0,0,0,0);
+  const f = new Date(d); f.setDate(f.getDate() + 7);
+  return mouvementsPeriode(d, f);
+}
+
+// ─── ADAPTATEUR DE COMPATIBILITÉ ──────────────────────────
+// Beaucoup d'écrans existants (page Caisse, enveloppes DG, PDF) lisent
+// encore le format historique `caisseFlotte` (champ `source`, `recu`,
+// `trancheId`...). Plutôt que de tout réécrire d'un coup au risque de
+// perdre des subtilités déjà fiables (suivi précis par enveloppe DG),
+// on dérive ce format à la volée depuis caisseUnifiee, qui reste la
+// SEULE vraie source de données. Cette fonction ne stocke rien.
+function caisseFlotteDerivee() {
+  const mapOrigineVersSource = { reserve_recette:'recette', apport_dg:'dg', apport_dsn:'dsn' };
+  return caisseUnifiee.map(m => ({
+    id: m.id, date: m.date, type: m.type, montant: m.montant, motif: m.motif,
+    maintId: m.maintId, trancheId: m.trancheId || null,
+    recu: m.recu !== undefined ? m.recu : (m.type === 'sortie' ? false : true),
+    source: m.type === 'entree' ? (mapOrigineVersSource[m.origine] || 'dsn') : undefined,
+  }));
+}
 
 let vehicles = []; // vos camions — ajoutez-les depuis la page Véhicules
 
@@ -3409,6 +3473,37 @@ function renderAll() {
 }
 
 // ─── DASHBOARD ───────────────────────────────────────────
+// ─── Cadrans SVG façon tableau de bord camion ─────────────
+// Génère un demi-cercle de fond (gris) et un arc de progression coloré,
+// proportionnel à ratio (0 à 1). Même esthétique que le vrai compteur
+// d'un camion — jauge de carburant, de vitesse, de pression.
+function svgCadran(ratio, couleur) {
+  const r = Math.max(0, Math.min(1, ratio || 0));
+  // Arc de 180° : de (8,54) à (92,54) en passant par le haut (centre 50,54 rayon 42).
+  const angle = Math.PI * (1 - r); // r=0 -> angle=PI (départ), r=1 -> angle=0 (arrivée)
+  const cx = 50, cy = 54, rad = 42;
+  const x = cx + rad * Math.cos(angle);
+  const y = cy - rad * Math.sin(angle);
+  const largeArc = r > 0.5 ? 1 : 0;
+  const path = r <= 0 ? '' : `<path d="M 8 54 A 42 42 0 ${largeArc} 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="${couleur}" stroke-width="8" stroke-linecap="round"/>`;
+  return `<svg width="90" height="52" viewBox="0 0 100 58">
+    <path d="M 8 54 A 42 42 0 0 1 92 54" fill="none" stroke="#2A2E35" stroke-width="8" stroke-linecap="round"/>
+    ${path}
+  </svg>`;
+}
+
+function majCadransDashboard(active, maint, retours, alerts, avail, totalVeh) {
+  const set = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
+  const total = totalVeh || 1;
+  set('gauge-active', svgCadran(active / total, '#4ADE80'));
+  set('gauge-maint', svgCadran(maint / total, '#FBBF24'));
+  // Les pannes qui reviennent et les alertes n'ont pas de "total" naturel :
+  // on sature le cadran dès qu'il y en a au moins une, pour signaler visuellement.
+  set('gauge-retours', svgCadran(retours > 0 ? Math.min(1, retours / 5) : 0, '#F87171'));
+  set('gauge-alerts', svgCadran(alerts > 0 ? Math.min(1, alerts / 5) : 0, '#F87171'));
+  set('gauge-avail', svgCadran(avail / total, '#4ADE80'));
+}
+
 function renderDashboard() {
   if (typeof renderAlertsCenter === 'function') renderAlertsCenter();
   chargerPannesSignalees().catch(()=>{});
@@ -3422,12 +3517,12 @@ function renderDashboard() {
   document.getElementById('kpi-alerts').textContent = alerts;
   document.getElementById('kpi-avail').textContent = avail;
 
-  // Solde du bilan hebdomadaire — même formule que la page Bilan hebdomadaire :
-  // report reçu de la semaine précédente + recette de la semaine en cours
-  // − dépenses camions − ouvriers − autres dépenses.
-  if (typeof currentWeekData === 'function' && typeof soldeFinalSemaine === 'function') {
-    const wdCourante = currentWeekData();
-    const solde = (wdCourante.reportRecu || 0) + soldeFinalSemaine(wdCourante);
+  // Solde du bilan hebdomadaire — même formule complète que la page
+  // Bilan hebdomadaire : report reçu + recette − dépenses − ouvriers
+  // − autres dépenses + apports DG de la semaine − sorties manuelles.
+  if (typeof soldeSemaine === 'function' && typeof currentWeek === 'function') {
+    const kCourante = weekKey(currentWeek());
+    const solde = soldeSemaine(kCourante);
     suivreCaisseVide(solde);
     const seuilAlerte = (typeof prefs !== 'undefined' && prefs.seuilAuto) ? prefs.seuilAuto : 25000;
     const valEl = document.getElementById('kpi-solde-dash');
@@ -3474,6 +3569,10 @@ function renderDashboard() {
   }
   document.getElementById('alertBadge').textContent = alerts + ' alerte' + (alerts > 1 ? 's' : '');
   document.getElementById('fleet-count').textContent = vehicles.length + ' véhicules';
+
+  // Cadrans SVG façon tableau de bord camion — une fois toutes les
+  // valeurs connues (mission, maintenance, retours, alertes, dispo).
+  majCadransDashboard(active, maint, retours.length, alerts, avail, vehicles.length);
 
   // fleet table (top 6)
   const tbody = document.getElementById('fleet-table-body');
@@ -3987,7 +4086,6 @@ function showPage(id, navEl, viaRetour) {
   if (id === 'immobilized' && typeof renderImmobilized === 'function') renderImmobilized();
   if (id === 'debts' && typeof renderDebts === 'function') renderDebts();
   if (id === 'garages' && typeof renderGarages === 'function') renderGarages();
-  if (id === 'caisse' && typeof renderCaisse === 'function') renderCaisse();
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
   // Revenir au tableau de bord repart de zéro — l'historique n'a plus de sens.
@@ -4003,7 +4101,7 @@ function showPage(id, navEl, viaRetour) {
   const parentDeSousMenu = { maintenance:'pannes', garages:'pannes', immobilized:'pannes',
     weekly:'bilans', monthly:'bilans', annual:'bilans' };
   if (parentDeSousMenu[id]) ouvrirSousMenu(parentDeSousMenu[id]);
-  const titles = {dashboard:'Tableau de bord', vehicles:'Véhicules', drivers:'Chauffeurs', workers:'Ouvriers & main-d\'œuvre', maintenance:'Maintenance', ai:'Assistant IA', prefs:'Préférences', weekly:'Bilan hebdomadaire', monthly:'Rapport mensuel', annual:'Bilan annuel', analysis:'Analyse des pannes & rapports', expenses:'Dépenses diverses', immobilized:'Camions immobilisés', debts:'Dettes fournisseurs', garages:'Garages & taux de retour', caisse:'Caisse flotte'};
+  const titles = {dashboard:'Tableau de bord', vehicles:'Véhicules', drivers:'Chauffeurs', workers:'Ouvriers & main-d\'œuvre', maintenance:'Maintenance', ai:'Assistant IA', prefs:'Préférences', weekly:'Bilan hebdomadaire', monthly:'Rapport mensuel', annual:'Bilan annuel', analysis:'Analyse des pannes & rapports', expenses:'Dépenses diverses', immobilized:'Camions immobilisés', debts:'Dettes fournisseurs', garages:'Garages & taux de retour'};
   document.getElementById('pageTitle').textContent = titles[id] || id;
 }
 
@@ -4038,7 +4136,7 @@ function saveCore() {
     localStorage.setItem('fleetbenne_drivers', JSON.stringify(drivers));
     localStorage.setItem('fleetbenne_maintenances', JSON.stringify(maintenances));
     localStorage.setItem('fleetbenne_garages', JSON.stringify(garages));
-    localStorage.setItem('fleetbenne_caisse', JSON.stringify(caisseFlotte));
+    localStorage.setItem('fleetbenne_caisse_unifiee', JSON.stringify(caisseUnifiee));
   } catch(e) {}
   syncCoreSB().catch(()=>{});
 }
@@ -4071,10 +4169,11 @@ async function syncCoreSB() {
     notes:m.notes||'', photo:m.photo||'',
     caisse_fait:!!m.caisseFait, retour:m.retour||null
   })));
-  // Caisse
-  if (caisseFlotte.length) await sb.upsert('caisse', caisseFlotte.map(c=>({
-    id:c.id, date:c.date, type:c.type, source:c.source||null,
-    montant:c.montant, motif:c.motif||'', maint_id:c.maintId||null, recu:!!c.recu
+  // Caisse unifiée
+  if (caisseUnifiee.length) await sb.upsert('caisse', caisseUnifiee.map(c=>({
+    id:c.id, date:c.date, type:c.type, origine:c.origine||null,
+    montant:c.montant, motif:c.motif||'', plate:c.plate||'',
+    maint_id:c.maintId||null, tranche_id:c.trancheId||null, saisie_ref:c.saisieRef||null
   })));
   majIndicateurSB(true);
 }
@@ -4088,9 +4187,9 @@ function loadCore() {
     if (d) drivers = JSON.parse(d);
     if (m) maintenances = JSON.parse(m);
     const g = localStorage.getItem('fleetbenne_garages');
-    const c = localStorage.getItem('fleetbenne_caisse');
+    const cu = localStorage.getItem('fleetbenne_caisse_unifiee');
     if (g) garages = JSON.parse(g);
-    if (c) caisseFlotte = JSON.parse(c);
+    if (cu) caisseUnifiee = JSON.parse(cu);
   } catch(e) {}
   migrerGarages();
   renderAll();
@@ -4124,9 +4223,10 @@ async function loadCoreSB() {
     downtime:m.downtime, workerId:m.worker_id, notes:m.notes,
     photo:m.photo, caisseFait:m.caisse_fait, retour:m.retour
   }));
-  caisseFlotte = (cs||[]).map(c=>({
-    id:c.id, date:c.date, type:c.type, source:c.source,
-    montant:c.montant, motif:c.motif, maintId:c.maint_id, recu:c.recu
+  caisseUnifiee = (cs||[]).map(c=>({
+    id:c.id, date:c.date, type:c.type, origine:c.origine,
+    montant:c.montant, motif:c.motif, plate:c.plate||'',
+    maintId:c.maint_id, trancheId:c.tranche_id, saisieRef:c.saisie_ref
   }));
   // Mettre à jour le cache local
   try {
@@ -4134,7 +4234,7 @@ async function loadCoreSB() {
     localStorage.setItem('fleetbenne_drivers', JSON.stringify(drivers));
     localStorage.setItem('fleetbenne_maintenances', JSON.stringify(maintenances));
     localStorage.setItem('fleetbenne_garages', JSON.stringify(garages));
-    localStorage.setItem('fleetbenne_caisse', JSON.stringify(caisseFlotte));
+    localStorage.setItem('fleetbenne_caisse_unifiee', JSON.stringify(caisseUnifiee));
   } catch(e) {}
   migrerGarages();
   renderAll();
@@ -4536,7 +4636,7 @@ function sendChip(btn) {
 
 // ─── PREFERENCES ─────────────────────────────────────────
 const THEMES = {
-  dark:     { steel:'#1A2332', steelMid:'#243447', steelLight:'#2E4057' },
+  dark:     { steel:'#16181C', steelMid:'#1E2126', steelLight:'#262A31' },
   midnight: { steel:'#0D0D1A', steelMid:'#12122A', steelLight:'#1E1E3A' },
   forest:   { steel:'#0F1E14', steelMid:'#172A1C', steelLight:'#1F3826' },
   light:    { steel:'#E8ECF0', steelMid:'#F5F7FA', steelLight:'#DDE3EA' },
@@ -4546,7 +4646,7 @@ let prefs = {
   companyName: '', siret: '', manager: '', phone: '', email: '', address: '',
   logoData: '',
   theme: 'dark',
-  accent: '#F5A623',
+  accent: '#FBBF24',
   notifCT: true, notifMaint: true, notifDaily: false, notifKm: true,
   kmThreshold: 200000, ctDays: 60,
   seuilAuto: 25000, seuilDirection: 150000, garantieJours: 30,
@@ -4613,13 +4713,13 @@ function applyPrefs() {
 
   // light theme text fix
   if (prefs.theme === 'light') {
-    root.style.setProperty('--offwhite', '#1A2332');
+    root.style.setProperty('--offwhite', '#16181C');
     root.style.setProperty('--white', '#0D1B2A');
     root.style.setProperty('--concrete', '#4A5568');
   } else {
-    root.style.setProperty('--offwhite', '#F0F4F8');
+    root.style.setProperty('--offwhite', '#E4E6EA');
     root.style.setProperty('--white', '#FFFFFF');
-    root.style.setProperty('--concrete', '#8A9BAE');
+    root.style.setProperty('--concrete', '#7A7F88');
   }
 
   // company name in sidebar
@@ -4665,7 +4765,7 @@ function savePrefs() {
 
 function resetPrefs() {
   localStorage.removeItem('fleetbenne_prefs');
-  prefs = { companyName:'', siret:'', manager:'', phone:'', email:'', address:'', logoData:'', theme:'dark', accent:'#F5A623', notifCT:true, notifMaint:true, notifDaily:false, notifKm:true, kmThreshold:200000, ctDays:60, intervals:{mecanique:180,hydraulique:120,electricite:365,soudure:90} };
+  prefs = { companyName:'', siret:'', manager:'', phone:'', email:'', address:'', logoData:'', theme:'dark', accent:'#FBBF24', notifCT:true, notifMaint:true, notifDaily:false, notifKm:true, kmThreshold:200000, ctDays:60, intervals:{mecanique:180,hydraulique:120,electricite:365,soudure:90} };
   applyPrefs();
   populatePrefFields();
   document.getElementById('logo-preview-box').innerHTML = '🚛';
@@ -4817,6 +4917,12 @@ function truckWeekend(t) { return truckExpensesBy(t, 'weekend'); }
 
 // Solde final d'une semaine : recette − dépenses camions − ouvriers − autres.
 // (même calcul que le point hebdomadaire)
+// Activité PROPRE d'une semaine, sans le report : recette − dépenses
+// camions − ouvriers − autres dépenses. Sert UNIQUEMENT à additionner
+// plusieurs semaines sans double-compter les reports en chaîne
+// (totalSoldeFinalCamion, agrégats mensuels). Pour "combien reste-t-il
+// disponible cette semaine" (y compris le report et les apports DG),
+// utiliser soldeSemaine(k) — jamais celle-ci pour un solde affiché seul.
 function soldeFinalSemaine(wd) {
   if (!wd) return 0;
   const rev = (wd.trucks||[]).reduce((s,t)=>s+(t.revenue||0),0);
@@ -4848,15 +4954,32 @@ function weekKeyOffset(weekKeyStr, nbSemaines) {
   return weekKey(d);
 }
 
-// Solde final d'une semaine (recette + report reçu − toutes dépenses).
+// ═══════════════════════════════════════════════════════════
+//  LE VRAI SOLDE D'UNE SEMAINE — logique complète confirmée par SARANA :
+//  report reçu + tout ce qui est passé par la caisse unifiée cette
+//  semaine (recette, dépenses camions, ouvriers, autres, apports
+//  DG/DSN). C'est ce total qui part en report vers la semaine
+//  suivante à la clôture — rien ne doit se perdre entre S et S+1.
+// ═══════════════════════════════════════════════════════════
+
+// Solde final d'une semaine (recette + report reçu + apports DG − toutes dépenses).
+// Solde "propre" d'une semaine (sans report) : somme de tous les
+// mouvements de caisse unifiée datés dans cette semaine — recette,
+// dépenses camions, ouvriers, autres, apports DG/DSN. Comme tout
+// l'argent passe désormais par une seule table, plus besoin de
+// recombiner plusieurs sources séparées.
+function activitePropreSemaine(k) {
+  const mvts = mouvementsSemaine(k);
+  return mvts.reduce((s, m) => s + (m.type === 'entree' ? m.montant : -m.montant), 0);
+}
+
+// Solde final d'une semaine = report reçu de la semaine précédente +
+// activité propre de cette semaine (recette − dépenses − ouvriers −
+// autres + apports DG/DSN reçus pendant la semaine).
 function soldeSemaine(k) {
   const wd = weeklyData[k];
-  if (!wd) return 0;
-  const rev = (wd.trucks||[]).reduce((s,t)=>s+(t.revenue||0),0);
-  const exp = (wd.trucks||[]).reduce((s,t)=>s+truckExpenses(t),0);
-  const wpay = (wd.workers||[]).reduce((s,w)=>s+(w.amount||0),0);
-  const oth = (wd.others||[]).reduce((s,o)=>s+(o.amount||0),0);
-  return (wd.reportRecu||0) + rev - exp - wpay - oth;
+  const reportRecu = wd ? (wd.reportRecu || 0) : 0;
+  return reportRecu + activitePropreSemaine(k);
 }
 
 function estCloturee(k) {
@@ -4923,6 +5046,23 @@ function renderWeekly() {
   document.getElementById('week-next').disabled = weekOffset >= 0;
   const wd = currentWeekData();
 
+  // Apports DG/DSN reçus cette semaine — visibles directement ici
+  // depuis le retrait de la page Caisse dédiée.
+  const boxApports = document.getElementById('weekly-apports-dg');
+  if (boxApports) {
+    const kSemBox = weekKey(ws);
+    const apportsSemaine = mouvementsSemaine(kSemBox).filter(m => m.origine === 'apport_dg' || m.origine === 'apport_dsn');
+    if (apportsSemaine.length) {
+      boxApports.innerHTML = apportsSemaine.map(m => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(21,101,192,0.08);border-radius:8px;margin-bottom:6px;font-size:13px;">
+          <span>${m.origine==='apport_dg'?'🏦':'🏢'} ${m.motif} <span style="color:var(--concrete);">— ${m.date}</span></span>
+          <span style="font-weight:700;">${m.montant.toLocaleString('fr-FR')} FCFA</span>
+        </div>`).join('');
+    } else {
+      boxApports.innerHTML = '';
+    }
+  }
+
   const totRevenue = wd.trucks.reduce((s,t)=>s+(t.revenue||0),0);
   const totTruckExp = wd.trucks.reduce((s,t)=>s+truckExpenses(t),0);
   const totWorkers = wd.workers.reduce((s,w)=>s+(w.amount||0),0);
@@ -4930,11 +5070,14 @@ function renderWeekly() {
   const totPieces = weekPiecesTotal(wd);
   const totManque = wd.trucks.reduce((s,t)=> s + ((t.revenueNormal!==undefined && t.revenueNormal!==null) ? Math.max(0, (t.revenueNormal - (t.revenue||0))) : 0), 0);
   const soldeCamions = totRevenue - totTruckExp;
-  // Le report reçu de la semaine précédente entre dans le solde.
+  // Solde final = report reçu + tout ce qui est passé par la caisse
+  // unifiée cette semaine (recette, dépenses, ouvriers, autres, apports
+  // DG/DSN) — une seule source, plus de recombinaison à la main.
   const reportRecu = wd.reportRecu || 0;
   const totImprPdf = (wd.trucks||[]).reduce((s,t)=>s+truckImprevu(t),0);
   const totWkndPdf = (wd.trucks||[]).reduce((s,t)=>s+truckWeekend(t),0);
-  const soldeFinal = reportRecu + soldeCamions - totWorkers - totOthers;
+  const kSemFormule = weekKey(ws);
+  const soldeFinal = soldeSemaine(kSemFormule);
 
   document.getElementById('wk-revenue').textContent = totRevenue.toLocaleString('fr-FR')+' FCFA';
   document.getElementById('wk-charges').textContent = totTruckExp.toLocaleString('fr-FR')+' FCFA';
@@ -4952,7 +5095,7 @@ function renderWeekly() {
       boxRes.innerHTML = '';
     } else {
       const deTxt = wd.reportDe ? fmtWeekRange(new Date(wd.reportDe)) : 'la semaine précédente';
-      const coul = res.epuisee ? 'var(--red)' : (res.reste < res.recu * 0.25 ? '#F5A623' : 'var(--green)');
+      const coul = res.epuisee ? 'var(--red)' : (res.reste < res.recu * 0.25 ? '#FBBF24' : 'var(--green)');
       boxRes.innerHTML = `
       <div class="section" style="padding:16px 20px;">
         <div style="font-size:13px; font-weight:700; margin-bottom:4px;">💵 Réserve pour les pannes</div>
@@ -4962,7 +5105,7 @@ function renderWeekly() {
         </div>
         <div style="display:flex; gap:22px; flex-wrap:wrap; font-size:12.5px;">
           <span>Reçu : <strong>${res.recu.toLocaleString('fr-FR')}</strong></span>
-          <span style="color:#F5A623;">⚡ Imprévus payés : <strong>${res.impr.toLocaleString('fr-FR')}</strong></span>
+          <span style="color:#FBBF24;">⚡ Imprévus payés : <strong>${res.impr.toLocaleString('fr-FR')}</strong></span>
           <span style="color:${coul};">Reste : <strong>${res.reste.toLocaleString('fr-FR')} FCFA</strong></span>
         </div>
         <div class="g-bar" style="margin-top:10px;">
@@ -5015,7 +5158,7 @@ function renderWeekly() {
           ? '<span class="lbl-wk">🔧</span>'
           : '<span class="lbl-im">⚡</span>';
         return `
-        <div style="display:flex; justify-content:space-between; font-size:12px; padding:3px 6px; color:${big?'#F5A623':'var(--concrete)'}; ${big?'background:rgba(245,166,35,0.12); border-radius:6px; font-weight:600;':''}">
+        <div style="display:flex; justify-content:space-between; font-size:12px; padding:3px 6px; color:${big?'#FBBF24':'var(--concrete)'}; ${big?'background:rgba(251,191,36,0.12); border-radius:6px; font-weight:600;':''}">
           <span>${tag} ${big?'⚠️ ':''}${l.isPiece?'🔩 ':''}${l.designation||'—'} ${l.qte>1?`(${l.qte}×${(l.pu||0).toLocaleString('fr-FR')})`:''}</span>
           <span style="font-family:'JetBrains Mono',monospace;">${lineTotal.toLocaleString('fr-FR')}</span>
         </div>`;
@@ -5031,7 +5174,7 @@ function renderWeekly() {
         </div>
         <div style="display:flex; gap:18px; font-size:12px; margin-bottom:8px; flex-wrap:wrap;">
           <span style="color:var(--green);">Recette : <strong>${(t.revenue||0).toLocaleString('fr-FR')}</strong></span>
-          <span style="color:#F5A623;">⚡ Imprévu : <strong>${impr.toLocaleString('fr-FR')}</strong></span>
+          <span style="color:#FBBF24;">⚡ Imprévu : <strong>${impr.toLocaleString('fr-FR')}</strong></span>
           <span style="color:#4A90E2;">🔧 Week-end : <strong>${wknd.toLocaleString('fr-FR')}</strong></span>
           <span style="color:var(--concrete);">Solde : <strong style="color:${solde>=0?'var(--green)':'var(--red)'}">${solde.toLocaleString('fr-FR')}</strong></span>
         </div>
@@ -5056,9 +5199,9 @@ function renderWeekly() {
   ol.innerHTML = wd.others.length ? wd.others.map((o,i)=>{
     const big = (o.amount||0) > BIG_EXPENSE;
     return `
-    <div class="risk-item" ${big?'style="background:rgba(245,166,35,0.12);"':''}>
-      <div class="risk-info"><div class="risk-truck" style="font-weight:600; ${big?'color:#F5A623;':''}">${big?'⚠️ ':''}${o.label}</div></div>
-      <div class="risk-cost" style="color:${big?'#F5A623':'var(--white)'}; font-weight:${big?'700':'inherit'}">${(o.amount||0).toLocaleString('fr-FR')} FCFA</div>
+    <div class="risk-item" ${big?'style="background:rgba(251,191,36,0.12);"':''}>
+      <div class="risk-info"><div class="risk-truck" style="font-weight:600; ${big?'color:#FBBF24;':''}">${big?'⚠️ ':''}${o.label}</div></div>
+      <div class="risk-cost" style="color:${big?'#FBBF24':'var(--white)'}; font-weight:${big?'700':'inherit'}">${(o.amount||0).toLocaleString('fr-FR')} FCFA</div>
       <button class="btn-icon danger" style="margin-left:10px;" onclick="deleteWeekOther(${i})" title="Supprimer">🗑️</button>
     </div>`;
   }).join('') + `<div style="padding:12px 20px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; font-weight:700;"><span style="color:var(--concrete);">Total</span><span style="font-family:'JetBrains Mono',monospace;">${totOthers.toLocaleString('fr-FR')} FCFA</span></div>`
@@ -5095,14 +5238,13 @@ function renderWeekly() {
 function renderWeekFund(weekStart) {
   const box = document.getElementById('week-fund');
   if (!box) return;
-  if (typeof caisseFlotte === 'undefined') { box.innerHTML = ''; return; }
-
+  
   const debut = new Date(weekStart); debut.setHours(0,0,0,0);
   const fin = new Date(debut); fin.setDate(fin.getDate() + 7);
   const dansLaSemaine = d => { const x = new Date(d); return x >= debut && x < fin; };
 
   // Apports reçus dans la semaine, par source
-  const entrees = caisseFlotte.filter(m => m.type === 'entree' && dansLaSemaine(m.date));
+  const entrees = caisseFlotteDerivee().filter(m => m.type === 'entree' && dansLaSemaine(m.date));
   const apportDG = entrees.filter(m => m.source === 'dg');
   const apportRecette = entrees.filter(m => m.source === 'recette');
   const apportDSN = entrees.filter(m => (m.source || 'dsn') === 'dsn');
@@ -5111,7 +5253,7 @@ function renderWeekFund(weekStart) {
   const totDSN = apportDSN.reduce((s,m)=>s+m.montant,0);
 
   // Pannes payées dans la semaine, réparties DG vs recette/caisse
-  const sortiesSemaine = caisseFlotte.filter(m => m.type === 'sortie' && dansLaSemaine(m.date));
+  const sortiesSemaine = caisseFlotteDerivee().filter(m => m.type === 'sortie' && dansLaSemaine(m.date));
   const idsDG = new Set();
   if (typeof pointsTranchesDG === 'function') {
     pointsTranchesDG().forEach(p => p.couvertes.forEach(s => idsDG.add(s.id)));
@@ -5123,11 +5265,13 @@ function renderWeekFund(weekStart) {
   const totPaye = totPayeDG + totPayeAutre;
 
   // Solde reporté de la semaine passée (calculé plus bas aussi, ici pour le garde-fou)
+  // Formule complète (soldeSemaine) : inclut les apports DG et sorties
+  // manuelles de la semaine passée, pas seulement recette − dépenses.
   let _reportGuard = 0;
-  if (typeof soldeFinalSemaine === 'function' && typeof weeklyData !== 'undefined') {
+  if (typeof soldeSemaine === 'function' && typeof weeklyData !== 'undefined') {
     const _ps = new Date(debut); _ps.setDate(_ps.getDate() - 7);
     const _pk = _ps.toISOString().slice(0,10);
-    if (weeklyData[_pk]) _reportGuard = soldeFinalSemaine(weeklyData[_pk]);
+    if (weeklyData[_pk]) _reportGuard = soldeSemaine(_pk);
   }
   // Rien du tout cette semaine (ni entrée, ni sortie, ni report) → on n'encombre pas
   if (!entrees.length && !sortiesSemaine.length && !_reportGuard) { box.innerHTML = ''; return; }
@@ -5138,7 +5282,7 @@ function renderWeekFund(weekStart) {
       <span style="font-family:'JetBrains Mono',monospace; color:${coul||'var(--white)'};">${val.toLocaleString('fr-FR')} FCFA</span>
     </div>`;
 
-  let h = `<div class="section" style="margin-top:16px; border-left:3px solid #1565C0;">
+  let h = `<div class="section" style="margin-top:16px; border-left:3px solid #16181C;">
     <div class="section-header"><div class="section-title">💰 Financement des pannes de la semaine</div></div>
     <div style="padding:4px 20px 10px; font-size:12px; color:var(--concrete);">
       D'où vient l'argent qui a payé les pannes de la semaine. Vue « caisse » — distincte des dépenses par camion ci-dessus.
@@ -5155,10 +5299,10 @@ function renderWeekFund(weekStart) {
   //   solde final REPORTÉ de la semaine PASSÉE + apport DG de la semaine en cours.
   //   C'est le pot avec lequel on règle les pannes de la semaine.
   let soldeReport = 0;
-  if (typeof soldeFinalSemaine === 'function' && typeof weeklyData !== 'undefined') {
+  if (typeof soldeSemaine === 'function' && typeof weeklyData !== 'undefined') {
     const prevStart = new Date(debut); prevStart.setDate(prevStart.getDate() - 7);
     const prevKey = prevStart.toISOString().slice(0,10);
-    if (weeklyData[prevKey]) soldeReport = soldeFinalSemaine(weeklyData[prevKey]);
+    if (weeklyData[prevKey]) soldeReport = soldeSemaine(prevKey);
   }
   const combine = soldeReport + totDG;
   const reste = combine - totPaye;
@@ -5326,14 +5470,39 @@ function saveWeekTruck() {
     lines: wtLineRows.filter(l=>l.designation || l.pu)
   };
   const wd = currentWeekData();
+  const kSemaine = weekKey(currentWeek());
+  const saisieRef = kSemaine + '|' + plate;
+
   if (editingWtIndex !== null) wd.trucks[editingWtIndex] = data;
   else wd.trucks.push(data);
-  saveWeeklyData(); closeModal('modal-week-truck'); renderWeekly();
+  saveWeeklyData();
+
+  // Caisse unifiée : on retire les mouvements précédemment générés pour
+  // ce camion cette semaine (cas d'une modification), puis on repousse
+  // la recette et chaque ligne de dépense comme mouvements datés.
+  caisseUnifiee = caisseUnifiee.filter(m => m.saisieRef !== saisieRef);
+  if (data.revenue > 0) {
+    ajouterMouvementCaisse({ date: kSemaine, origine:'recette', montant:data.revenue, plate, motif:'Recette semaine', saisieRef });
+  }
+  data.lines.forEach(l => {
+    const montantLigne = (l.qte||0) * (l.pu||0);
+    if (montantLigne > 0) {
+      ajouterMouvementCaisse({ date: l.date || kSemaine, origine:'depense_maintenance', montant:montantLigne, plate, motif:l.designation||'Dépense', saisieRef });
+    }
+  });
+
+  closeModal('modal-week-truck'); renderWeekly();
 }
 function deleteWeekTruck(i) {
   const wd = currentWeekData();
-  if (!confirm('Supprimer ' + wd.trucks[i].plate + ' de cette semaine ?')) return;
-  wd.trucks.splice(i,1); saveWeeklyData(); renderWeekly();
+  const plate = wd.trucks[i].plate;
+  if (!confirm('Supprimer ' + plate + ' de cette semaine ?')) return;
+  wd.trucks.splice(i,1); saveWeeklyData();
+  // Retire aussi les mouvements de caisse générés pour ce camion cette semaine.
+  const saisieRef = weekKey(currentWeek()) + '|' + plate;
+  caisseUnifiee = caisseUnifiee.filter(m => m.saisieRef !== saisieRef);
+  saveCore();
+  renderWeekly();
 }
 
 // ── Ouvriers payés ──
@@ -5351,10 +5520,18 @@ function saveWeekWorkerPay() {
   const camion = document.getElementById('ww-camion').value.trim();
   const reason = document.getElementById('ww-reason').value.trim();
   if (!name || !amount) return;
-  currentWeekData().workers.push({name, amount, camion, reason});
-  saveWeeklyData(); closeModal('modal-week-worker'); renderWeekly();
+  const saisieRef = 'ouvrier|' + Date.now();
+  currentWeekData().workers.push({name, amount, camion, reason, saisieRef});
+  saveWeeklyData();
+  ajouterMouvementCaisse({ date: new Date().toISOString().slice(0,10), origine:'ouvrier', montant:amount, plate:camion, motif:name + (reason?' — '+reason:''), saisieRef });
+  closeModal('modal-week-worker'); renderWeekly();
 }
-function deleteWeekWorker(i) { currentWeekData().workers.splice(i,1); saveWeeklyData(); renderWeekly(); }
+function deleteWeekWorker(i) {
+  const w = currentWeekData().workers[i];
+  currentWeekData().workers.splice(i,1); saveWeeklyData();
+  if (w && w.saisieRef) { caisseUnifiee = caisseUnifiee.filter(m => m.saisieRef !== w.saisieRef); saveCore(); }
+  renderWeekly();
+}
 
 // ── Autres dépenses ──
 function openWeekOtherModal() {
@@ -5365,10 +5542,18 @@ function saveWeekOther() {
   const label = document.getElementById('wo-label').value.trim();
   const amount = parseInt(document.getElementById('wo-amount').value)||0;
   if (!label || !amount) return;
-  currentWeekData().others.push({label, amount});
-  saveWeeklyData(); closeModal('modal-week-other'); renderWeekly();
+  const saisieRef = 'autre|' + Date.now();
+  currentWeekData().others.push({label, amount, saisieRef});
+  saveWeeklyData();
+  ajouterMouvementCaisse({ date: new Date().toISOString().slice(0,10), origine:'autre', montant:amount, motif:label, saisieRef });
+  closeModal('modal-week-other'); renderWeekly();
 }
-function deleteWeekOther(i) { currentWeekData().others.splice(i,1); saveWeeklyData(); renderWeekly(); }
+function deleteWeekOther(i) {
+  const o = currentWeekData().others[i];
+  currentWeekData().others.splice(i,1); saveWeeklyData();
+  if (o && o.saisieRef) { caisseUnifiee = caisseUnifiee.filter(m => m.saisieRef !== o.saisieRef); saveCore(); }
+  renderWeekly();
+}
 
 // ── Justification du solde ──
 let _lastSoldeFinal = 0;
@@ -5448,8 +5633,8 @@ function drawEvolutionChart() {
   const minVal = Math.min(...data.map(d=>d.solde),0);
   const range = maxVal - minVal || 1;
 
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--yellow').trim() || '#F5A623';
-  const concrete = getComputedStyle(document.documentElement).getPropertyValue('--concrete').trim() || '#8A9BAE';
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--yellow').trim() || '#FBBF24';
+  const concrete = getComputedStyle(document.documentElement).getPropertyValue('--concrete').trim() || '#7A7F88';
 
   ctx.strokeStyle = 'rgba(138,155,174,0.15)'; ctx.fillStyle = concrete;
   ctx.font = '10px JetBrains Mono, monospace'; ctx.textAlign='right';
@@ -6356,8 +6541,8 @@ function initPWA() {
     description: 'Gestion de flotte de camions bennes',
     start_url: startUrl,
     display: 'standalone',
-    background_color: '#1A2332',
-    theme_color: '#111C2A',
+    background_color: '#16181C',
+    theme_color: '#0E0F12',
     orientation: 'portrait',
     icons: [
       { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192'%3E%3Crect width='192' height='192' rx='42' fill='%23111C2A'/%3E%3Ctext x='96' y='128' font-size='96' text-anchor='middle'%3E%F0%9F%9A%9B%3C/text%3E%3C/svg%3E", sizes:'192x192', type:'image/svg+xml' },
@@ -6608,11 +6793,13 @@ function exportWeeklyPDF() {
   const totPieces = weekPiecesTotal(wd);
   const totManque = wd.trucks.reduce((s,t)=> s + ((t.revenueNormal!==undefined && t.revenueNormal!==null) ? Math.max(0, (t.revenueNormal - (t.revenue||0))) : 0), 0);
   const soldeCamions = totRevenue - totTruckExp;
-  // Le report reçu de la semaine précédente entre dans le solde.
+  // Solde final = report reçu + activité complète de la caisse unifiée
+  // cette semaine — une seule source, comme sur l'écran Bilan hebdomadaire.
   const reportRecu = wd.reportRecu || 0;
   const totImprPdf = (wd.trucks||[]).reduce((s,t)=>s+truckImprevu(t),0);
   const totWkndPdf = (wd.trucks||[]).reduce((s,t)=>s+truckWeekend(t),0);
-  const soldeFinal = reportRecu + soldeCamions - totWorkers - totOthers;
+  const kSemFormulePdf = weekKey(ws);
+  const soldeFinal = soldeSemaine(kSemFormulePdf);
 
   const f = n => (n||0).toLocaleString('fr-FR') + ' FCFA';
   const company = (typeof prefs!=='undefined' && prefs.companyName) ? prefs.companyName : 'FleetBenne';
@@ -6634,19 +6821,19 @@ function exportWeeklyPDF() {
   // Financement des pannes : montant de travail = solde reporté + apport DG,
   //   puis ce qui a été dépensé et ce qui reste. Simple et lisible pour le DG.
   let fundHtml = '';
-  if (typeof caisseFlotte !== 'undefined') {
+  if (typeof caisseUnifiee !== 'undefined') {
     const wsD = new Date(ws); wsD.setHours(0,0,0,0);
     const weD = new Date(wsD); weD.setDate(weD.getDate()+7);
     const inWk = d => { const x = new Date(d); return x >= wsD && x < weD; };
-    // Solde reporté de la semaine passée
+    // Solde reporté de la semaine passée (formule complète, apports DG inclus)
     let soldeReport = 0;
-    if (typeof soldeFinalSemaine === 'function') {
+    if (typeof soldeSemaine === 'function') {
       const prev = new Date(wsD); prev.setDate(prev.getDate()-7);
       const pk = prev.toISOString().slice(0,10);
-      if (weeklyData[pk]) soldeReport = soldeFinalSemaine(weeklyData[pk]);
+      if (weeklyData[pk]) soldeReport = soldeSemaine(pk);
     }
-    const apportDG = caisseFlotte.filter(m => m.type==='entree' && m.source==='dg' && inWk(m.date)).reduce((a,m)=>a+m.montant,0);
-    const sorties = caisseFlotte.filter(m => m.type==='sortie' && inWk(m.date));
+    const apportDG = caisseFlotteDerivee().filter(m => m.type==='entree' && m.source==='dg' && inWk(m.date)).reduce((a,m)=>a+m.montant,0);
+    const sorties = caisseFlotteDerivee().filter(m => m.type==='sortie' && inWk(m.date));
     const totPannes = sorties.reduce((a,s)=>a+s.montant,0);
     const montant = soldeReport + apportDG;
     const reste = montant - totPannes;
@@ -6658,10 +6845,10 @@ function exportWeeklyPDF() {
       fundHtml = `<h2>Argent des pannes de la semaine</h2>
       <div class="summary" style="width:100%; margin:0 0 10px;">
         <div><span>Solde reporté de la semaine du ${prevLbl}</span><span class="num">${f(soldeReport)}</span></div>
-        <div><span>+ Apport du DG cette semaine</span><span class="num" style="color:#1565c0;">${f(apportDG)}</span></div>
+        <div><span>+ Apport du DG cette semaine</span><span class="num" style="color:#FBBF24;">${f(apportDG)}</span></div>
         <div class="strong"><span>= Montant à gérer</span><span class="num">${f(montant)}</span></div>
         <div><span>− Dépensé en pannes</span><span class="num expense">${f(totPannes)}</span></div>
-        <div class="final"><span>Reste</span><span class="num" style="color:#fff;">${f(reste)}</span></div>
+        <div class="final"><span>Reste</span><span class="num" style="color:#FDE68A;">${f(reste)}</span></div>
       </div>
       ${rowsP ? `<table><thead><tr><th>Date</th><th>Panne réglée</th><th class="num">Montant</th></tr></thead><tbody>${rowsP}</tbody></table>` : ''}`;
     }
@@ -6673,14 +6860,14 @@ function exportWeeklyPDF() {
     const solde = (t.revenue||0) - exp;
     const manque = (t.revenueNormal!==undefined && t.revenueNormal!==null) ? (t.revenueNormal - (t.revenue||0)) : null;
     const manqueTxt = (manque!==null && manque!==0)
-      ? `<div style="font-size:10px; color:#c0392b; margin-top:2px;">${manque>0?'Manque':'Surplus'} ${Math.abs(manque).toLocaleString('fr-FR')}${t.ecartNote?' — '+t.ecartNote:''}</div>`
+      ? `<div style="font-size:10px; color:#B0342B; margin-top:2px;">${manque>0?'Manque':'Surplus'} ${Math.abs(manque).toLocaleString('fr-FR')}${t.ecartNote?' — '+t.ecartNote:''}</div>`
       : '';
     const linesTxt = (t.lines||[]).map(l => {
       const lineTotal = (l.qte||0)*(l.pu||0);
       const big = lineTotal > BIG_EXPENSE;
       const inner = `${big?'⚠️ ':''}${l.isPiece?'🔩 ':''}${l.designation||'—'} — ${l.qte||0}×${(l.pu||0).toLocaleString('fr-FR')} = ${lineTotal.toLocaleString('fr-FR')}`;
-      return big ? `<span style="background:#fdf0d5; color:#b9770e; font-weight:700; padding:1px 4px; border-radius:3px; display:inline-block;">${inner}</span>` : inner;
-    }).join('<br>') || '<span style="color:#999">Aucune dépense</span>';
+      return big ? `<span style="background:#EFEFEC; color:#B8790C; font-weight:700; padding:1px 4px; border-radius:3px; display:inline-block;">${inner}</span>` : inner;
+    }).join('<br>') || '<span style="color:#5D6067">Aucune dépense</span>';
     return `<tr>
       <td><strong>${t.plate}</strong></td>
       <td class="num revenue">${(t.revenue||0).toLocaleString('fr-FR')}${manqueTxt}</td>
@@ -6688,14 +6875,14 @@ function exportWeeklyPDF() {
       <td class="num expense">${exp.toLocaleString('fr-FR')}</td>
       <td class="num ${solde>=0?'pos':'neg'}">${solde.toLocaleString('fr-FR')}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="5" style="text-align:center;color:#999">Aucun camion saisi</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:#5D6067">Aucun camion saisi</td></tr>';
 
-  const workersRows = wd.workers.map(w => `<tr><td>${w.name}</td><td>${w.camion||'<span style="color:#999">Général</span>'}</td><td style="font-size:11px;color:#555;">${w.reason||'—'}</td><td class="num">${(w.amount||0).toLocaleString('fr-FR')}</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#999">Aucun</td></tr>';
+  const workersRows = wd.workers.map(w => `<tr><td>${w.name}</td><td>${w.camion||'<span style="color:#5D6067">Général</span>'}</td><td style="font-size:11px;color:#5D6067;">${w.reason||'—'}</td><td class="num">${(w.amount||0).toLocaleString('fr-FR')}</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#5D6067">Aucun</td></tr>';
 
   const othersRows = wd.others.map(o => {
     const big = (o.amount||0) > BIG_EXPENSE;
-    return `<tr${big?' style="background:#fdf0d5;"':''}><td>${big?'⚠️ ':''}${o.label}</td><td class="num"${big?' style="color:#b9770e;font-weight:700;"':''}>${(o.amount||0).toLocaleString('fr-FR')}</td></tr>`;
-  }).join('') || '<tr><td colspan="2" style="text-align:center;color:#999">Aucune</td></tr>';
+    return `<tr${big?' style="background:#EFEFEC;"':''}><td>${big?'⚠️ ':''}${o.label}</td><td class="num"${big?' style="color:#B8790C;font-weight:700;"':''}>${(o.amount||0).toLocaleString('fr-FR')}</td></tr>`;
+  }).join('') || '<tr><td colspan="2" style="text-align:center;color:#5D6067">Aucune</td></tr>';
 
   // Justification du solde
   const remis = (wd.remis !== null && wd.remis !== undefined && wd.remis !== '') ? Number(wd.remis) : null;
@@ -6715,55 +6902,56 @@ function exportWeeklyPDF() {
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
   <title>Bilan hebdomadaire — ${fmtWeekRange(ws)}</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
     * { box-sizing:border-box; }
-    body { font-family:'Segoe UI', Arial, sans-serif; color:#1a2332; margin:0; padding:28px 32px; font-size:13px; }
-    .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #1a2332; padding-bottom:14px; margin-bottom:18px; }
+    body { font-family:'Barlow', Arial, sans-serif; color:#1E2024; margin:0; padding:28px 32px; font-size:13px; background:#FAFAF8; }
+    .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px double #16181C; padding-bottom:14px; margin-bottom:18px; }
     .head-left { display:flex; align-items:center; gap:14px; }
-    .logo { width:54px; height:54px; border-radius:10px; object-fit:cover; }
-    .logo-fallback { width:54px; height:54px; border-radius:10px; background:#1a2332; color:#F5A623; display:flex; align-items:center; justify-content:center; font-size:26px; }
-    h1 { font-size:20px; margin:0; color:#1a2332; }
-    .company { font-size:15px; font-weight:700; }
-    .sub { color:#666; font-size:12px; margin-top:2px; }
-    .meta { text-align:right; font-size:11px; color:#555; }
-    h2 { font-size:14px; margin:22px 0 8px; padding-bottom:5px; border-bottom:2px solid #1a2332; color:#1a2332; }
+    .logo { width:54px; height:54px; border-radius:50%; object-fit:cover; border:2px solid #FBBF24; }
+    .logo-fallback { width:54px; height:54px; border-radius:50%; background:#16181C; color:#FDE68A; display:flex; align-items:center; justify-content:center; font-size:22px; font-family:'Oswald',sans-serif; font-weight:700; border:2px solid #FBBF24; }
+    h1 { font-family:'Oswald',sans-serif; font-size:20px; margin:0; color:#16181C; font-weight:700; }
+    .company { font-family:'Oswald',sans-serif; font-size:15px; font-weight:700; color:#16181C; }
+    .sub { color:#5D6067; font-size:12px; margin-top:2px; }
+    .meta { text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5D6067; }
+    h2 { font-family:'Oswald',sans-serif; font-size:14px; margin:22px 0 8px; padding-bottom:5px; border-bottom:2px solid #FBBF24; color:#16181C; font-weight:700; }
     table { width:100%; border-collapse:collapse; margin-bottom:6px; }
-    th { background:#1a2332; color:#fff; text-align:left; padding:8px 10px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
-    td { padding:7px 10px; border-bottom:1px solid #eee; vertical-align:top; }
-    tbody tr:nth-child(even) { background:#fafbfc; }
-    .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-    .revenue { color:#127a32; font-weight:700; }
-    .expense { color:#c0392b; font-weight:700; }
-    .pos { color:#127a32; font-weight:700; }
-    .neg { color:#c0392b; font-weight:700; }
-    th.revenue { color:#7ee0a0; }
-    th.expense { color:#f5a3a3; }
-    .summary { width:62%; margin-left:auto; border:2px solid #1a2332; border-radius:8px; overflow:hidden; }
-    .summary div { display:flex; justify-content:space-between; padding:9px 16px; border-bottom:1px solid #eee; font-size:13px; }
+    th { background:#16181C; color:#FAFAF8; text-align:left; padding:8px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; }
+    td { padding:7px 10px; border-bottom:1px solid #D8D8D4; vertical-align:top; }
+    tbody tr:nth-child(even) { background:#F5F5F3; }
+    .num { text-align:right; font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .revenue { color:#2E7D4F; font-weight:700; }
+    .expense { color:#B0342B; font-weight:700; }
+    .pos { color:#2E7D4F; font-weight:700; }
+    .neg { color:#B0342B; font-weight:700; }
+    th.revenue { color:#8FD4AE; }
+    th.expense { color:#E8A9A0; }
+    .summary { width:62%; margin-left:auto; border:2px solid #16181C; border-radius:0; overflow:hidden; }
+    .summary div { display:flex; justify-content:space-between; padding:9px 16px; border-bottom:1px solid #D8D8D4; font-size:13px; }
     .summary div:last-child { border-bottom:none; }
-    .summary .final { background:#1a2332; color:#fff; font-size:16px; font-weight:700; }
-    .summary .strong { font-weight:700; background:#f5f5f5; }
-    .ai { background:#f8f9fb; border-left:4px solid #F5A623; padding:14px 16px; font-size:12px; line-height:1.6; white-space:pre-wrap; border-radius:0 6px 6px 0; }
+    .summary .final { background:#16181C; color:#FDE68A; font-family:'Oswald',sans-serif; font-size:16px; font-weight:700; }
+    .summary .strong { font-weight:700; background:#EFEFEC; }
+    .ai { background:#EFEFEC; border-left:4px solid #FBBF24; padding:14px 16px; font-size:12px; line-height:1.6; white-space:pre-wrap; border-radius:0; }
     .two { display:flex; gap:18px; }
     .two > div { flex:1; }
     .sign { margin-top:40px; display:flex; justify-content:space-between; font-size:12px; }
     .sign div { width:45%; }
-    .sign .line { margin-top:42px; border-top:1px solid #999; padding-top:4px; color:#666; }
-    .foot { margin-top:24px; text-align:center; color:#999; font-size:10px; border-top:1px solid #eee; padding-top:10px; line-height:1.6; }
-    .ident { font-size:10px; color:#666; margin-top:2px; line-height:1.4; }
+    .sign .line { margin-top:42px; border-top:1px solid #1E2024; padding-top:4px; color:#5D6067; }
+    .foot { margin-top:24px; text-align:center; color:#5D6067; font-size:10px; border-top:1px solid #D8D8D4; padding-top:10px; line-height:1.6; }
+    .ident { font-size:10px; color:#5D6067; margin-top:2px; line-height:1.4; }
     .kpis { display:flex; gap:10px; margin:4px 0 20px; }
-    .kpis > div { flex:1; border:1px solid #d8dee8; border-radius:8px; padding:11px 12px; text-align:center; }
-    .kpis .k-lbl { font-size:9px; text-transform:uppercase; letter-spacing:0.6px; color:#777; margin-bottom:5px; }
-    .kpis .k-val { font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; }
-    .kpis .k-rev { color:#127a32; }
-    .kpis .k-exp { color:#c0392b; }
-    .kpis .k-sol { color:#1a2332; }
+    .kpis > div { flex:1; border:1px solid #D8D8D4; border-radius:0; padding:11px 12px; text-align:center; background:#FFFFFF; }
+    .kpis .k-lbl { font-size:9px; text-transform:uppercase; letter-spacing:0.6px; color:#5D6067; margin-bottom:5px; font-weight:600; }
+    .kpis .k-val { font-family:'Oswald',sans-serif; font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .kpis .k-rev { color:#2E7D4F; }
+    .kpis .k-exp { color:#B0342B; }
+    .kpis .k-sol { color:#16181C; }
     h2, table { break-inside:avoid; }
     thead { display:table-header-group; }
     tr { break-inside:avoid; }
     .fund { display:flex; gap:14px; margin-bottom:6px; }
-    .fund > div { flex:1; background:#f4f7fb; border:1px solid #d8e2ef; border-radius:8px; padding:11px 14px; }
-    .fund .f-lbl { font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#666; margin-bottom:3px; }
-    .fund .f-val { font-size:15px; font-weight:800; }
+    .fund > div { flex:1; background:#FFFFFF; border:1px solid #D8D8D4; border-radius:0; padding:11px 14px; }
+    .fund .f-lbl { font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#5D6067; margin-bottom:3px; font-weight:600; }
+    .fund .f-val { font-family:'Oswald',sans-serif; font-size:15px; font-weight:700; }
     /* -- Impression compacte : moins d'espaces, moins de feuilles -- */
     body { padding:16px 20px !important; font-size:12px !important; }
     .head { padding-bottom:9px !important; margin-bottom:11px !important; }
@@ -6786,8 +6974,8 @@ function exportWeeklyPDF() {
     ul, ol { margin:4px 0 !important; }
     /* Coupure resume (page 1) / annexes (pages suivantes) */
     .page-break { break-before:page; page-break-before:always; height:0; }
-    .annexe-titre { font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#888; border-bottom:1.5px solid #ccc; padding-bottom:5px; margin:4px 0 12px; font-weight:700; }
-    @media print { body { padding:0; } @page { margin:1cm; } }
+    .annexe-titre { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#5D6067; border-bottom:1.5px solid #FBBF24; padding-bottom:5px; margin:4px 0 12px; font-weight:700; }
+    @media print { body { padding:0; background:#fff; } @page { margin:1cm; } }
   </style></head><body>
     <div class="head">
       <div class="head-left">
@@ -6809,18 +6997,18 @@ function exportWeeklyPDF() {
     <div class="kpis">
       <div><div class="k-lbl">Recette perçue</div><div class="k-val k-rev">${f(totRevenue)}</div></div>
       <div><div class="k-lbl">Total dépenses</div><div class="k-val k-exp">${f(totTruckExp+totWorkers+totOthers)}</div></div>
-      <div><div class="k-lbl">Solde final</div><div class="k-val k-sol" style="color:${soldeFinal>=0?'#127a32':'#c0392b'};">${f(soldeFinal)}</div></div>
+      <div><div class="k-lbl">Solde final</div><div class="k-val k-sol" style="color:${soldeFinal>=0?'#2E7D4F':'#B0342B'};">${f(soldeFinal)}</div></div>
     </div>
 
     <h2>Le compte de la semaine</h2>
     <div class="summary">
       ${reportRecu>0 ? `<div><span>Report de la semaine précédente</span><span class="num revenue">${f(reportRecu)}</span></div>` : ''}
       <div><span>Recette camions (perçue)</span><span class="num revenue">${f(totRevenue)}</span></div>
-      ${totManque>0 ? `<div style="font-size:12px; color:#c0392b;"><span>　⚠️ Manque à gagner (attendu non perçu)</span><span class="num">${f(totManque)}</span></div>` : ''}
+      ${totManque>0 ? `<div style="font-size:12px; color:#B0342B;"><span>　⚠️ Manque à gagner (attendu non perçu)</span><span class="num">${f(totManque)}</span></div>` : ''}
       <div><span>− Dépenses sur camions</span><span class="num expense">${f(totTruckExp)}</span></div>
-      <div style="font-size:12px; color:#666;"><span>　⚡ dont pannes imprévues (lun-ven)</span><span class="num">${f(totImprPdf)}</span></div>
-      <div style="font-size:12px; color:#666;"><span>　🔧 dont maintenance week-end</span><span class="num">${f(totWkndPdf)}</span></div>
-      ${totPieces>0 ? `<div style="font-size:12px; color:#666;"><span>　🔩 dont pièces de rechange</span><span class="num">${f(totPieces)}</span></div>` : ''}
+      <div style="font-size:12px; color:#5D6067;"><span>　⚡ dont pannes imprévues (lun-ven)</span><span class="num">${f(totImprPdf)}</span></div>
+      <div style="font-size:12px; color:#5D6067;"><span>　🔧 dont maintenance week-end</span><span class="num">${f(totWkndPdf)}</span></div>
+      ${totPieces>0 ? `<div style="font-size:12px; color:#5D6067;"><span>　🔩 dont pièces de rechange</span><span class="num">${f(totPieces)}</span></div>` : ''}
       <div class="strong"><span>= Solde après dépenses camions</span><span class="num">${f(soldeCamions)}</span></div>
       <div><span>− Paiement ouvriers</span><span class="num expense">${f(totWorkers)}</span></div>
       <div><span>− Autres dépenses</span><span class="num expense">${f(totOthers)}</span></div>
@@ -6833,7 +7021,7 @@ function exportWeeklyPDF() {
       ${remis !== null ? `<div><span>Montant réellement remis</span><span class="num">${f(remis)}</span></div>
       <div class="strong"><span>Écart</span><span class="num ${ecart<0?'neg':(ecart>0?'':'pos')}">${(ecart>0?'+':'')+ (ecart||0).toLocaleString('fr-FR')} FCFA</span></div>` : ''}
     </div>
-    ${justifNote ? `<div class="ai" style="border-left-color:#c0392b;"><strong>Explication :</strong> ${justifNote.replace(/</g,'&lt;')}</div>` : ''}` : ''}
+    ${justifNote ? `<div class="ai" style="border-left-color:#B0342B;"><strong>Explication :</strong> ${justifNote.replace(/</g,'&lt;')}</div>` : ''}` : ''}
 
     ${fundHtml}
 
@@ -6849,13 +7037,13 @@ function exportWeeklyPDF() {
     <h2>Paiement des ouvriers</h2>
     <table>
       <thead><tr><th>Ouvrier</th><th>Camion</th><th>Motif</th><th class="num">Montant</th></tr></thead>
-      <tbody>${workersRows}<tr style="background:#f5f5f5;font-weight:700"><td colspan="3">Total ouvriers</td><td class="num">${totWorkers.toLocaleString('fr-FR')}</td></tr></tbody>
+      <tbody>${workersRows}<tr style="background:#EFEFEC;font-weight:700"><td colspan="3">Total ouvriers</td><td class="num">${totWorkers.toLocaleString('fr-FR')}</td></tr></tbody>
     </table>
 
     <h2>Autres dépenses extérieures</h2>
     <table>
       <thead><tr><th>Désignation</th><th class="num">Montant</th></tr></thead>
-      <tbody>${othersRows}<tr style="background:#f5f5f5;font-weight:700"><td>Total</td><td class="num">${totOthers.toLocaleString('fr-FR')}</td></tr></tbody>
+      <tbody>${othersRows}<tr style="background:#EFEFEC;font-weight:700"><td>Total</td><td class="num">${totOthers.toLocaleString('fr-FR')}</td></tr></tbody>
     </table>
 
     ${immRows ? `<h2>Camions immobilisés</h2>
@@ -6976,40 +7164,16 @@ function scoreGarage(garageId) {
   };
 }
 
-// ─── CAISSE FLOTTE ───────────────────────────────────────
-function soldeCaisse() {
-  return caisseFlotte.reduce((s, m) => s + (m.type === 'entree' ? m.montant : -m.montant), 0);
-}
-
-// Le solde de la caisse flotte, sans les sorties automatiques liées aux
-// dépenses de maintenance (maintId renseigné) : ces dépenses sont déjà
-// comptées dans le suivi hebdomadaire (soldeFinalSemaine). Les additionner
-// aussi ici ferait payer la même dépense deux fois dans le total du
-// tableau de bord. Les apports (DG/DSN/recette) et les sorties manuelles
-// depuis la page Caisse (sans lien maintenance) restent comptés.
-function soldeCaisseSansDoublons() {
-  return caisseFlotte.reduce((s, m) => {
-    if (m.type === 'entree') return s + m.montant;
-    if (m.maintId) return s; // déjà compté dans le bilan hebdomadaire
-    return s - m.montant;
-  }, 0);
-}
-
+// ─── CAISSE FLOTTE (ancien système — compatibilité) ───────
 function sortirCaisse(montant, motif, maintId) {
-  caisseFlotte.push({
-    id: Date.now() + Math.floor(Math.random() * 1000),
-    date: new Date().toISOString().slice(0, 10),
-    type: 'sortie', montant: montant, motif: motif,
-    maintId: maintId || null, recu: false
-  });
-  saveCore();
+  ajouterMouvementCaisse({ origine:'depense_maintenance', montant, motif, maintId });
 }
 
 // Les trois provenances de l'argent qui entre en caisse.
 // Le DG veut savoir d'où vient l'argent, pas seulement combien il reste.
 const SOURCES_CAISSE = {
   recette: { label: 'Recette chauffeurs', court: 'Recette', motif: 'Part de la recette gardée pour les pannes', couleur: '#2E7D32' },
-  dg:      { label: 'Apport du DG',        court: 'DG',      motif: 'Argent avancé par le DG (personnel)',       couleur: '#1565C0' },
+  dg:      { label: 'Apport du DG',        court: 'DG',      motif: 'Argent avancé par le DG (personnel)',       couleur: '#16181C' },
   dsn:     { label: 'Caisse DSN',          court: 'DSN',     motif: 'Approvisionnement par la direction',        couleur: '#6A1B9A' }
 };
 
@@ -7026,17 +7190,17 @@ function entrerCaisse(source) {
     const raison = prompt('Motif de l\'apport (ex. « recette épuisée », « avance pannes semaine ») :', 'Recette épuisée — poursuite des pannes');
     if (raison && raison.trim()) motif = raison.trim();
   }
-  caisseFlotte.push({
-    id: Date.now(), date: (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : new Date().toISOString().slice(0, 10),
-    type: 'entree', source: source, montant: n, motif: motif,
-    maintId: null, recu: true
-  });
-  saveCore(); renderCaisse();
+  const dateMvt = (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : new Date().toISOString().slice(0, 10);
+  // Caisse unifiée : recette gardée = reserve_recette ; dg/dsn = apport_dg/apport_dsn.
+  const origineUnifiee = source === 'recette' ? 'reserve_recette' : (source === 'dg' ? 'apport_dg' : 'apport_dsn');
+  ajouterMouvementCaisse({ date: dateMvt, origine: origineUnifiee, montant: n, motif });
+  if (typeof renderWeekly === 'function') renderWeekly();
+  if (typeof renderDashboard === 'function') renderDashboard();
 }
 
 // ─── Rubrique dédiée : le point des fonds du DG ──────────
 function apportsDG() {
-  return caisseFlotte
+  return caisseFlotteDerivee()
     .filter(m => m.type === 'entree' && m.source === 'dg')
     .sort((a, b) => (new Date(a.date) - new Date(b.date)) || (a.id - b.id));
 }
@@ -7047,7 +7211,7 @@ function apportsDG() {
 function pointsTranchesDG() {
   const tranches = apportsDG();
   if (!tranches.length) return [];
-  const sorties = caisseFlotte
+  const sorties = caisseFlotteDerivee()
     .filter(m => m.type === 'sortie')
     .sort((a, b) => (new Date(a.date) - new Date(b.date)) || (a.id - b.id));
 
@@ -7094,7 +7258,7 @@ function renderApportDG() {
   box.innerHTML = points.map((p, idx) => {
     const t = p.tranche;
     const pct = t.montant > 0 ? Math.min(100, Math.round(p.consomme / t.montant * 100)) : 0;
-    const coul = p.reste < 0 ? '#C0392B' : (pct >= 85 ? 'var(--accent, #E29403)' : '#1565C0');
+    const coul = p.reste < 0 ? '#B0342B' : (pct >= 85 ? 'var(--accent, #FBBF24)' : '#16181C');
     const resteLab = p.reste < 0
       ? `Dépassé de ${Math.abs(p.reste).toLocaleString('fr-FR')} FCFA`
       : `Reste ${p.reste.toLocaleString('fr-FR')} FCFA`;
@@ -7105,7 +7269,7 @@ function renderApportDG() {
           <div style="font-size:12.5px; color:var(--concrete);">${t.motif || 'Apport du DG'}</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-family:ui-monospace,monospace; font-weight:800; font-size:16px; color:#1565C0;">${t.montant.toLocaleString('fr-FR')} FCFA</div>
+          <div style="font-family:ui-monospace,monospace; font-weight:800; font-size:16px; color:#16181C;">${t.montant.toLocaleString('fr-FR')} FCFA</div>
           <div style="font-size:11px; color:var(--concrete);">${p.couvertes.length} panne${p.couvertes.length>1?'s':''} couverte${p.couvertes.length>1?'s':''}</div>
         </div>
       </div>
@@ -7126,7 +7290,7 @@ function renderApportDG() {
   `<div style="border-top:1px solid rgba(255,255,255,0.08); margin-top:6px; padding-top:12px; display:flex; justify-content:space-between; align-items:baseline;">
     <span style="font-weight:700;">Total mis à disposition · reste global</span>
     <span style="font-family:ui-monospace,monospace; font-weight:800; font-size:15px;">
-      <span style="color:#1565C0;">${totalDonne.toLocaleString('fr-FR')}</span>
+      <span style="color:#16181C;">${totalDonne.toLocaleString('fr-FR')}</span>
       <span style="color:var(--concrete); font-weight:400;"> · reste </span>
       <span style="color:${totalReste<0?'#C0392B':'#1B6E45'};">${totalReste.toLocaleString('fr-FR')} FCFA</span>
     </span>
@@ -7198,7 +7362,7 @@ function pointPourDG() {
 
 // Enregistrer une dépense imputée à CET apport précis.
 function depenseSurTranche(trancheId) {
-  const t = caisseFlotte.find(x => String(x.id) === String(trancheId));
+  const t = caisseFlotteDerivee().find(x => String(x.id) === String(trancheId));
   if (!t) return;
   const p = pointsTranchesDG().find(x => String(x.tranche.id) === String(trancheId));
   const reste = p ? p.reste : t.montant;
@@ -7212,13 +7376,8 @@ function depenseSurTranche(trancheId) {
     if (!confirm('Cette dépense (' + n.toLocaleString('fr-FR') + ' FCFA) dépasse le reste de cet apport (' + reste.toLocaleString('fr-FR') + ' FCFA).\n\nL\'enregistrer quand même ?')) return;
   }
   const d = prompt('Date (AAAA-MM-JJ) — laisser vide pour aujourd\'hui :', new Date().toISOString().slice(0,10));
-  caisseFlotte.push({
-    id: Date.now() + Math.floor(Math.random()*1000),
-    date: (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : new Date().toISOString().slice(0,10),
-    type: 'sortie', montant: n, motif: motif.trim(),
-    maintId: null, trancheId: t.id, recu: false
-  });
-  saveCore();
+  const dateMvt = (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : new Date().toISOString().slice(0,10);
+  ajouterMouvementCaisse({ date: dateMvt, origine:'autre', montant:n, motif:motif.trim(), trancheId: t.id });
   renderCaisse();
 }
 
@@ -7247,13 +7406,13 @@ function imprimerPointDGComplet() {
     const t = p.tranche;
     const rows = p.couvertes.length
       ? p.couvertes.map((s,i) => `<tr><td>${i+1}</td><td>${s.date}</td><td>${s.motif}</td><td class="num expense">${f(s.montant)}</td></tr>`).join('')
-      : '<tr><td colspan="4" style="text-align:center;color:#888;">Aucune dépense imputée à cet apport.</td></tr>';
+      : '<tr><td colspan="4" style="text-align:center;color:#5D6067;">Aucune dépense imputée à cet apport.</td></tr>';
     const resteLab = p.reste >= 0 ? 'Reste disponible' : 'Dépassement';
     const resteVal = p.reste >= 0 ? f(p.reste) : f(Math.abs(p.reste));
-    const resteCol = p.reste >= 0 ? '#127a32' : '#c0392b';
+    const resteCol = p.reste >= 0 ? '#2E7D4F' : '#B0342B';
     return `<div class="tranche">
       <div class="t-head">
-        <div><span class="t-num">Apport ${idx+1}</span> — reçu le <strong>${t.date}</strong>${t.motif ? ` <span style="color:#666;">(${t.motif})</span>` : ''}</div>
+        <div><span class="t-num">Apport ${idx+1}</span> — reçu le <strong>${t.date}</strong>${t.motif ? ` <span style="color:#5D6067;">(${t.motif})</span>` : ''}</div>
         <div class="t-montant">${f(t.montant)}</div>
       </div>
       <table>
@@ -7269,38 +7428,39 @@ function imprimerPointDGComplet() {
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
   <title>Point des apports du DG — ${today}</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
     * { box-sizing:border-box; }
-    body { font-family:'Segoe UI', Arial, sans-serif; color:#1a2332; margin:0; padding:28px 32px; font-size:13px; }
-    .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #1a2332; padding-bottom:14px; margin-bottom:18px; }
+    body { font-family:'Barlow', Arial, sans-serif; color:#1E2024; margin:0; padding:28px 32px; font-size:13px; background:#FAFAF8; }
+    .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px double #16181C; padding-bottom:14px; margin-bottom:18px; }
     .head-left { display:flex; align-items:center; gap:14px; }
-    .logo { width:54px; height:54px; border-radius:10px; object-fit:cover; }
-    .logo-fallback { width:54px; height:54px; border-radius:10px; background:#1a2332; color:#F5A623; display:flex; align-items:center; justify-content:center; font-size:26px; }
-    h1 { font-size:20px; margin:6px 0 0; color:#1a2332; }
-    .company { font-size:15px; font-weight:700; }
-    .ident { font-size:10px; color:#666; margin-top:2px; }
-    .sub { color:#666; font-size:12px; margin-top:2px; }
-    .meta { text-align:right; font-size:11px; color:#555; }
+    .logo { width:54px; height:54px; border-radius:50%; object-fit:cover; border:2px solid #FBBF24; }
+    .logo-fallback { width:54px; height:54px; border-radius:50%; background:#16181C; color:#FDE68A; display:flex; align-items:center; justify-content:center; font-size:22px; font-family:'Oswald',sans-serif; font-weight:700; border:2px solid #FBBF24; }
+    h1 { font-family:'Oswald',sans-serif; font-size:20px; margin:6px 0 0; color:#16181C; font-weight:700; }
+    .company { font-family:'Oswald',sans-serif; font-size:15px; font-weight:700; color:#16181C; }
+    .ident { font-size:10px; color:#5D6067; margin-top:2px; }
+    .sub { color:#5D6067; font-size:12px; margin-top:2px; }
+    .meta { text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5D6067; }
     .synth { display:flex; gap:12px; margin-bottom:22px; }
-    .synth > div { flex:1; border:1px solid #d8dee8; border-radius:8px; padding:12px 14px; text-align:center; }
-    .synth .s-lbl { font-size:9px; text-transform:uppercase; letter-spacing:0.6px; color:#777; margin-bottom:5px; }
-    .synth .s-val { font-size:17px; font-weight:800; font-variant-numeric:tabular-nums; }
-    .tranche { border:1px solid #d8e2ef; border-radius:10px; padding:14px 16px; margin-bottom:16px; break-inside:avoid; }
+    .synth > div { flex:1; border:1px solid #D8D8D4; border-radius:0; padding:12px 14px; text-align:center; background:#FFFFFF; }
+    .synth .s-lbl { font-size:9px; text-transform:uppercase; letter-spacing:0.6px; color:#5D6067; margin-bottom:5px; font-weight:600; }
+    .synth .s-val { font-family:'Oswald',sans-serif; font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .tranche { border:1px solid #D8D8D4; border-radius:0; padding:14px 16px; margin-bottom:16px; break-inside:avoid; background:#FFFFFF; }
     .t-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; font-size:14px; }
-    .t-num { background:#1565C0; color:#fff; padding:2px 9px; border-radius:5px; font-size:12px; font-weight:700; }
-    .t-montant { font-size:17px; font-weight:800; color:#1565C0; font-variant-numeric:tabular-nums; }
+    .t-num { background:#16181C; color:#FDE68A; padding:2px 9px; border-radius:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; }
+    .t-montant { font-family:'Oswald',sans-serif; font-size:17px; font-weight:700; color:#16181C; font-variant-numeric:tabular-nums; }
     .t-solde { text-align:right; margin-top:8px; font-size:13px; }
     table { width:100%; border-collapse:collapse; }
     thead { display:table-header-group; }
-    th { background:#1a2332; color:#fff; text-align:left; padding:7px 10px; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; }
-    td { padding:6px 10px; border-bottom:1px solid #eee; }
-    tbody tr:nth-child(even) { background:#fafbfc; }
-    .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-    .expense { color:#c0392b; font-weight:700; }
-    .totrow td { border-top:2px solid #1a2332; font-weight:700; background:#f5f5f5; }
+    th { background:#16181C; color:#FAFAF8; text-align:left; padding:7px 10px; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+    td { padding:6px 10px; border-bottom:1px solid #D8D8D4; }
+    tbody tr:nth-child(even) { background:#F5F5F3; }
+    .num { text-align:right; font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .expense { color:#B0342B; font-weight:700; }
+    .totrow td { border-top:2px solid #16181C; font-weight:700; background:#EFEFEC; }
     .sign { margin-top:40px; display:flex; justify-content:space-between; font-size:12px; }
     .sign div { width:45%; }
-    .sign .line { margin-top:42px; border-top:1px solid #999; padding-top:4px; color:#666; }
-    .foot { margin-top:24px; text-align:center; color:#999; font-size:10px; border-top:1px solid #eee; padding-top:10px; line-height:1.6; }
+    .sign .line { margin-top:42px; border-top:1px solid #1E2024; padding-top:4px; color:#5D6067; }
+    .foot { margin-top:24px; text-align:center; color:#5D6067; font-size:10px; border-top:1px solid #D8D8D4; padding-top:10px; line-height:1.6; }
     /* -- Impression compacte : moins d'espaces, moins de feuilles -- */
     body { padding:16px 20px !important; font-size:12px !important; }
     .head { padding-bottom:9px !important; margin-bottom:11px !important; }
@@ -7321,7 +7481,7 @@ function imprimerPointDGComplet() {
     .foot { margin-top:14px !important; padding-top:7px !important; }
     p { margin:5px 0 !important; }
     ul, ol { margin:4px 0 !important; }
-    @media print { body { padding:0; } @page { margin:1cm; } }
+    @media print { body { padding:0; background:#fff; } @page { margin:1cm; } }
   </style></head><body>
     <div class="head">
       <div class="head-left">
@@ -7337,9 +7497,9 @@ function imprimerPointDGComplet() {
     </div>
 
     <div class="synth">
-      <div><div class="s-lbl">Total mis à disposition</div><div class="s-val" style="color:#1565C0;">${f(totalDonne)}</div></div>
-      <div><div class="s-lbl">Total consommé en pannes</div><div class="s-val" style="color:#c0392b;">${f(totalConsomme)}</div></div>
-      <div><div class="s-lbl">Reste global</div><div class="s-val" style="color:${totalReste>=0?'#127a32':'#c0392b'};">${f(totalReste)}</div></div>
+      <div><div class="s-lbl">Total mis à disposition</div><div class="s-val" style="color:#16181C;">${f(totalDonne)}</div></div>
+      <div><div class="s-lbl">Total consommé en pannes</div><div class="s-val" style="color:#B0342B;">${f(totalConsomme)}</div></div>
+      <div><div class="s-lbl">Reste global</div><div class="s-val" style="color:${totalReste>=0?'#2E7D4F':'#B0342B'};">${f(totalReste)}</div></div>
     </div>
 
     ${sections}
@@ -7377,44 +7537,45 @@ function imprimerTrancheDG(trancheId) {
 
   const rows = p.couvertes.length
     ? p.couvertes.map((s,i) => `<tr><td>${i+1}</td><td>${s.date}</td><td>${s.motif}</td><td class="num expense">${f(s.montant)}</td></tr>`).join('')
-    : '<tr><td colspan="4" style="text-align:center;color:#888;">Aucune dépense imputée à cet apport pour l\'instant.</td></tr>';
+    : '<tr><td colspan="4" style="text-align:center;color:#5D6067;">Aucune dépense imputée à cet apport pour l\'instant.</td></tr>';
 
   const resteLab = p.reste >= 0 ? 'Reste disponible' : 'Dépassement';
   const resteVal = p.reste >= 0 ? f(p.reste) : f(Math.abs(p.reste));
-  const resteCol = p.reste >= 0 ? '#127a32' : '#c0392b';
+  const resteCol = p.reste >= 0 ? '#2E7D4F' : '#B0342B';
 
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
   <title>Point apport DG — ${t.date}</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
     * { box-sizing:border-box; }
-    body { font-family:'Segoe UI', Arial, sans-serif; color:#1a2332; margin:0; padding:28px 32px; font-size:13px; }
-    .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #1a2332; padding-bottom:14px; margin-bottom:18px; }
+    body { font-family:'Barlow', Arial, sans-serif; color:#1E2024; margin:0; padding:28px 32px; font-size:13px; background:#FAFAF8; }
+    .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px double #16181C; padding-bottom:14px; margin-bottom:18px; }
     .head-left { display:flex; align-items:center; gap:14px; }
-    .logo { width:54px; height:54px; border-radius:10px; object-fit:cover; }
-    .logo-fallback { width:54px; height:54px; border-radius:10px; background:#1a2332; color:#F5A623; display:flex; align-items:center; justify-content:center; font-size:26px; }
-    h1 { font-size:20px; margin:0; color:#1a2332; }
-    .company { font-size:15px; font-weight:700; }
-    .sub { color:#666; font-size:12px; margin-top:2px; }
-    .meta { text-align:right; font-size:11px; color:#555; }
-    .box { background:#f4f7fb; border:1px solid #d8e2ef; border-radius:8px; padding:14px 16px; margin-bottom:18px; display:flex; justify-content:space-between; }
-    .box .lbl { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#666; }
-    .box .val { font-size:20px; font-weight:800; color:#1565C0; }
-    h2 { font-size:14px; margin:22px 0 8px; padding-bottom:5px; border-bottom:2px solid #1a2332; }
+    .logo { width:54px; height:54px; border-radius:50%; object-fit:cover; border:2px solid #FBBF24; }
+    .logo-fallback { width:54px; height:54px; border-radius:50%; background:#16181C; color:#FDE68A; display:flex; align-items:center; justify-content:center; font-size:22px; font-family:'Oswald',sans-serif; font-weight:700; border:2px solid #FBBF24; }
+    h1 { font-family:'Oswald',sans-serif; font-size:20px; margin:0; color:#16181C; font-weight:700; }
+    .company { font-family:'Oswald',sans-serif; font-size:15px; font-weight:700; color:#16181C; }
+    .sub { color:#5D6067; font-size:12px; margin-top:2px; }
+    .meta { text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5D6067; }
+    .box { background:#FFFFFF; border:1px solid #D8D8D4; border-radius:0; padding:14px 16px; margin-bottom:18px; display:flex; justify-content:space-between; }
+    .box .lbl { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#5D6067; font-weight:600; }
+    .box .val { font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; color:#16181C; }
+    h2 { font-family:'Oswald',sans-serif; font-size:14px; margin:22px 0 8px; padding-bottom:5px; border-bottom:2px solid #FBBF24; color:#16181C; font-weight:700; }
     table { width:100%; border-collapse:collapse; margin-bottom:6px; }
-    th { background:#1a2332; color:#fff; text-align:left; padding:8px 10px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
-    td { padding:7px 10px; border-bottom:1px solid #eee; }
-    tbody tr:nth-child(even) { background:#fafbfc; }
-    .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-    .expense { color:#c0392b; font-weight:700; }
-    .totrow td { border-top:2px solid #1a2332; font-weight:700; font-size:14px; }
+    th { background:#16181C; color:#FAFAF8; text-align:left; padding:8px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; }
+    td { padding:7px 10px; border-bottom:1px solid #D8D8D4; }
+    tbody tr:nth-child(even) { background:#F5F5F3; }
+    .num { text-align:right; font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .expense { color:#B0342B; font-weight:700; }
+    .totrow td { border-top:2px solid #16181C; font-weight:700; font-size:14px; }
     .synth { margin-top:16px; display:flex; gap:16px; }
-    .synth > div { flex:1; background:#f8f9fb; border-radius:8px; padding:12px 14px; text-align:center; }
-    .synth .lbl { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#666; margin-bottom:4px; }
-    .synth .v { font-size:17px; font-weight:800; }
+    .synth > div { flex:1; background:#EFEFEC; border-radius:0; padding:12px 14px; text-align:center; }
+    .synth .lbl { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#5D6067; margin-bottom:4px; font-weight:600; }
+    .synth .v { font-family:'Oswald',sans-serif; font-size:17px; font-weight:700; }
     .sign { margin-top:44px; display:flex; justify-content:space-between; font-size:12px; }
     .sign div { width:45%; }
-    .sign .line { margin-top:42px; border-top:1px solid #999; padding-top:4px; color:#666; }
-    .foot { margin-top:24px; text-align:center; color:#999; font-size:10px; border-top:1px solid #eee; padding-top:10px; }
+    .sign .line { margin-top:42px; border-top:1px solid #1E2024; padding-top:4px; color:#5D6067; }
+    .foot { margin-top:24px; text-align:center; color:#5D6067; font-size:10px; border-top:1px solid #D8D8D4; padding-top:10px; }
     /* -- Impression compacte : moins d'espaces, moins de feuilles -- */
     body { padding:16px 20px !important; font-size:12px !important; }
     .head { padding-bottom:9px !important; margin-bottom:11px !important; }
@@ -7435,7 +7596,7 @@ function imprimerTrancheDG(trancheId) {
     .foot { margin-top:14px !important; padding-top:7px !important; }
     p { margin:5px 0 !important; }
     ul, ol { margin:4px 0 !important; }
-    @media print { body { padding:0; } @page { margin:1cm; } }
+    @media print { body { padding:0; background:#fff; } @page { margin:1cm; } }
   </style></head><body>
     <div class="head">
       <div class="head-left">
@@ -7450,7 +7611,7 @@ function imprimerTrancheDG(trancheId) {
     </div>
 
     <div class="box">
-      <div><div class="lbl">Somme reçue du DG — le ${t.date}</div>${t.motif ? `<div style="font-size:12px;color:#555;margin-top:3px;">${t.motif}</div>`:''}</div>
+      <div><div class="lbl">Somme reçue du DG — le ${t.date}</div>${t.motif ? `<div style="font-size:12px;color:#5D6067;margin-top:3px;">${t.motif}</div>`:''}</div>
       <div class="val">${f(t.montant)}</div>
     </div>
 
@@ -7463,8 +7624,8 @@ function imprimerTrancheDG(trancheId) {
     </table>
 
     <div class="synth">
-      <div><div class="lbl">Somme reçue</div><div class="v" style="color:#1565C0;">${f(t.montant)}</div></div>
-      <div><div class="lbl">Consommé</div><div class="v" style="color:#c0392b;">${f(p.consomme)}</div></div>
+      <div><div class="lbl">Somme reçue</div><div class="v" style="color:#16181C;">${f(t.montant)}</div></div>
+      <div><div class="lbl">Consommé</div><div class="v" style="color:#B0342B;">${f(p.consomme)}</div></div>
       <div><div class="lbl">${resteLab}</div><div class="v" style="color:${resteCol};">${resteVal}</div></div>
     </div>
 
@@ -7494,7 +7655,7 @@ function afficherPointDG(txt) {
   const zone = document.getElementById('apport-dg-liste');
   const bloc = document.createElement('div');
   bloc.className = 'card';
-  bloc.style.cssText = 'background:rgba(21,101,192,0.10); border-color:#1565C0; margin-top:14px;';
+  bloc.style.cssText = 'background:rgba(184,146,61,0.10); border-color:#FBBF24; margin-top:14px;';
   bloc.innerHTML = `<div style="font-weight:700; margin-bottom:8px;">Point prêt à envoyer au DG</div>
     <pre style="white-space:pre-wrap; font-family:inherit; font-size:13px; margin:0 0 12px; color:var(--ink);">${txt}</pre>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -7506,13 +7667,13 @@ function afficherPointDG(txt) {
 
 // Total entré pour une source donnée.
 function totalSource(source) {
-  return caisseFlotte
+  return caisseFlotteDerivee()
     .filter(m => m.type === 'entree' && (m.source || 'dsn') === source)
     .reduce((s, m) => s + m.montant, 0);
 }
 
 function basculerRecu(id) {
-  const m = caisseFlotte.find(x => x.id === id);
+  const m = caisseUnifiee.find(x => x.id === id);
   if (!m) return;
   m.recu = !m.recu;
   saveCore(); renderCaisse();
@@ -7520,7 +7681,7 @@ function basculerRecu(id) {
 
 function supprimerMvtCaisse(id) {
   if (!confirm('Supprimer ce mouvement de caisse ?')) return;
-  caisseFlotte = caisseFlotte.filter(x => x.id !== id);
+  caisseUnifiee = caisseUnifiee.filter(x => x.id !== id);
   saveCore();
   if (navigator.onLine) sb.del('caisse', id).catch(()=>{});
   renderCaisse();
@@ -7632,10 +7793,10 @@ function renderGarages() {
 function renderCaisse() {
   const solde = soldeCaisse();
   const auj = new Date();
-  const sorties30 = caisseFlotte
+  const sorties30 = caisseFlotteDerivee()
     .filter(m => m.type === 'sortie' && joursEntre(m.date, auj) <= 30)
     .reduce((s, m) => s + m.montant, 0);
-  const sansRecu = caisseFlotte.filter(m => m.type === 'sortie' && !m.recu).length;
+  const sansRecu = caisseFlotteDerivee().filter(m => m.type === 'sortie' && !m.recu).length;
 
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('kpi-solde', solde.toLocaleString('fr-FR'));
@@ -7656,7 +7817,7 @@ function renderCaisse() {
       boxSrc.innerHTML = '<p style="color:var(--concrete);font-size:13px;margin:0;">Aucune entrée pour l\'instant. Utilisez « + Recette », « + Apport DG » ou « + Caisse DSN » ci-dessous.</p>';
     } else {
       // Pannes payées, réparties : DG (via enveloppes) vs recette/DSN.
-      const totSorties = caisseFlotte.filter(m => m.type === 'sortie').reduce((s, m) => s + m.montant, 0);
+      const totSorties = caisseFlotteDerivee().filter(m => m.type === 'sortie').reduce((s, m) => s + m.montant, 0);
       let dgConsomme = 0, dgReste = 0;
       if (typeof pointsTranchesDG === 'function') {
         pointsTranchesDG().forEach(p => { dgConsomme += p.consomme; if (p.reste > 0) dgReste += p.reste; });
@@ -7691,7 +7852,7 @@ function renderCaisse() {
       }
       // Apport du DG : suivi précis par enveloppes
       if (entreDG > 0) {
-        h += ligne('#1565C0', '🏦 Apports du DG', entreDG, dgConsomme, entreDG - dgConsomme,
+        h += ligne('#16181C', '🏦 Apports du DG', entreDG, dgConsomme, entreDG - dgConsomme,
           'Détail apport par apport dans la rubrique ci-dessous.');
       }
 
@@ -7717,12 +7878,13 @@ function renderCaisse() {
 
   const box = document.getElementById('caisse-liste');
   if (!box) return;
-  if (!caisseFlotte.length) {
+  const cfd = caisseFlotteDerivee();
+  if (!cfd.length) {
     box.innerHTML = '<p style="text-align:center;color:var(--concrete);padding:28px;">Caisse vide. Approvisionnez-la pour que le terrain puisse payer sans vous appeler.</p>';
     return;
   }
 
-  const mvts = caisseFlotte.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  const mvts = cfd.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
   box.innerHTML = `<table class="data-table"><thead><tr>
       <th>Date</th><th>Provenance / motif</th><th>Reçu</th><th style="text-align:right;">Montant</th><th></th>
     </tr></thead><tbody>` +
@@ -8262,7 +8424,7 @@ async function validerPanneEnMaintenance(panneId, plate, description) {
 }
 
 // ─── SAUVEGARDE & RESTAURATION ───────────────────────────
-const BACKUP_KEYS = ['fleetbenne_vehicles','fleetbenne_drivers','fleetbenne_maintenances','fleetbenne_garages','fleetbenne_caisse','fleetbenne_workers','fleetbenne_expenses','fleetbenne_immobilized','fleetbenne_debts','fleetbenne_weekly_v2','fleetbenne_prefs'];
+const BACKUP_KEYS = ['fleetbenne_vehicles','fleetbenne_drivers','fleetbenne_maintenances','fleetbenne_garages','fleetbenne_caisse_unifiee','fleetbenne_workers','fleetbenne_expenses','fleetbenne_immobilized','fleetbenne_debts','fleetbenne_weekly_v2','fleetbenne_prefs'];
 
 function showBackupMsg(text, ok=true) {
   const el = document.getElementById('backup-msg');
@@ -8635,12 +8797,7 @@ function saveExpress() {
     const trVal = document.getElementById('xp-tranche') ? document.getElementById('xp-tranche').value : '';
     const trancheId = trVal ? (isNaN(parseInt(trVal)) ? trVal : parseInt(trVal)) : null;
     if (amount > 0 && (trancheId !== null || amount <= seuil)) {
-      caisseFlotte.push({
-        id: Date.now() + Math.floor(Math.random()*1000),
-        date: today, type: 'sortie', montant: amount,
-        motif: rec.type + ' — ' + truck,
-        maintId: rec.id, trancheId: trancheId, recu: false
-      });
+      ajouterMouvementCaisse({ date: today, origine:'depense_maintenance', montant:amount, plate:truck, motif: rec.type + ' — ' + truck, maintId: rec.id, trancheId });
       rec.caisseFait = true;
     }
     maintenances.push(rec);
@@ -8648,24 +8805,23 @@ function saveExpress() {
     if (typeof renderMaintenanceTable === 'function') renderMaintenanceTable(maintenances);
     if (typeof renderCaisse === 'function') renderCaisse();
   } else if (type === 'cashin') {
-    // Entrée directe en caisse flotte, avec sa provenance
+    // Entrée directe en caisse, avec sa provenance
     const source = document.getElementById('xp-source').value;
-    const meta = (typeof SOURCES_CAISSE !== 'undefined') ? SOURCES_CAISSE[source] : null;
-    let motif = meta ? meta.motif : 'Entrée en caisse';
+    let motif = (typeof SOURCES_CAISSE !== 'undefined' && SOURCES_CAISSE[source]) ? SOURCES_CAISSE[source].motif : 'Entrée en caisse';
     if (source === 'dg' && reason) motif = reason;
-    caisseFlotte.push({
-      id: Date.now(), date: new Date().toISOString().slice(0,10),
-      type: 'entree', source: source, montant: amount, motif: motif,
-      maintId: null, recu: true
-    });
-    saveCore();
+    const origineUnifiee = source === 'recette' ? 'reserve_recette' : (source === 'dg' ? 'apport_dg' : 'apport_dsn');
+    ajouterMouvementCaisse({ origine: origineUnifiee, montant: amount, motif });
     if (typeof renderCaisse === 'function') renderCaisse();
   } else if (type === 'worker') {
     if (!label) return;
-    wd.workers.push({ name:label, amount, camion:truck, reason });
+    const saisieRef = 'ouvrier|' + Date.now();
+    wd.workers.push({ name:label, amount, camion:truck, reason, saisieRef });
+    ajouterMouvementCaisse({ origine:'ouvrier', montant:amount, plate:truck, motif:label + (reason?' — '+reason:''), saisieRef });
   } else if (type === 'other') {
     if (!label) return;
-    wd.others.push({ label, amount });
+    const saisieRef = 'autre|' + Date.now();
+    wd.others.push({ label, amount, saisieRef });
+    ajouterMouvementCaisse({ origine:'autre', montant:amount, motif:label, saisieRef });
   }
   saveWeeklyData();
   closeModal('modal-express');
@@ -8881,11 +9037,11 @@ function renderAnnual() {
       </div>`;
     palmBox.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div style="border:1px solid rgba(46,125,50,0.3);border-radius:10px;overflow:hidden;">
-        <div style="background:#1a7a3f;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;">🏆 Les plus performants</div>
+        <div style="background:#2E7D4F;color:#FAFAF8;padding:8px 14px;font-size:12px;font-weight:700;font-family:'Oswald',sans-serif;">🏆 Les plus performants</div>
         ${top.map((r,i)=>ligne(r,i,true)).join('')}
       </div>
       <div style="border:1px solid rgba(192,57,43,0.3);border-radius:10px;overflow:hidden;">
-        <div style="background:#c0392b;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;">⚠️ À surveiller</div>
+        <div style="background:#B0342B;color:#FAFAF8;padding:8px 14px;font-size:12px;font-weight:700;font-family:'Oswald',sans-serif;">⚠️ À surveiller</div>
         ${bottom.map((r,i)=>ligne(r,i,false)).join('')}
       </div>
     </div>`;
@@ -8925,7 +9081,7 @@ function exportAnnualPDF() {
     tRev+=a.rev; tExp+=a.exp; tWpay+=a.wpay; tOth+=a.oth;
     moisRows.push(`<tr><td>${NOMS_MOIS[m]}</td><td class="num">${a.rev.toLocaleString('fr-FR')}</td><td class="num">${a.exp.toLocaleString('fr-FR')}</td><td class="num">${a.wpay.toLocaleString('fr-FR')}</td><td class="num">${a.oth.toLocaleString('fr-FR')}</td><td class="num ${a.solde>=0?'pos':'neg'}">${a.solde.toLocaleString('fr-FR')}</td></tr>`);
   }
-  const monthRowsHtml = moisRows.join('') || '<tr><td colspan="6" style="text-align:center;color:#999">Aucune donnée</td></tr>';
+  const monthRowsHtml = moisRows.join('') || '<tr><td colspan="6" style="text-align:center;color:#5D6067">Aucune donnée</td></tr>';
 
   const truckRows = agg.ranked.map((r,i) => `<tr><td>${i+1}. <strong>${r.plate}</strong></td><td class="num">${r.rev.toLocaleString('fr-FR')}</td><td class="num">${r.exp.toLocaleString('fr-FR')}</td><td class="num ${r.solde>=0?'pos':'neg'}">${r.solde.toLocaleString('fr-FR')}</td></tr>`).join('');
 
@@ -8949,27 +9105,28 @@ function exportAnnualPDF() {
 
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Bilan annuel — ${agg.year}</title>
   <style>
-    *{box-sizing:border-box;} body{font-family:'Segoe UI',Arial,sans-serif;color:#1a2332;margin:0;padding:28px 32px;font-size:13px;}
-    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a2332;padding-bottom:14px;margin-bottom:18px;}
-    .head-left{display:flex;align-items:center;gap:14px;} .logo{width:54px;height:54px;border-radius:10px;object-fit:cover;}
-    .logo-fallback{width:54px;height:54px;border-radius:10px;background:#1a2332;color:#F5A623;display:flex;align-items:center;justify-content:center;font-size:26px;}
-    h1{font-size:20px;margin:0;} .company{font-size:15px;font-weight:700;} .sub{color:#666;font-size:12px;margin-top:2px;}
-    .meta{text-align:right;font-size:11px;color:#555;}
-    h2{font-size:14px;margin:22px 0 8px;padding-bottom:5px;border-bottom:1px solid #ddd;}
-    table{width:100%;border-collapse:collapse;margin-bottom:6px;} th{background:#1a2332;color:#fff;text-align:left;padding:7px 9px;font-size:11px;text-transform:uppercase;}
-    td{padding:6px 9px;border-bottom:1px solid #eee;} .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-    .pos{color:#1a7a3f;font-weight:700;} .neg{color:#c0392b;font-weight:700;}
-    .total{background:#f5f5f5;font-weight:700;}
-    .summary{width:60%;margin-left:auto;border:1px solid #1a2332;border-radius:8px;overflow:hidden;}
-    .summary div{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #eee;} .summary div:last-child{border-bottom:none;}
-    .summary .final{background:#1a2332;color:#fff;font-size:16px;font-weight:700;}
-    .sign{margin-top:40px;display:flex;justify-content:space-between;font-size:12px;} .sign div{width:45%;} .sign .line{margin-top:42px;border-top:1px solid #999;padding-top:4px;color:#666;}
-    .foot{margin-top:24px;text-align:center;color:#999;font-size:10px;border-top:1px solid #eee;padding-top:10px;}
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+    *{box-sizing:border-box;} body{font-family:'Barlow',Arial,sans-serif;color:#1E2024;margin:0;padding:28px 32px;font-size:13px;background:#FAFAF8;}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #16181C;padding-bottom:14px;margin-bottom:18px;}
+    .head-left{display:flex;align-items:center;gap:14px;} .logo{width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #FBBF24;}
+    .logo-fallback{width:54px;height:54px;border-radius:50%;background:#16181C;color:#FDE68A;display:flex;align-items:center;justify-content:center;font-size:22px;font-family:'Oswald',sans-serif;font-weight:700;border:2px solid #FBBF24;}
+    h1{font-family:'Oswald',sans-serif;font-size:20px;margin:0;color:#16181C;font-weight:700;} .company{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#16181C;} .sub{color:#5D6067;font-size:12px;margin-top:2px;}
+    .meta{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:#5D6067;}
+    h2{font-family:'Oswald',sans-serif;font-size:14px;margin:22px 0 8px;padding-bottom:5px;border-bottom:2px solid #FBBF24;color:#16181C;font-weight:700;}
+    table{width:100%;border-collapse:collapse;margin-bottom:6px;} th{background:#16181C;color:#FAFAF8;text-align:left;padding:7px 9px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+    td{padding:6px 9px;border-bottom:1px solid #D8D8D4;} .num{text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;}
+    .pos{color:#2E7D4F;font-weight:700;} .neg{color:#B0342B;font-weight:700;}
+    .total{background:#EFEFEC;font-weight:700;}
+    .summary{width:60%;margin-left:auto;border:2px solid #16181C;border-radius:0;overflow:hidden;}
+    .summary div{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #D8D8D4;} .summary div:last-child{border-bottom:none;}
+    .summary .final{background:#16181C;color:#FDE68A;font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;}
+    .sign{margin-top:40px;display:flex;justify-content:space-between;font-size:12px;} .sign div{width:45%;} .sign .line{margin-top:42px;border-top:1px solid #1E2024;padding-top:4px;color:#5D6067;}
+    .foot{margin-top:24px;text-align:center;color:#5D6067;font-size:10px;border-top:1px solid #D8D8D4;padding-top:10px;}
     .palmares{display:flex;gap:16px;margin-bottom:8px;}
-    .palm-col{flex:1;border:1px solid #ddd;border-radius:8px;overflow:hidden;}
-    .palm-titre{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:7px 10px;color:#fff;}
-    .palm-top{background:#1a7a3f;} .palm-bot{background:#c0392b;}
-    .palm-tab{margin:0;} .palm-tab th{background:#f0f0f0;color:#555;padding:5px 8px;} .palm-tab td{padding:6px 8px;}
+    .palm-col{flex:1;border:1px solid #D8D8D4;border-radius:0;overflow:hidden;}
+    .palm-titre{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:7px 10px;color:#FAFAF8;}
+    .palm-top{background:#2E7D4F;} .palm-bot{background:#B0342B;}
+    .palm-tab{margin:0;} .palm-tab th{background:#EFEFEC;color:#5D6067;padding:5px 8px;} .palm-tab td{padding:6px 8px;}
     body { padding:16px 20px !important; font-size:12px !important; }
     .head { padding-bottom:9px !important; margin-bottom:11px !important; }
     h1 { font-size:18px !important; }
@@ -8978,7 +9135,7 @@ function exportAnnualPDF() {
     .summary div { padding:6px 13px !important; }
     .sign { margin-top:22px !important; } .sign .line { margin-top:26px !important; }
     .foot { margin-top:14px !important; padding-top:7px !important; }
-    @media print{body{padding:0;} @page{margin:1cm;}}
+    @media print{body{padding:0;background:#fff;} @page{margin:1cm;}}
   </style></head><body>
     <div class="head">
       <div class="head-left">
@@ -9027,7 +9184,7 @@ function exportMonthlyPDF() {
   const weekRows = agg.keys.map(k => {
     const a = weekAgg(k);
     return `<tr><td>${fmtWeekRange(new Date(k))}</td><td class="num">${a.rev.toLocaleString('fr-FR')}</td><td class="num">${a.exp.toLocaleString('fr-FR')}</td><td class="num">${a.wpay.toLocaleString('fr-FR')}</td><td class="num">${a.oth.toLocaleString('fr-FR')}</td><td class="num ${a.solde>=0?'pos':'neg'}">${a.solde.toLocaleString('fr-FR')}</td></tr>`;
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:#999">Aucune donnée</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:#5D6067">Aucune donnée</td></tr>';
 
   const truckRows = agg.ranked.map((r,i) => `<tr><td>${i+1}. <strong>${r.plate}</strong></td><td class="num">${r.rev.toLocaleString('fr-FR')}</td><td class="num">${r.exp.toLocaleString('fr-FR')}</td><td class="num ${r.solde>=0?'pos':'neg'}">${r.solde.toLocaleString('fr-FR')}</td></tr>`).join('');
 
@@ -9067,28 +9224,29 @@ function exportMonthlyPDF() {
 
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Rapport mensuel — ${monthName}</title>
   <style>
-    *{box-sizing:border-box;} body{font-family:'Segoe UI',Arial,sans-serif;color:#1a2332;margin:0;padding:28px 32px;font-size:13px;}
-    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a2332;padding-bottom:14px;margin-bottom:18px;}
-    .head-left{display:flex;align-items:center;gap:14px;} .logo{width:54px;height:54px;border-radius:10px;object-fit:cover;}
-    .logo-fallback{width:54px;height:54px;border-radius:10px;background:#1a2332;color:#F5A623;display:flex;align-items:center;justify-content:center;font-size:26px;}
-    h1{font-size:20px;margin:0;} .company{font-size:15px;font-weight:700;} .sub{color:#666;font-size:12px;margin-top:2px;}
-    .meta{text-align:right;font-size:11px;color:#555;}
-    h2{font-size:14px;margin:22px 0 8px;padding-bottom:5px;border-bottom:1px solid #ddd;}
-    table{width:100%;border-collapse:collapse;margin-bottom:6px;} th{background:#1a2332;color:#fff;text-align:left;padding:7px 9px;font-size:11px;text-transform:uppercase;}
-    td{padding:6px 9px;border-bottom:1px solid #eee;} .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-    .pos{color:#1a7a3f;font-weight:700;} .neg{color:#c0392b;font-weight:700;}
-    .total{background:#f5f5f5;font-weight:700;}
-    .summary{width:60%;margin-left:auto;border:1px solid #1a2332;border-radius:8px;overflow:hidden;}
-    .summary div{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #eee;} .summary div:last-child{border-bottom:none;}
-    .summary .final{background:#1a2332;color:#fff;font-size:16px;font-weight:700;}
-    .sign{margin-top:40px;display:flex;justify-content:space-between;font-size:12px;} .sign div{width:45%;} .sign .line{margin-top:42px;border-top:1px solid #999;padding-top:4px;color:#666;}
-    .foot{margin-top:24px;text-align:center;color:#999;font-size:10px;border-top:1px solid #eee;padding-top:10px;}
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+    *{box-sizing:border-box;} body{font-family:'Barlow',Arial,sans-serif;color:#1E2024;margin:0;padding:28px 32px;font-size:13px;background:#FAFAF8;}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #16181C;padding-bottom:14px;margin-bottom:18px;}
+    .head-left{display:flex;align-items:center;gap:14px;} .logo{width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #FBBF24;}
+    .logo-fallback{width:54px;height:54px;border-radius:50%;background:#16181C;color:#FDE68A;display:flex;align-items:center;justify-content:center;font-size:22px;font-family:'Oswald',sans-serif;font-weight:700;border:2px solid #FBBF24;}
+    h1{font-family:'Oswald',sans-serif;font-size:20px;margin:0;color:#16181C;font-weight:700;} .company{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:#16181C;} .sub{color:#5D6067;font-size:12px;margin-top:2px;}
+    .meta{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:#5D6067;}
+    h2{font-family:'Oswald',sans-serif;font-size:14px;margin:22px 0 8px;padding-bottom:5px;border-bottom:2px solid #FBBF24;color:#16181C;font-weight:700;}
+    table{width:100%;border-collapse:collapse;margin-bottom:6px;} th{background:#16181C;color:#FAFAF8;text-align:left;padding:7px 9px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+    td{padding:6px 9px;border-bottom:1px solid #D8D8D4;} .num{text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;}
+    .pos{color:#2E7D4F;font-weight:700;} .neg{color:#B0342B;font-weight:700;}
+    .total{background:#EFEFEC;font-weight:700;}
+    .summary{width:60%;margin-left:auto;border:2px solid #16181C;border-radius:0;overflow:hidden;}
+    .summary div{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #D8D8D4;} .summary div:last-child{border-bottom:none;}
+    .summary .final{background:#16181C;color:#FDE68A;font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;}
+    .sign{margin-top:40px;display:flex;justify-content:space-between;font-size:12px;} .sign div{width:45%;} .sign .line{margin-top:42px;border-top:1px solid #1E2024;padding-top:4px;color:#5D6067;}
+    .foot{margin-top:24px;text-align:center;color:#5D6067;font-size:10px;border-top:1px solid #D8D8D4;padding-top:10px;}
     .palmares{display:flex;gap:16px;margin-bottom:8px;}
-    .palm-col{flex:1;border:1px solid #ddd;border-radius:8px;overflow:hidden;}
-    .palm-titre{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:7px 10px;color:#fff;}
-    .palm-top{background:#1a7a3f;}
-    .palm-bot{background:#c0392b;}
-    .palm-tab{margin:0;} .palm-tab th{background:#f0f0f0;color:#555;padding:5px 8px;}
+    .palm-col{flex:1;border:1px solid #D8D8D4;border-radius:0;overflow:hidden;}
+    .palm-titre{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:7px 10px;color:#FAFAF8;}
+    .palm-top{background:#2E7D4F;}
+    .palm-bot{background:#B0342B;}
+    .palm-tab{margin:0;} .palm-tab th{background:#EFEFEC;color:#5D6067;padding:5px 8px;}
     .palm-tab td{padding:6px 8px;}
     /* -- Impression compacte : moins d'espaces, moins de feuilles -- */
     body { padding:16px 20px !important; font-size:12px !important; }
@@ -9110,7 +9268,7 @@ function exportMonthlyPDF() {
     .foot { margin-top:14px !important; padding-top:7px !important; }
     p { margin:5px 0 !important; }
     ul, ol { margin:4px 0 !important; }
-    @media print{body{padding:0;} @page{margin:1cm;}}
+    @media print{body{padding:0;background:#fff;} @page{margin:1cm;}}
   </style></head><body>
     <div class="head">
       <div class="head-left">
@@ -9123,7 +9281,7 @@ function exportMonthlyPDF() {
     <div class="summary">
       <div><span>Recettes camions</span><span class="num revenue">${f(agg.tRev)}</span></div>
       <div><span>− Dépenses sur camions</span><span class="num expense">${f(agg.tExp)}</span></div>
-      ${agg.tPieces>0 ? `<div style="font-size:12px; color:#666;"><span>　🔩 dont pièces de rechange</span><span class="num">${f(agg.tPieces)}</span></div>` : ''}
+      ${agg.tPieces>0 ? `<div style="font-size:12px; color:#5D6067;"><span>　🔩 dont pièces de rechange</span><span class="num">${f(agg.tPieces)}</span></div>` : ''}
       <div><span>− Paiement ouvriers</span><span class="num expense">${f(agg.tWpay)}</span></div>
       <div><span>− Autres dépenses</span><span class="num expense">${f(agg.tOth)}</span></div>
       <div class="final"><span>SOLDE DU MOIS</span><span class="num">${f(agg.solde)}</span></div>
@@ -9285,6 +9443,7 @@ function bootApp() {
   // ─── Admin (SARANA) : accès direct, comportement d'origine ───
   sessionRole = 'admin';
   document.getElementById('login-screen').classList.add('hidden');
+  reinitialiserPartieFinanciereUneFois();
   loadPrefs(); loadWeeklyData(); renderWeekly();
   loadExpenses(); loadWorkers(); loadImmobilized(); loadDebts(); initPWA();
   loadCore();
@@ -9292,6 +9451,34 @@ function bootApp() {
   adapterEcran();
   chargerUtilisateurs();
   if (estMobile()) chargerPannesSignalees().catch(()=>{});
+}
+
+// Remise à zéro ponctuelle de la partie financière, demandée par SARANA
+// pour repartir sur la nouvelle Caisse unifiée avec un historique propre
+// qu'il ressaisira lui-même. Ne touche PAS aux véhicules, chauffeurs,
+// maintenances ou garages — seulement Caisse + Bilan hebdo/mensuel/annuel.
+// Se déclenche une seule fois grâce au marqueur, jamais après.
+function reinitialiserPartieFinanciereUneFois() {
+  const MARQUEUR = 'fleetbenne_reset_caisse_unifiee_2026_08';
+  if (localStorage.getItem(MARQUEUR)) return; // déjà fait, on ne touche plus à rien
+  try {
+    localStorage.removeItem('fleetbenne_caisse');
+    localStorage.removeItem('fleetbenne_caisse_unifiee');
+    localStorage.removeItem('fleetbenne_weekly_v2');
+    caisseUnifiee = [];
+    weeklyData = {};
+    localStorage.setItem(MARQUEUR, new Date().toISOString());
+  } catch(e) {}
+  // Purge côté Supabase aussi, pour que loadCoreSB()/loadWeeklySB() ne
+  // re-tirent pas les anciennes données au premier passage en ligne.
+  if (navigator.onLine && typeof sb !== 'undefined') {
+    sb.get('caisse').then(rows => {
+      (rows||[]).forEach(r => sb.del('caisse', r.id).catch(()=>{}));
+    }).catch(()=>{});
+    sb.get('weekly_data').then(rows => {
+      (rows||[]).forEach(r => sb.req('DELETE', 'weekly_data?week_key=eq.' + encodeURIComponent(r.week_key)).catch(()=>{}));
+    }).catch(()=>{});
+  }
 }
 
 function majBadgeRole() {
