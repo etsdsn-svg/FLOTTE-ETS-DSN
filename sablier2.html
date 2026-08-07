@@ -43,7 +43,21 @@ button{cursor:pointer;border:0;background:none}
 #topbar .etat{display:flex;align-items:center;gap:6px;padding-left:11px;margin-left:11px;border-left:1px solid rgba(255,255,255,.18);flex:none}
 #topbar .etat .lbl{font-style:normal}
 .pastille{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
-#main{flex:1;padding:14px 14px calc(var(--nav-h) + 26px + env(safe-area-inset-bottom));max-width:1120px;width:100%;margin:0 auto}
+#main{flex:1;padding:14px 14px calc(var(--nav-h) + 26px + env(safe-area-inset-bottom));
+  max-width:1120px;width:100%;margin:0 auto;container-type:inline-size}
+
+/* La mise en page suit la place disponible, pas la taille de l'appareil. */
+.grille{display:grid;gap:12px;grid-template-columns:1fr;align-items:start}
+.grille>div{min-width:0}
+.grille .large{grid-column:1 / -1}
+@container (min-width: 640px){
+  .grille{grid-template-columns:minmax(280px,1fr) minmax(300px,1.1fr)}
+}
+@container (min-width: 1060px){
+  .grille{grid-template-columns:minmax(280px,.9fr) minmax(320px,1.1fr) minmax(280px,1fr)}
+}
+/* Le texte explicatif garde une longueur de ligne lisible. */
+.carte>p.mt{max-width:70ch}
 
 #nav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--craie);
   border-top:1px solid var(--ciment-fonce);display:flex;padding-bottom:env(safe-area-inset-bottom)}
@@ -180,9 +194,9 @@ td.n{font-family:"Space Grotesk";font-variant-numeric:tabular-nums;font-weight:5
   #topbar{padding:12px 26px}
   #topbar .marque{display:none}
   #topbar .solde-haut{display:flex}
-  #main{padding:22px 26px 60px}
+  #main{padding:22px 30px 60px;max-width:none}
   .colonne{height:220px;width:70px}
-  .sablier-bloc{max-width:560px}
+  .sablier-bloc{max-width:none}
   .scroll-x{margin:0;padding:0}
   .btn{width:auto;min-width:170px}
   .grille2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
@@ -581,7 +595,8 @@ function vBord(){
   const pEngage=part(Math.min(c.engage, Math.max(0,c.solde-c.partFlotte)));
   const hSeuil=Math.max(0,Math.min(100,c.seuil/max*100));
 
-  let h = `<div class="sablier-bloc">
+  /* ---- colonne A : l'argent ---- */
+  let A = `<div class="sablier-bloc">
     <div class="colonne">
       <div class="remplissage" style="height:${hSolde.toFixed(1)}%">
         <div class="p-libre" style="height:${Math.max(0,100-pFlotte-pEngage).toFixed(1)}%"></div>
@@ -602,46 +617,71 @@ function vBord(){
       </div>
     </div></div>`;
 
-  if(c.sousSeuil) h += `<div class="alerte a-rouge"><div><b>Caisse au seuil</b>
+  if(c.sousSeuil) A += `<div class="alerte a-rouge"><div><b>Caisse au seuil</b>
     Il reste ${fmtF(c.solde)}, seuil à ${fmtF(c.seuil)}. C'est le moment de solliciter le DG.</div></div>`;
-  if(c.previsionnel<=c.seuil && !c.sousSeuil) h += `<div class="alerte a-ocre"><div><b>Le prévisionnel passe sous le seuil</b>
+  if(c.previsionnel<=c.seuil && !c.sousSeuil) A += `<div class="alerte a-ocre"><div><b>Le prévisionnel passe sous le seuil</b>
     Une fois les ${c.nbARegler} réparations terminées réglées, il ne restera que ${fmtF(c.previsionnel)}.</div></div>`;
-  if(c.sansEstimation) h += `<div class="alerte a-ocre"><div><b>${c.sansEstimation} réparation${c.sansEstimation>1?"s":""} sans montant estimé</b>
+  if(c.sansEstimation) A += `<div class="alerte a-ocre"><div><b>${c.sansEstimation} réparation${c.sansEstimation>1?"s":""} sans montant estimé</b>
     Aucun historique pour les chiffrer. Ouvre-les pour donner un ordre de grandeur, sinon le prévisionnel est faux.</div></div>`;
-  if(c.libreNegatif) h += `<div class="alerte a-ocre"><div><b>Les sorties externes entament la part flotte</b>
+  if(c.libreNegatif) A += `<div class="alerte a-ocre"><div><b>Les sorties externes entament la part flotte</b>
     Part libre à ${fmtF(c.partLibre)}.</div></div>`;
 
+  /* ---- colonne B : le travail ---- */
   const ec=enCours();
   const aAffecter=ec.filter(p=>p.statut==="signalee");
   const auGarage=ec.filter(p=>p.statut==="affectee");
   const aRegler=ec.filter(p=>p.statut==="terminee");
   const retard=aAffecter.filter(enRetard);
 
-  h += `<div class="etapes">
+  let B = `<div class="etapes">
     <div class="etape${retard.length?" urgent":""}"><div class="n">${aAffecter.length}</div><div class="t">à affecter</div></div>
     <div class="etape"><div class="n">${auGarage.length}</div><div class="t">au garage</div></div>
     <div class="etape"><div class="n">${aRegler.length}</div><div class="t">à régler</div></div>
   </div>`;
 
-  for(const p of retard){
-    h += `<div class="alerte a-rouge"><div><b>${esc(nomCamion(p.camion_id))} sans garage depuis ${Math.floor(heuresDepuis(p.date_signalement))} h</b>
+  for(const p of retard)
+    B += `<div class="alerte a-rouge"><div><b>${esc(nomCamion(p.camion_id))} sans garage depuis ${Math.floor(heuresDepuis(p.date_signalement))} h</b>
       ${esc(p.description||"Sans description")} — signalé par ${esc(nomChauffeur(p.chauffeur_id))}</div></div>`;
-  }
+
   const imm=D.pannes.filter(p=>p.immobilise && !p.immob_fin);
-  if(imm.length) h += `<div class="alerte a-rouge"><div><b>${imm.length} camion${imm.length>1?"s":""} immobilisé${imm.length>1?"s":""}</b>` +
+  if(imm.length) B += `<div class="alerte a-rouge"><div><b>${imm.length} camion${imm.length>1?"s":""} immobilisé${imm.length>1?"s":""}</b>` +
     imm.map(p=>`${esc(nomCamion(p.camion_id))} — ${joursArret(p)} j ouvrés d'arrêt`).join("<br>") + `</div></div>`;
 
-  h += `<div class="titre-sec">Pannes en cours</div><div class="carte">`;
-  if(!ec.length) h += `<div class="vide"><b>Rien en cours</b>Tous les camions roulent.</div>`;
-  else for(const p of ec) h += lignePanne(p);
-  h += `</div>`;
+  B += `<div class="carte"><div class="titre-sec">Pannes en cours</div>`;
+  if(!ec.length) B += `<div class="vide"><b>Rien en cours</b>Tous les camions roulent.</div>`;
+  else for(const p of ec) B += lignePanne(p);
+  B += `</div>`;
 
-  if(admin()) h += `<div class="duo no-print" style="margin-bottom:9px">
+  /* ---- colonne C : ce qui bouge, et les gestes du jour ---- */
+  let C = "";
+  if(admin()) C += `<div class="duo no-print" style="margin-bottom:9px">
       <button class="btn" onclick="formPanneAdmin()">Noter une panne</button>
       <button class="btn sec" onclick="formSortie()">Dépense externe</button></div>
-    <div class="duo no-print"><button class="btn sec" onclick="formApportDG()">Apport du DG</button>
+    <div class="duo no-print" style="margin-bottom:12px">
+      <button class="btn sec" onclick="formApportDG()">Apport du DG</button>
       <button class="btn sec" onclick="aller('vendredi')">Collecte</button></div>`;
-  return h;
+
+  const derniers=[...D.mouvements]
+    .sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,7);
+  C += `<div class="carte"><div class="titre-sec">Derniers mouvements</div>`;
+  if(!derniers.length) C += `<div class="vide"><b>Rien encore</b>Recettes, apports et dépenses apparaîtront ici.</div>`;
+  else for(const m of derniers){
+    const plus = m.sens==="entree";
+    C += `<div class="ligne"><div class="lib"><b>${esc(m.libelle)}</b>
+      <small>${dateCourte(m.date)} · ${esc(etiquetteMouvement(m))}</small></div>
+      <span class="num" style="color:${plus?"var(--vert)":"var(--minium)"}">${plus?"+":"−"}${fmt(m.montant)}</span></div>`;
+  }
+  C += `</div>`;
+
+  return `<div class="grille"><div>${A}</div><div>${B}</div><div>${C}</div></div>`;
+}
+function etiquetteMouvement(m){
+  if(m.sens==="entree"){
+    if(m.source==="dg") return "Apport DG";
+    if(m.source==="ouverture") return "Ouverture";
+    return "Recette";
+  }
+  return m.nature==="flotte" ? "Flotte" : "Externe";
 }
 function lignePanne(p){
   const tags={signalee:["t-rouge","à affecter"],affectee:["t-gris","au garage"],terminee:["t-vert","à régler"]}[p.statut]||["t-gris",p.statut];
