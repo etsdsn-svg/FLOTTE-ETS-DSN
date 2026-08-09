@@ -275,7 +275,10 @@ const fmt = n => {
 const fmtF = n => fmt(n) + " F";
 const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
   .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-const auj = () => new Date().toISOString().slice(0,10);
+/* Date locale au format AAAA-MM-JJ. Ne jamais passer par toISOString :
+   en UTC+1 (Cotonou), minuit local devient 23h la veille en UTC. */
+const isoLocal = (x) => `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
+const auj = () => isoLocal(new Date());
 window.auj = () => auj();
 const jrs = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
 const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
@@ -290,10 +293,11 @@ function joursOuvres(d1,d2){
 }
 const normPiece = p => String(p||"").toLowerCase().trim().replace(/\s+/g," ").replace(/s$/,"");
 window.lundiDe = (d) => lundiDe(d);
-function lundiDe(d){ const x=new Date(d+"T00:00:00"); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x.toISOString().slice(0,10); }
+function lundiDe(d){ const x=new Date(d+"T00:00:00"); x.setDate(x.getDate()-((x.getDay()+6)%7)); return isoLocal(x); }
 function numSemaine(d){ const x=new Date(d+"T00:00:00"); x.setDate(x.getDate()+4-((x.getDay()+6)%7));
   return Math.ceil((((x-new Date(x.getFullYear(),0,1))/86400000)+1)/7); }
-function ajoutJours(d,n){ const x=new Date(d+"T00:00:00"); x.setDate(x.getDate()+n); return x.toISOString().slice(0,10); }
+window.ajoutJours = (d,n) => ajoutJours(d,n);
+function ajoutJours(d,n){ const x=new Date(d+"T00:00:00"); x.setDate(x.getDate()+n); return isoLocal(x); }
 
 function toast(msg){
   const t=document.getElementById("toast");
@@ -978,13 +982,24 @@ function vVendredi(){
   const lundi = lundiDe(ancre);
   const dimanche = ajoutJours(lundi, 6);
 
+  const semaineEnCours = lundi === lundiDe(auj());
   let h = `<div class="titre-sec">Collecte de la semaine</div>
     <div class="carte">
-      <div class="duo" style="margin-bottom:11px">
-        <button class="btn sec mini" onclick="setVue('semaineCollecte','${ajoutJours(lundi,-7)}')">← Semaine précédente</button>
-        <button class="btn sec mini" onclick="setVue('semaineCollecte','${ajoutJours(lundi,7)}')">Semaine suivante →</button>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <button class="btn sec" style="min-width:0;width:52px;padding:11px 0;font-size:18px"
+          onclick="setVue('semaineCollecte','${ajoutJours(lundi,-7)}')" aria-label="Semaine précédente">←</button>
+        <div style="flex:1;text-align:center">
+          <b style="display:block">${dateCourte(lundi)} → ${dateCourte(dimanche)}</b>
+          <small class="mt">${semaineEnCours ? "Semaine en cours" : "Semaine " + numSemaine(lundi)}</small>
+        </div>
+        <button class="btn sec" style="min-width:0;width:52px;padding:11px 0;font-size:18px"
+          onclick="setVue('semaineCollecte','${ajoutJours(lundi,7)}')" aria-label="Semaine suivante">→</button>
       </div>
-      <p class="mt">Semaine du ${dateCourte(lundi)} au ${dateCourte(dimanche)}. Touche un camion déjà encaissé pour corriger son montant.</p>
+      ${semaineEnCours ? "" : `<button class="btn sec" style="width:100%;margin-bottom:10px"
+        onclick="setVue('semaineCollecte','${auj()}')">Revenir à la semaine en cours</button>`}
+      <label class="ch" style="margin-bottom:0"><span>Aller à une semaine précise</span>
+        <input type="date" id="c-saut" value="${lundi}" onchange="setVue('semaineCollecte', this.value)"></label>
+      <p class="mt" style="margin-top:9px">Touche un camion déjà encaissé pour corriger son montant.</p>
     </div>`;
 
   const saisis = actifs.filter(c => recetteSemaine(c.id, lundi));
@@ -1033,17 +1048,45 @@ window.apres_vendredi = () => {
   maj();
 };
 
+/* La recette doit porter une date DANS la semaine affichee, sinon elle
+   bascule dans une autre semaine et le camion reste "en attente" —
+   c'est ce qui provoquait les doubles saisies. */
+function dateDansSemaine(lundi){
+  const dimanche = ajoutJours(lundi, 6);
+  const jour = auj();
+  if(jour >= lundi && jour <= dimanche) return jour;
+  return ajoutJours(lundi, 4);   // le vendredi de cette semaine-la
+}
+
 window.validerCollecte = async (lundi) => {
-  const lignes=[];
+  lundi = lundi || lundiDe(auj());
+  const dateRecette = dateDansSemaine(lundi);
+  const nouvelles = [], corrections = [];
+
   document.querySelectorAll(".c-montant").forEach(i=>{
-    const v=Number(i.value)||0;
-    if(v>0) lignes.push({date:auj(),sens:"entree",source:"recette",montant:v,
-      camion_id:i.dataset.c, libelle:"Recette "+nomCamion(i.dataset.c)});
+    const v = Number(i.value) || 0;
+    if(v <= 0) return;
+    const camionId = i.dataset.c;
+    // garde-fou : si une recette existe deja pour cette semaine, on corrige
+    const existante = recetteSemaine(camionId, lundi);
+    if(existante) corrections.push({ id:existante.id, montant:v });
+    else nouvelles.push({ date:dateRecette, sens:"entree", source:"recette", montant:v,
+      camion_id:camionId, libelle:"Recette "+nomCamion(camionId) });
   });
-  if(!lignes.length) return toast("Aucun montant saisi.");
-  const {error}=await sb.from("sb2_mouvements").insert(lignes);
-  if(error) return toast("Échec : "+error.message);
-  toast(`${lignes.length} recette${lignes.length>1?"s":""} encaissée${lignes.length>1?"s":""}.`);
+
+  if(!nouvelles.length && !corrections.length) return toast("Aucun montant saisi.");
+
+  if(nouvelles.length){
+    const {error} = await sb.from("sb2_mouvements").insert(nouvelles);
+    if(error) return toast("Échec : "+error.message);
+  }
+  for(const c of corrections){
+    const {error} = await sb.from("sb2_mouvements").update({montant:c.montant}).eq("id", c.id);
+    if(error) return toast("Échec : "+error.message);
+  }
+
+  const n = nouvelles.length + corrections.length;
+  toast(`${n} recette${n>1?"s":""} enregistrée${n>1?"s":""}.`);
   await recharger(); aller("bord");
 };
 
@@ -1250,8 +1293,8 @@ function bornes(per,ancre){
     return {d1:l,d2:ajoutJours(l,6),titre:"Semaine "+numSemaine(l)+" · "+new Date(l+"T00:00:00").getFullYear()}; }
   const x=new Date(ancre+"T00:00:00");
   if(per==="mois") return {
-    d1:new Date(x.getFullYear(),x.getMonth(),1).toISOString().slice(0,10),
-    d2:new Date(x.getFullYear(),x.getMonth()+1,0).toISOString().slice(0,10),
+    d1:isoLocal(new Date(x.getFullYear(),x.getMonth(),1)),
+    d2:isoLocal(new Date(x.getFullYear(),x.getMonth()+1,0)),
     titre:MOIS[x.getMonth()][0].toUpperCase()+MOIS[x.getMonth()].slice(1)+" "+x.getFullYear()};
   return {d1:x.getFullYear()+"-01-01",d2:x.getFullYear()+"-12-31",titre:"Année "+x.getFullYear()};
 }
@@ -1261,7 +1304,7 @@ window.decaler = n => {
   if(per==="semaine") x.setDate(x.getDate()+7*n);
   else if(per==="mois") x.setMonth(x.getMonth()+n);
   else x.setFullYear(x.getFullYear()+n);
-  etatVue.ancre=x.toISOString().slice(0,10); rendu();
+  etatVue.ancre=isoLocal(x); rendu();
 };
 function totaux(d1,d2){
   const t={recettes:0,dg:0,ouv:0,pieces:0,mo:0,externes:0,nbPannes:0,prog:0,imp:0};
