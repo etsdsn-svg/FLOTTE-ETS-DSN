@@ -588,6 +588,8 @@ window.aller = aller;
 window.setVue = (k,v) => { etatVue[k]=v; rendu(); };
 /* exposés pour inspection et tests */
 Object.defineProperty(window,"D",{get:()=>D});
+Object.defineProperty(window,"C",{get:()=>C});
+Object.defineProperty(window,"G",{get:()=>G});
 window.perfGarage = id => perfGarage(id);
 window.caisse = () => caisse();
 
@@ -1517,14 +1519,15 @@ let enAttenteFile = [];
 async function chargerChauffeur(){
   await viderFile(true).catch(()=>{});
   try{ enAttenteFile = await fileLire(); }catch(e){ enAttenteFile = []; }
-  const [cam, pan, gar] = await Promise.all([
+  const [cam, pan, gar, med] = await Promise.all([
     sb.from("sb2_camions").select("*"),
     sb.from("sb2_pannes").select("*").order("date_signalement",{ascending:false}),
-    sb.from("sb2_garages").select("id,nom,ville")
+    sb.from("sb2_garages").select("id,nom,ville"),
+    sb.from("sb2_medias").select("panne_id,genre")
   ]);
   const e=[cam,pan,gar].find(r=>r.error);
   if(e) throw new Error(e.error.message);
-  C = { camions:cam.data||[], pannes:pan.data||[], garages:gar.data||[] };
+  C = { camions:cam.data||[], pannes:pan.data||[], garages:gar.data||[], medias:med.data||[] };
 }
 const nomGarageC = id => (C.garages.find(g=>g.id===id)||{}).nom || "un garage";
 /* Étiquette courte, détail dans la ligne du dessous. Aucun mot d'argent. */
@@ -1587,8 +1590,12 @@ function rendreChauffeur(){
     if(!miennes.length) h += `<div class="vide"><b>Rien en cours</b>Votre camion n'a aucune panne signalée.</div>`;
     for(const p of miennes){
       const [txt,tag]=etatLisible(p);
-      h += `<div class="ligne"><div class="lib"><b>${esc(p.description||p.piece||"Panne")}</b>
-        <small>Signalée le ${dateLongue(p.date_signalement)}<br>${esc(detailEtat(p))}</small></div>
+      // Tant qu'aucun garage n'est affecte, le chauffeur peut encore corriger.
+      const modifiable = p.statut === "signalee";
+      h += `<div class="ligne"${modifiable?` style="cursor:pointer" onclick="modifierSignalement('${p.id}')"`:""}>
+        <div class="lib"><b>${esc(p.description||p.piece||"Panne")}</b>
+        <small>Signalée le ${dateLongue(p.date_signalement)}<br>${esc(detailEtat(p))}${
+          modifiable ? ` · <span style="color:var(--vert);font-weight:600">touchez pour compléter</span>` : ""}</small></div>
         <span class="tag ${tag}" style="white-space:nowrap">${esc(txt)}</span></div>`;
     }
     h += `</div>`;
@@ -1606,6 +1613,142 @@ function rendreChauffeur(){
     </main></div></div>`;
   document.getElementById("racine").innerHTML = h;
 }
+
+/* --- Modifier un signalement encore en attente de garage --- */
+let piecesAjoutees = [];
+
+window.modifierSignalement = (panneId) => {
+  const p = C.pannes.find(x => x.id === panneId);
+  if(!p) return;
+  if(p.statut !== "signalee"){
+    return toast("Cette panne est déjà partie au garage, elle ne peut plus être modifiée.");
+  }
+  piecesAjoutees = [];
+  const dejaJointes = (C.medias || []).filter(m => m.panne_id === panneId).length;
+
+  ouvrir("Compléter le signalement", `
+    <p class="mt" style="margin-bottom:12px">Signalée le ${dateLongue(p.date_signalement)}.
+    Vous pouvez encore corriger tant qu&#39;aucun garage n&#39;est choisi.</p>
+
+    <label class="ch"><span>Ce qui se passe</span>
+      <textarea id="md-desc" rows="3">${esc(p.description || "")}</textarea></label>
+
+    <label class="ch"><span>Le camion peut-il rouler ?</span></label>
+    <div class="segm" id="md-roule" style="margin-bottom:14px">
+      <button data-v="1" class="${p.immobilise?"":"on"}">Il roule</button>
+      <button data-v="0" class="${p.immobilise?"on":""}">Il est arrêté</button></div>
+
+    <div class="lbl" style="margin-bottom:7px">Ajouter une preuve${
+      dejaJointes ? ` <span class="mt" style="text-transform:none;letter-spacing:0">— ${dejaJointes} déjà envoyée${dejaJointes>1?"s":""}</span>` : ""}</div>
+    <div class="duo" style="margin-bottom:9px">
+      <button class="btn sec" onclick="document.getElementById('md-photo').click()">Photo</button>
+      <button class="btn sec" id="md-b-audio" onclick="basculerAudioMod()">Enregistrer</button></div>
+    <button class="btn sec" style="width:100%;margin-bottom:9px"
+      onclick="document.getElementById('md-video').click()">Vidéo (10 s maximum)</button>
+    <input type="file" id="md-photo" accept="image/*" style="display:none">
+    <input type="file" id="md-video" accept="video/*" capture="environment" style="display:none">
+    <input type="file" id="md-audio" accept="audio/*" style="display:none">
+    <div id="md-liste"></div>
+    <div id="md-msg"></div>
+
+    <div class="duo" style="margin-top:6px"><button class="btn sec" onclick="fermer()">Annuler</button>
+    <button class="btn" id="md-envoyer" onclick="enregistrerModification('${panneId}')">Enregistrer</button></div>`,
+    () => {
+      segm("md-roule");
+      document.getElementById("md-photo").onchange = e => ajouterPiece(e.target.files[0],"photo");
+      document.getElementById("md-video").onchange = e => ajouterPiece(e.target.files[0],"video");
+      document.getElementById("md-audio").onchange = e => ajouterPiece(e.target.files[0],"audio");
+    });
+};
+
+const msgMod = (t,y) => { const z=document.getElementById("md-msg");
+  if(z) z.innerHTML = t ? `<div class="alerte a-${y}"><div>${esc(t)}</div></div>` : ""; };
+
+function listerPiecesAjoutees(){
+  const z=document.getElementById("md-liste"); if(!z) return;
+  z.innerHTML = piecesAjoutees.length
+    ? `<div class="carte" style="padding:9px 12px;margin-bottom:10px">` + piecesAjoutees.map((f,i)=>
+        `<div class="ligne"><div class="lib"><b>${({photo:"Photo",audio:"Audio",video:"Vidéo"})[f.genre]}</b>
+         <small>${Math.round(f.blob.size/1024)} Ko${f.duree?` · ${f.duree.toFixed(0)} s`:""}</small></div>
+         <button class="btn mini sec" onclick="retirerPieceAjoutee(${i})">Retirer</button></div>`).join("") + `</div>`
+    : "";
+}
+window.retirerPieceAjoutee = i => { piecesAjoutees.splice(i,1); listerPiecesAjoutees(); };
+
+async function ajouterPiece(fichier, genre){
+  if(!fichier) return;
+  msgMod("");
+  let blob=fichier, duree=null;
+  if(genre==="photo") blob=await compresser(fichier);
+  if(genre==="video"){
+    duree=await dureeVideo(fichier);
+    if(duree>12) return msgMod(`Cette vidéo dure ${duree.toFixed(0)} secondes. Refaites-en une de 10 secondes maximum.`,"ocre");
+  }
+  if(blob.size>10*1024*1024)
+    return msgMod("Ce fichier dépasse 10 Mo. Prenez une photo à la place, c'est bien plus léger.","ocre");
+  piecesAjoutees.push({blob, genre, duree});
+  listerPiecesAjoutees();
+}
+
+let microMod=null, morceauxMod=[];
+window.basculerAudioMod = async () => {
+  const b=document.getElementById("md-b-audio");
+  if(microMod && microMod.state==="recording"){ microMod.stop(); return; }
+  if(!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==="undefined"){
+    document.getElementById("md-audio").click(); return;
+  }
+  try{
+    const flux=await navigator.mediaDevices.getUserMedia({audio:true});
+    microMod=new MediaRecorder(flux); morceauxMod=[];
+    microMod.ondataavailable=e=>morceauxMod.push(e.data);
+    microMod.onstop=async()=>{
+      flux.getTracks().forEach(t=>t.stop());
+      b.textContent="Enregistrer";
+      const blob=new Blob(morceauxMod,{type:microMod.mimeType||"audio/webm"});
+      if(blob.size>0){ piecesAjoutees.push({blob,genre:"audio",duree:null}); listerPiecesAjoutees(); }
+    };
+    microMod.start(); b.textContent="Arrêter";
+    setTimeout(()=>{ if(microMod && microMod.state==="recording") microMod.stop(); }, 30000);
+  }catch(e){ document.getElementById("md-audio").click(); }
+};
+
+window.enregistrerModification = async (panneId) => {
+  const desc = val("md-desc").trim();
+  if(!desc && !piecesAjoutees.length) return msgMod("Décrivez la panne, ou joignez une photo.","ocre");
+  if(!navigator.onLine) return msgMod("Pas de réseau. Réessayez dès que vous captez.","ocre");
+
+  const b = document.getElementById("md-envoyer");
+  b.disabled = true; b.textContent = "Envoi…";
+  const arret = valSegm("md-roule") === "0";
+
+  const maj = { description: desc, immobilise: arret };
+  const p = C.pannes.find(x => x.id === panneId);
+  if(arret && !p.immob_debut) maj.immob_debut = auj();
+  if(!arret) maj.immob_debut = null;
+
+  const { error } = await sb.from("sb2_pannes").update(maj).eq("id", panneId);
+  if(error){
+    b.disabled = false; b.textContent = "Enregistrer";
+    return msgMod("Modification impossible. La panne est peut-être déjà partie au garage.","rouge");
+  }
+
+  let ratés = 0;
+  for(const f of piecesAjoutees){
+    try{
+      const ext = {photo:"jpg",audio:"webm",video:"mp4"}[f.genre];
+      const chemin = `${panneId}/${crypto.randomUUID()}.${ext}`;
+      const up = await sb.storage.from("sb2-medias").upload(chemin, f.blob, {contentType:f.blob.type});
+      if(up.error) throw up.error;
+      await sb.from("sb2_medias").insert({panne_id:panneId, genre:f.genre,
+        chemin, taille:f.blob.size, duree_s:f.duree||null});
+    }catch(e){ ratés++; }
+  }
+
+  fermer();
+  toast(ratés ? `Modifié, mais ${ratés} pièce${ratés>1?"s":""} non envoyée${ratés>1?"s":""}.`
+              : "Signalement mis à jour.");
+  await recharger();
+};
 
 /* --- Formulaire de signalement --- */
 let piecesJointes = [];
@@ -1626,7 +1769,7 @@ window.formSignaler = () => {
        <button class="btn sec" id="sg-b-audio" onclick="basculerAudio()">Enregistrer</button></div>
      <button class="btn sec" style="width:100%;margin-bottom:9px"
        onclick="document.getElementById('sg-video').click()">Vidéo (10 s maximum)</button>
-     <input type="file" id="sg-photo" accept="image/*" capture="environment" style="display:none">
+     <input type="file" id="sg-photo" accept="image/*" style="display:none">
      <input type="file" id="sg-video" accept="video/*" capture="environment" style="display:none">
      <input type="file" id="sg-audio" accept="audio/*" style="display:none">
      <div id="sg-liste"></div>
