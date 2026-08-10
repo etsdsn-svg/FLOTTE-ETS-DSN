@@ -76,6 +76,7 @@ button{cursor:pointer;border:0;background:none}
 .titre-sec:first-child{margin-top:0}
 .ligne{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--ciment)}
 .ligne>div:last-child{flex:none;text-align:right}
+.ligne>span.num{flex:none;white-space:nowrap}
 .ligne:last-child{border-bottom:0}
 .lib{min-width:0}
 .lib b{display:block;font-weight:600}
@@ -225,6 +226,7 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
   .carte{border:1px solid #bbb;break-inside:avoid;padding:9px;margin-bottom:8px}
   .scroll-x{overflow:visible;margin:0;padding:0}
   .imprime-entete{display:block !important}
+  .imprime-cloture{display:block !important}
 }
 .logo{display:block;color:currentColor}
 .logo-cote{height:40px;width:auto;color:var(--vert);flex:none}
@@ -232,6 +234,7 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .logo-fond{position:absolute;right:-15%;top:-28%;height:176%;color:#fff;opacity:.11;pointer-events:none}
 .logo-accueil{height:104px;width:auto;margin:0 auto 14px;color:#27368B}
 .logo-entete{height:74px;width:auto;color:#27368B;flex:none}
+.imprime-cloture{display:none;font-size:8.5pt;color:#444;margin:-6px 0 10px;font-style:italic}
 .imprime-entete{display:none;position:relative;overflow:hidden;background:var(--vert);color:#fff;
   padding:13px 15px;margin:0 0 13px;border-radius:8px}
 .imprime-entete .tete{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative}
@@ -345,7 +348,7 @@ function chauffeurDe(camionId, date){
 }
 
 async function charger(){
-  const [cam,ch,ga,af,ty,pa,mv,pr,me] = await Promise.all([
+  const [cam,ch,ga,af,ty,pa,mv,pr,clo,me] = await Promise.all([
     sb.from("sb2_camions").select("*").order("nom"),
     sb.from("sb2_chauffeurs").select("*").order("nom"),
     sb.from("sb2_garages").select("*").order("nom"),
@@ -354,6 +357,7 @@ async function charger(){
     sb.from("sb2_pannes").select("*").order("date_signalement",{ascending:false}),
     sb.from("sb2_mouvements").select("*").order("date",{ascending:false}),
     sb.from("sb2_prefs").select("*").maybeSingle(),
+    sb.from("sb2_clotures").select("*").order("d1",{ascending:false}),
     sb.from("sb2_medias").select("*")
   ]);
   const err = [cam,ch,ga,af,ty,pa,mv,me].find(r=>r.error);
@@ -362,6 +366,7 @@ async function charger(){
     camions:cam.data||[], chauffeurs:ch.data||[], garages:ga.data||[],
     affectations:af.data||[], types:(ty.data||[]).map(t=>t.libelle),
     pannes:pa.data||[], mouvements:mv.data||[], medias:me.data||[],
+    clotures: clo.data||[],
     prefs: pr.data || {seuil:10000, fenetre_retour:30, delai_alerte_h:2, entreprise:"ETS DSN"}
   };
   try{ localStorage.setItem(CACHE, JSON.stringify(D)); }catch(e){}
@@ -595,6 +600,9 @@ Object.defineProperty(window,"D",{get:()=>D});
 Object.defineProperty(window,"C",{get:()=>C});
 Object.defineProperty(window,"G",{get:()=>G});
 window.perfGarage = id => perfGarage(id);
+window.totaux = (d1,d2) => totaux(d1,d2);
+window.soldeAu = (d) => soldeAu(d);
+window.clotureDe = (p,d) => clotureDe(p,d);
 window.caisse = () => caisse();
 
 function bandeaux(){
@@ -1306,6 +1314,17 @@ window.decaler = n => {
   else x.setFullYear(x.getFullYear()+n);
   etatVue.ancre=isoLocal(x); rendu();
 };
+/* Ce qui restait en caisse la veille du debut de periode : le report. */
+function soldeAu(dateLimite){
+  let s=0;
+  for(const m of D.mouvements){
+    if(m.date > dateLimite) continue;
+    s += (m.sens==="entree" ? 1 : -1) * (Number(m.montant)||0);
+  }
+  return s;
+}
+const clotureDe = (per,d1) => (D.clotures||[]).find(c => c.periode===per && c.d1===d1) || null;
+
 function totaux(d1,d2){
   const t={recettes:0,dg:0,ouv:0,pieces:0,mo:0,externes:0,nbPannes:0,prog:0,imp:0};
   for(const m of D.mouvements){
@@ -1321,29 +1340,51 @@ function totaux(d1,d2){
   }
   t.flotte=t.pieces+t.mo; t.entrees=t.recettes+t.dg+t.ouv;
   t.sorties=t.flotte+t.externes; t.resultat=t.entrees-t.sorties;
+  t.reporte = soldeAu(ajoutJours(d1,-1));
+  t.disponible = t.reporte + t.entrees;
+  t.soldeFin = t.disponible - t.sorties;
+  return t;
+}
+
+/* Une periode close affiche ses chiffres figes, pas ceux recalcules. */
+function totauxFiges(c){
+  const t = { reporte:Number(c.solde_ouverture)||0, recettes:Number(c.recettes)||0,
+    dg:Number(c.apports_dg)||0, ouv:Number(c.ouverture_caisse)||0,
+    pieces:Number(c.flotte_pieces)||0, mo:Number(c.flotte_mo)||0,
+    externes:Number(c.externes)||0, nbPannes:c.nb_interventions||0,
+    prog:c.nb_programmees||0, imp:c.nb_imprevues||0 };
+  t.flotte=t.pieces+t.mo; t.entrees=t.recettes+t.dg+t.ouv;
+  t.sorties=t.flotte+t.externes; t.resultat=t.entrees-t.sorties;
+  t.disponible=t.reporte+t.entrees; t.soldeFin=Number(c.solde_cloture)||0;
   return t;
 }
 function blocFlux(t){
   return `<div class="carte">
+    <div class="ligne"><div class="lib"><b>Solde reporté</b><small>Ce qui restait en caisse au début de la période</small></div>
+      <span class="num">${fmtF(t.reporte)}</span></div>
     <div class="ligne"><div class="lib"><b>Recettes camions</b></div><span class="num">${fmtF(t.recettes)}</span></div>
     <div class="ligne"><div class="lib"><b>Apports du DG</b></div><span class="num">${fmtF(t.dg)}</span></div>
     ${t.ouv?`<div class="ligne"><div class="lib"><b>Solde d'ouverture</b></div><span class="num">${fmtF(t.ouv)}</span></div>`:""}
-    <div class="ligne"><div class="lib"><b>Total entrées</b></div><span class="num" style="font-weight:700">${fmtF(t.entrees)}</span></div>
+    <div class="ligne"><div class="lib"><b>Total disponible</b><small>Report + entrées de la période</small></div>
+      <span class="num" style="font-weight:700">${fmtF(t.disponible)}</span></div>
     <div class="ligne"><div class="lib"><b>Flotte — pièces</b></div><span class="num">${fmtF(t.pieces)}</span></div>
     <div class="ligne"><div class="lib"><b>Flotte — main-d'œuvre</b></div><span class="num">${fmtF(t.mo)}</span></div>
     <div class="ligne"><div class="lib"><b>Sous-total flotte</b><small>${t.nbPannes} intervention${t.nbPannes>1?"s":""} · ${t.prog} programmées, ${t.imp} imprévues</small></div>
       <span class="num" style="font-weight:700">${fmtF(t.flotte)}</span></div>
     <div class="ligne"><div class="lib"><b>Dépenses externes</b><small>Hors flotte</small></div><span class="num">${fmtF(t.externes)}</span></div>
     <div class="ligne"><div class="lib"><b>Total sorties</b></div><span class="num" style="font-weight:700">${fmtF(t.sorties)}</span></div>
-    <div class="ligne" style="border-bottom:0"><div class="lib"><b>Résultat de la période</b></div>
-      <span class="num" style="font-size:19px;font-weight:700;color:${t.resultat<0?"var(--minium)":"var(--vert)"}">${fmtF(t.resultat)}</span></div></div>`;
+    <div class="ligne"><div class="lib"><b>Résultat de la période</b><small>Entrées − sorties, hors report</small></div>
+      <span class="num" style="color:${t.resultat<0?"var(--minium)":"var(--vert)"}">${fmtF(t.resultat)}</span></div>
+    <div class="ligne" style="border-bottom:0"><div class="lib"><b>Solde de fin de période</b>
+      <small>Reporté sur la période suivante</small></div>
+      <span class="num" style="font-size:19px;font-weight:700">${fmtF(t.soldeFin)}</span></div></div>`;
 }
 function vRapports(){
   const per=etatVue.periode||"semaine", b=bornes(per,etatVue.ancre||auj());
   let h=`<div class="onglets no-print">${
     [["semaine","Hebdomadaire"],["mois","Mensuel"],["annee","Annuel"]].map(x=>
       `<button class="${per===x[0]?"on":""}" onclick="setVue('periode','${x[0]}')">${x[1]}</button>`).join("")}</div>
-    <div class="duo no-print" style="margin-bottom:13px">
+    <div class="duo no-print" style="margin-bottom:9px">
       <button class="btn sec mini" onclick="decaler(-1)">← Précédent</button>
       <button class="btn sec mini" onclick="decaler(1)">Suivant →</button>
       <button class="btn mini" onclick="window.print()">Imprimer</button></div>
@@ -1359,7 +1400,27 @@ function vRapports(){
       </div></div>
     <div class="carte no-print" style="padding:11px 14px"><b>${esc(b.titre)}</b>
       <div class="mt">Du ${dateLongue(b.d1)} au ${dateLongue(b.d2)}</div></div>`;
-  const t=totaux(b.d1,b.d2);
+  const close = clotureDe(per, b.d1);
+  const t = close ? totauxFiges(close) : totaux(b.d1, b.d2);
+  const terminee = b.d2 < auj();
+
+  if(close){
+    h += `<div class="alerte a-verte no-print"><div><b>Période clôturée</b>
+      Chiffres figés le ${dateLongue(close.cloture_le.slice(0,10))}${close.cloture_par_nom?" par "+esc(close.cloture_par_nom):""}.
+      Plus aucune saisie n'est possible sur cet intervalle.</div></div>
+      ${admin()?`<button class="btn sec no-print" style="width:100%;margin-bottom:13px"
+        onclick="formRouvrir('${close.id}')">Rouvrir cette période</button>`:""}`;
+  } else if(admin() && terminee){
+    h += `<button class="btn no-print" style="width:100%;margin-bottom:13px"
+      onclick="formCloturer('${per}','${b.d1}','${b.d2}')">Clôturer et figer cette période</button>`;
+  } else if(admin() && !terminee){
+    h += `<div class="alerte a-ocre no-print"><div><b>Période en cours</b>
+      La clôture sera possible à partir du ${dateLongue(ajoutJours(b.d2,1))}.</div></div>`;
+  }
+
+  if(close) h += `<div class="imprime-cloture">Rapport clôturé le ${dateLongue(close.cloture_le.slice(0,10))}${
+    close.cloture_par_nom?" par "+esc(close.cloture_par_nom):""} — chiffres définitifs.</div>`;
+
   h += `<div class="titre-sec">Où est passé l'argent</div>` + blocFlux(t);
 
   if(per==="semaine"){
@@ -2465,6 +2526,58 @@ function construireRecapPDF(doc, depuis, programmees, enAttente){
   doc.text(`Établi par ${moi.nom} — GestFlot`, 12, hauteur-11);
   return doc;
 }
+
+
+/* --- Clôture d'une période : fige les chiffres et verrouille les saisies --- */
+window.formCloturer = (per, d1, d2) => {
+  const t = totaux(d1, d2);
+  const nom = { semaine:"cette semaine", mois:"ce mois", annee:"cette année" }[per];
+  ouvrir("Clôturer " + nom,
+    `<p class="mt" style="margin-bottom:12px">Du ${dateLongue(d1)} au ${dateLongue(d2)}.</p>
+     <div class="carte" style="padding:9px 12px;margin-bottom:12px">
+       <div class="ligne"><div class="lib"><b>Solde reporté</b></div><span class="num">${fmtF(t.reporte)}</span></div>
+       <div class="ligne"><div class="lib"><b>Entrées</b></div><span class="num">${fmtF(t.entrees)}</span></div>
+       <div class="ligne"><div class="lib"><b>Sorties</b></div><span class="num">${fmtF(t.sorties)}</span></div>
+       <div class="ligne" style="border-bottom:0"><div class="lib"><b>Solde de fin</b>
+         <small>Report sur la période suivante</small></div>
+         <span class="num" style="font-weight:700;font-size:17px">${fmtF(t.soldeFin)}</span></div>
+     </div>
+     <div class="alerte a-ocre"><div><b>Ces chiffres deviendront définitifs</b>
+       Plus aucune saisie ni correction ne sera possible sur cette période.
+       Vérifie que tout est enregistré avant de continuer.</div></div>
+     <div id="cl-msg"></div>
+     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn" id="cl-ok" onclick="validerCloture('${per}','${d1}','${d2}')">Clôturer</button></div>`);
+};
+window.validerCloture = async (per, d1, d2) => {
+  const b = document.getElementById("cl-ok");
+  b.disabled = true; b.textContent = "Clôture…";
+  const { error } = await sb.rpc("sb2_cloturer", { p_periode:per, p_d1:d1, p_d2:d2 });
+  if(error){
+    const msg = String(error.message||"");
+    document.getElementById("cl-msg").innerHTML =
+      `<div class="alerte a-rouge"><div>${
+        msg.includes("PERIODE_NON_TERMINEE") ? "Cette période n'est pas encore terminée."
+        : msg.includes("DEJA_CLOTUREE") ? "Cette période est déjà clôturée."
+        : "Clôture impossible : " + esc(msg)}</div></div>`;
+    b.disabled = false; b.textContent = "Clôturer";
+    return;
+  }
+  fermer(); toast("Période clôturée."); await recharger();
+};
+window.formRouvrir = (id) => {
+  ouvrir("Rouvrir la période",
+    `<div class="alerte a-ocre"><div><b>Les chiffres figés seront perdus</b>
+       Le rapport redeviendra modifiable et ne correspondra plus forcément à celui que tu as remis.
+       À ne faire que pour corriger une erreur.</div></div>
+     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn danger" onclick="validerReouverture('${id}')">Rouvrir</button></div>`);
+};
+window.validerReouverture = async (id) => {
+  const { error } = await sb.rpc("sb2_rouvrir", { p_id:id });
+  if(error) return toast("Échec : " + error.message);
+  fermer(); toast("Période rouverte."); await recharger();
+};
 
 /* ================= 15. DÉMARRAGE ================= */
 async function demarrer(){
