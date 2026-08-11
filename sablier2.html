@@ -784,6 +784,20 @@ function vBord(){
   if(c.libreNegatif) A += `<div class="alerte a-ocre"><div><b>Les sorties externes entament la part flotte</b>
     Part libre à ${fmtF(c.partLibre)}.</div></div>`;
 
+  /* Juste apres le solde : les derniers mouvements, pour verifier une saisie
+     sans avoir a descendre sous les pannes et les boutons d'action. */
+  const derniers=[...D.mouvements]
+    .sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,7);
+  A += `<div class="carte"><div class="titre-sec" style="margin-top:0">Derniers mouvements</div>`;
+  if(!derniers.length) A += `<div class="vide"><b>Rien encore</b>Recettes, apports et dépenses apparaîtront ici.</div>`;
+  else for(const m of derniers){
+    const plus = m.sens==="entree";
+    A += `<div class="ligne"><div class="lib"><b>${esc(m.libelle)}</b>
+      <small>${dateCourte(m.date)} · ${esc(etiquetteMouvement(m))}</small></div>
+      <span class="num" style="color:${plus?"var(--vert)":"var(--minium)"}">${plus?"+":"−"}${fmt(m.montant)}</span></div>`;
+  }
+  A += `</div>`;
+
   /* ---- colonne B : le travail ---- */
   const ec=enCours();
   const aAffecter=ec.filter(p=>p.statut==="signalee");
@@ -862,18 +876,6 @@ function vBord(){
       <button class="btn sec" onclick="formApportDG()">Apport du DG</button>
       <button class="btn sec" onclick="aller('vendredi')">Collecte</button></div>
     <button class="btn sec no-print" style="width:100%;margin-bottom:12px" onclick="formRecapWeekend()">Récap du weekend → DG</button>`;
-
-  const derniers=[...D.mouvements]
-    .sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,7);
-  C += `<div class="carte"><div class="titre-sec">Derniers mouvements</div>`;
-  if(!derniers.length) C += `<div class="vide"><b>Rien encore</b>Recettes, apports et dépenses apparaîtront ici.</div>`;
-  else for(const m of derniers){
-    const plus = m.sens==="entree";
-    C += `<div class="ligne"><div class="lib"><b>${esc(m.libelle)}</b>
-      <small>${dateCourte(m.date)} · ${esc(etiquetteMouvement(m))}</small></div>
-      <span class="num" style="color:${plus?"var(--vert)":"var(--minium)"}">${plus?"+":"−"}${fmt(m.montant)}</span></div>`;
-  }
-  C += `</div>`;
 
   return `<div class="grille"><div>${A}</div><div>${B}</div><div>${C}</div></div>`;
 }
