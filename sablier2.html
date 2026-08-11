@@ -276,6 +276,7 @@ const SB_CLE = "sb_publishable_wEw9LFDHWcawi_89JvM63w_Jcn1g1pC";
 const sb = createClient(SB_URL, SB_CLE, {
   auth:{ persistSession:true, autoRefreshToken:true, storageKey:"sablier2_auth" }
 });
+window.sb = sb;   /* client public (cle publiable) — expose pour les tests */
 const CACHE = "sablier2_cache";
 
 let moi = null;                 /* {role, nom, acteur_id, camion_id, camion_nom} */
@@ -689,6 +690,14 @@ function badgeDocument(doc){
   const texte = doc.etat==="echue" ? "échue" : doc.etat==="proche" ? `${doc.jours} j` : "à renseigner";
   return `<span class="tag ${TAG_DOC[doc.etat]}" style="white-space:nowrap">${esc(texte)}</span>`;
 }
+/* Variante compacte, prefixee du document concerne — utile des qu'on affiche
+   plusieurs badges cote a cote pour un meme camion, pour lever l'ambiguite. */
+const ABREV_DOC = { visite:"VT", assurance:"Assur.", tvm:"TVM" };
+function badgeDocumentEtiquete(doc){
+  if(doc.etat==="ok") return "";
+  const texte = doc.etat==="echue" ? "échue" : doc.etat==="proche" ? `${doc.jours} j` : "à renseigner";
+  return `<span class="tag ${TAG_DOC[doc.etat]}" style="white-space:nowrap">${ABREV_DOC[doc.type]} · ${esc(texte)}</span>`;
+}
 
 window.totaux = (d1,d2) => totaux(d1,d2);
 window.soldeAu = (d) => soldeAu(d);
@@ -821,6 +830,22 @@ function vBord(){
     }
     B += `<div class="alerte ${urgent?"a-rouge":"a-ocre"}"><div><b>Documents administratifs</b>` +
       lignes.join("<br>") + `</div></div>`;
+  }
+
+  /* Vue complete, camion par camion : au-dela de l'alerte urgente ci-dessus,
+     on veut voir d'un coup d'oeil ou en est chaque camion, meme sans probleme. */
+  const actifsDoc = D.camions.filter(c => c.actif);
+  if(actifsDoc.length){
+    B += `<div class="carte"><div class="titre-sec" style="margin-top:0">Documents administratifs — tous les camions</div>`;
+    for(const c of actifsDoc){
+      const docs = documentsCamion(c);
+      const badges = docs.map(d => badgeDocumentEtiquete(d)).filter(Boolean).join(" ");
+      B += `<div class="ligne" style="flex-direction:column;align-items:stretch;gap:6px">
+        <div class="lib"><b>${esc(c.nom)}</b></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${badges || `<span class="tag t-vert">à jour</span>`}</div></div>`;
+    }
+    B += `</div>`;
   }
 
   B += `<div class="carte"><div class="titre-sec">Pannes en cours</div>`;
@@ -1839,7 +1864,15 @@ async function chargerChauffeur(){
   ]);
   const e=[cam,pan,gar].find(r=>r.error);
   if(e) throw new Error(e.error.message);
-  C = { camions:cam.data||[], pannes:pan.data||[], garages:gar.data||[], medias:med.data||[] };
+  C = { camions:cam.data||[], pannes:pan.data||[], garages:gar.data||[], medias:med.data||[], documents:[] };
+  /* Statut des documents administratifs de son camion — jamais un montant :
+     la fonction serveur ne renvoie que l'échéance et l'état. */
+  if(C.camions[0]){
+    try{
+      const { data, error } = await sb.rpc("sb2_documents_camion", { p_camion: C.camions[0].id });
+      if(!error) C.documents = data || [];
+    }catch(e){ C.documents = []; }
+  }
 }
 const nomGarageC = id => (C.garages.find(g=>g.id===id)||{}).nom || "un garage";
 /* Étiquette courte, détail dans la ligne du dessous. Aucun mot d'argent. */
@@ -1878,6 +1911,19 @@ function rendreChauffeur(){
       <div class="mt">${esc(camion.modele||"")}</div>
       <div style="margin-top:11px">
         <span class="tag ${arret?"t-rouge":"t-vert"}">${arret?"à l'arrêt":"en route"}</span></div></div>`;
+
+    if(C.documents && C.documents.length){
+      h += `<div class="carte">
+        <div class="lbl" style="margin-bottom:8px">Documents du camion</div>`;
+      for(const d of C.documents){
+        const [txt,tagCls] = { echue:["Échue","t-rouge"], proche:[`Dans ${d.jours} j`,"t-ocre"],
+          aRenseigner:["À renseigner par SARANA","t-gris"], ok:["À jour","t-vert"] }[d.etat] || [d.etat,"t-gris"];
+        h += `<div class="ligne"><div class="lib"><b>${esc(d.libelle)}</b>
+          ${d.echeance ? `<small>Échéance le ${dateLongue(d.echeance)}</small>` : ""}</div>
+          <span class="tag ${tagCls}" style="white-space:nowrap">${esc(txt)}</span></div>`;
+      }
+      h += `</div>`;
+    }
 
     h += `<button class="btn" style="width:100%;padding:18px;font-size:17px;margin-bottom:14px"
       onclick="formSignaler()">Signaler une panne</button>`;
