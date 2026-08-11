@@ -227,6 +227,7 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
   .scroll-x{overflow:visible;margin:0;padding:0}
   .imprime-entete{display:block !important}
   .imprime-cloture{display:block !important}
+  .imprime-signature{display:flex !important}
 }
 .logo{display:block;color:currentColor}
 .logo-cote{height:40px;width:auto;color:var(--vert);flex:none}
@@ -235,6 +236,11 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .logo-accueil{height:104px;width:auto;margin:0 auto 14px;color:#27368B}
 .logo-entete{height:74px;width:auto;color:#27368B;flex:none}
 .imprime-cloture{display:none;font-size:8.5pt;color:#444;margin:-6px 0 10px;font-style:italic}
+.imprime-signature{display:none;margin-top:30px;padding-top:4px;gap:30px}
+.imprime-signature>div{flex:1;text-align:center}
+.imprime-signature .trait-sign{border-top:1px solid #333;margin:36px 14px 6px}
+.imprime-signature b{display:block;font-size:9pt}
+.imprime-signature small{font-size:8pt;color:#555}
 .imprime-entete{display:none;position:relative;overflow:hidden;background:var(--vert);color:#fff;
   padding:13px 15px;margin:0 0 13px;border-radius:8px}
 .imprime-entete .tete{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative}
@@ -301,6 +307,8 @@ function numSemaine(d){ const x=new Date(d+"T00:00:00"); x.setDate(x.getDate()+4
   return Math.ceil((((x-new Date(x.getFullYear(),0,1))/86400000)+1)/7); }
 window.ajoutJours = (d,n) => ajoutJours(d,n);
 function ajoutJours(d,n){ const x=new Date(d+"T00:00:00"); x.setDate(x.getDate()+n); return isoLocal(x); }
+window.ajoutMois = (d,n) => ajoutMois(d,n);
+function ajoutMois(d,n){ const x=new Date(d+"T00:00:00"); x.setMonth(x.getMonth()+n); return isoLocal(x); }
 
 function toast(msg){
   const t=document.getElementById("toast");
@@ -600,9 +608,90 @@ Object.defineProperty(window,"D",{get:()=>D});
 Object.defineProperty(window,"C",{get:()=>C});
 Object.defineProperty(window,"G",{get:()=>G});
 window.perfGarage = id => perfGarage(id);
+
+/* ==================================================================
+   ECHEANCES ADMINISTRATIVES — visite technique, assurance, TVM
+   Pas d'alerte tant qu'une date n'a pas ete renseignee : une flotte
+   fraichement documentee ne doit jamais s'afficher en retard.
+   ================================================================== */
+
+/* La TVM n'a pas de date a saisir : son echeance est le 1er janvier.
+   On regarde si un paiement a deja ete journalise cette annee civile
+   pour savoir si l'echeance a deja ete honoree. */
+function tvmPayeePour(camionId, annee){
+  return D.mouvements.some(m =>
+    m.sens==="sortie" && m.nature==="externe" && m.camion_id===camionId &&
+    m.categorie==="TVM" && Number(m.date.slice(0,4))===annee);
+}
+function echeanceTVM(camionId){
+  const an = Number(auj().slice(0,4));
+  const anneeDue = tvmPayeePour(camionId, an) ? an+1 : an;
+  return { date:`${anneeDue}-01-01`, annee:anneeDue };
+}
+function echeanceVisite(c){ return c.visite_technique_date ? ajoutMois(c.visite_technique_date,6) : null; }
+function echeanceAssurance(c){ return c.assurance_date ? ajoutMois(c.assurance_date,12) : null; }
+
+/* etat : aRenseigner | echue | proche | ok */
+function statutEcheance(dateEcheance, delaiJours){
+  if(!dateEcheance) return { etat:"aRenseigner" };
+  const j = jrs(auj(), dateEcheance);
+  if(j < 0) return { etat:"echue", jours:-j };
+  if(j <= delaiJours) return { etat:"proche", jours:j };
+  return { etat:"ok", jours:j };
+}
+
+function documentsCamion(c){
+  const dv = D.prefs.delai_visite_j ?? 45;
+  const da = D.prefs.delai_assurance_j ?? 30;
+  const dt = D.prefs.delai_tvm_j ?? 30;
+  const tvm = echeanceTVM(c.id);
+  return [
+    { type:"visite", libelle:"Visite technique", echeance:echeanceVisite(c), ...statutEcheance(echeanceVisite(c), dv) },
+    { type:"assurance", libelle:"Assurance", echeance:echeanceAssurance(c), ...statutEcheance(echeanceAssurance(c), da) },
+    { type:"tvm", libelle:`TVM ${tvm.annee}`, echeance:tvm.date, ...statutEcheance(tvm.date, dt), tvmAnnee:tvm.annee }
+  ];
+}
+
+/* Phrase lisible pour un document donne, utilisee dans le centre d'alertes
+   et dans la fiche camion. */
+function phraseDocument(camionNom, doc){
+  if(doc.type==="tvm"){
+    const base = `TVM ${doc.tvmAnnee} due au 1er janvier`;
+    if(doc.etat==="echue") return `${base} — échue depuis ${doc.jours} j`;
+    if(doc.etat==="proche") return `${base} — dans ${doc.jours} j`;
+    return base;
+  }
+  if(doc.etat==="echue") return `${doc.libelle} échue depuis ${doc.jours} j`;
+  if(doc.etat==="proche") return `${doc.libelle} à renouveler dans ${doc.jours} j`;
+  if(doc.etat==="aRenseigner") return `${doc.libelle} — date à renseigner`;
+  return `${doc.libelle} à jour`;
+}
+
+/* Un seul indicateur pour la liste des camions : le pire des trois documents. */
+function pireStatutDocuments(c){
+  const ordre = { echue:3, proche:2, aRenseigner:1, ok:0 };
+  return documentsCamion(c).reduce((pire,d) => ordre[d.etat]>ordre[pire.etat] ? d : pire,
+    { etat:"ok" });
+}
+
+const TAG_DOC = { echue:"t-rouge", proche:"t-ocre", aRenseigner:"t-gris", ok:"t-vert" };
+function badgeDocument(doc){
+  if(doc.etat==="ok") return "";
+  const texte = doc.etat==="echue" ? "échue" : doc.etat==="proche" ? `${doc.jours} j` : "à renseigner";
+  return `<span class="tag ${TAG_DOC[doc.etat]}" style="white-space:nowrap">${esc(texte)}</span>`;
+}
+
 window.totaux = (d1,d2) => totaux(d1,d2);
 window.soldeAu = (d) => soldeAu(d);
 window.clotureDe = (p,d) => clotureDe(p,d);
+window.documentsCamion = (c) => documentsCamion(c);
+window.echeanceTVM = (id) => echeanceTVM(id);
+window.echeanceVisite = (c) => echeanceVisite(c);
+window.echeanceAssurance = (c) => echeanceAssurance(c);
+window.statutEcheance = (d,n) => statutEcheance(d,n);
+window.phraseDocument = (n,d) => phraseDocument(n,d);
+window.pireStatutDocuments = (c) => pireStatutDocuments(c);
+window.tvmPayeePour = (id,an) => tvmPayeePour(id,an);
 window.caisse = () => caisse();
 
 function bandeaux(){
@@ -697,6 +786,33 @@ function vBord(){
   const imm=D.pannes.filter(p=>p.immobilise && !p.immob_fin);
   if(imm.length) B += `<div class="alerte a-rouge"><div><b>${imm.length} camion${imm.length>1?"s":""} immobilisé${imm.length>1?"s":""}</b>` +
     imm.map(p=>`${esc(nomCamion(p.camion_id))} — ${joursArret(p)} j ouvrés d'arrêt`).join("<br>") + `</div></div>`;
+
+  /* Documents administratifs : uniquement echue/proche remontent ici.
+     "a renseigner" n'est pas une urgence, on ne l'affiche pas dans le centre d'alertes.
+     Les TVM en retard sont regroupees sur une ligne pour ne pas noyer les vraies urgences. */
+  const alertesDoc = [];
+  const tvmEnRetard = [];
+  for(const c of D.camions){
+    if(!c.actif) continue;
+    for(const d of documentsCamion(c)){
+      if(d.etat!=="echue" && d.etat!=="proche") continue;
+      if(d.type==="tvm") tvmEnRetard.push({ camion:c, doc:d });
+      else alertesDoc.push({ camion:c, doc:d });
+    }
+  }
+  if(alertesDoc.length || tvmEnRetard.length){
+    alertesDoc.sort((a,b) => (a.doc.etat==="echue"?0:1) - (b.doc.etat==="echue"?0:1));
+    const urgent = alertesDoc.some(a=>a.doc.etat==="echue") || tvmEnRetard.some(a=>a.doc.etat==="echue");
+    let lignes = alertesDoc.map(a => `${esc(a.camion.nom)} — ${esc(phraseDocument(a.camion.nom, a.doc))}`);
+    if(tvmEnRetard.length === 1){
+      lignes.push(`${esc(tvmEnRetard[0].camion.nom)} — ${esc(phraseDocument(tvmEnRetard[0].camion.nom, tvmEnRetard[0].doc))}`);
+    } else if(tvmEnRetard.length > 1){
+      const an = tvmEnRetard[0].doc.tvmAnnee;
+      lignes.push(`TVM ${an} due au 1er janvier — ${tvmEnRetard.length} camions concernés`);
+    }
+    B += `<div class="alerte ${urgent?"a-rouge":"a-ocre"}"><div><b>Documents administratifs</b>` +
+      lignes.join("<br>") + `</div></div>`;
+  }
 
   B += `<div class="carte"><div class="titre-sec">Pannes en cours</div>`;
   if(!ec.length) B += `<div class="vide"><b>Rien en cours</b>Tous les camions roulent.</div>`;
@@ -1156,29 +1272,53 @@ window.supprimerRecette = async (mouvementId, camionId) => {
 };
 
 /* ================= 10. CAISSE : SORTIES ET APPORTS ================= */
-const CATEGORIES=["Besoin société","Avance personnel","Demande du DG","Abonnement","Autre"];
-window.formSortie = () => {
+const CATEGORIES=["Besoin société","Avance personnel","Demande du DG","Abonnement","TVM","Visite technique","Assurance","Autre"];
+window.formSortie = (preremplir) => {
   const c=caisse();
+  const estTVM = preremplir==="tvm";
   ouvrir("Dépense externe",
-    `<label class="ch"><span>Objet</span><input id="s-lib" placeholder="Avance salaire Armand"></label>
-     <label class="ch"><span>Catégorie</span><select id="s-cat">${CATEGORIES.map(x=>`<option>${esc(x)}</option>`).join("")}</select></label>
+    `<button type="button" class="btn sec mini no-print" style="margin-bottom:12px" onclick="basculerTVM()">🧾 TVM</button>
+     <label class="ch"><span>Objet</span><input id="s-lib" placeholder="Avance salaire Armand" value="${estTVM?"TVM "+new Date().getFullYear():""}"></label>
+     <label class="ch"><span>Catégorie</span><select id="s-cat">${CATEGORIES.map(x=>`<option${estTVM&&x==="TVM"?" selected":""}>${esc(x)}</option>`).join("")}</select></label>
+     <div id="s-camion-bloc" style="${estTVM?"":"display:none"}">
+       <label class="ch"><span>Camion concerné</span><select id="s-camion">
+         <option value="">— Choisir —</option>
+         ${D.camions.filter(x=>x.actif).map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join("")}
+       </select></label>
+     </div>
      <div class="rang"><label class="ch"><span>Montant</span><input type="number" inputmode="numeric" id="s-m"></label>
      <label class="ch"><span>Date</span><input type="date" id="s-date" value="${auj()}"></label></div>
      <div id="s-alerte"></div>
      <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
      <button class="btn" onclick="validerSortie()">Enregistrer</button></div>`,
-    ()=>document.getElementById("s-m").addEventListener("input",function(){
-      const v=Number(this.value)||0, z=document.getElementById("s-alerte");
-      z.innerHTML = (v>c.partLibre && v>0)
-        ? `<div class="alerte a-ocre"><div><b>Tu entames la part flotte</b>La part libre est de ${fmtF(Math.max(0,c.partLibre))}. Cette dépense prend ${fmtF(v-Math.max(0,c.partLibre))} sur l'argent du DG.</div></div>` : "";
-    }));
+    ()=>{
+      document.getElementById("s-m").addEventListener("input",function(){
+        const v=Number(this.value)||0, z=document.getElementById("s-alerte");
+        z.innerHTML = (v>c.partLibre && v>0)
+          ? `<div class="alerte a-ocre"><div><b>Tu entames la part flotte</b>La part libre est de ${fmtF(Math.max(0,c.partLibre))}. Cette dépense prend ${fmtF(v-Math.max(0,c.partLibre))} sur l'argent du DG.</div></div>` : "";
+      });
+      document.getElementById("s-cat").addEventListener("change", function(){
+        document.getElementById("s-camion-bloc").style.display =
+          (this.value==="TVM"||this.value==="Visite technique"||this.value==="Assurance") ? "" : "none";
+      });
+      if(estTVM){ document.getElementById("s-camion").focus(); }
+    });
+};
+window.basculerTVM = () => {
+  document.getElementById("s-lib").value = "TVM " + new Date().getFullYear();
+  document.getElementById("s-cat").value = "TVM";
+  document.getElementById("s-camion-bloc").style.display = "";
+  document.getElementById("s-camion").focus();
 };
 window.validerSortie = async () => {
-  const lib=val("s-lib").trim(), v=nb("s-m");
+  const lib=val("s-lib").trim(), v=nb("s-m"), cat=val("s-cat");
+  const camionBloc = document.getElementById("s-camion-bloc");
+  const camionId = camionBloc && camionBloc.style.display!=="none" ? val("s-camion") : "";
   if(!lib) return toast("Donne un objet.");
   if(v<=0) return toast("Renseigne un montant.");
+  if(cat==="TVM" && !camionId) return toast("Choisis le camion concerné par la TVM.");
   const {error}=await sb.from("sb2_mouvements").insert({date:val("s-date")||auj(),sens:"sortie",
-    nature:"externe",montant:v,libelle:lib,categorie:val("s-cat")});
+    nature:"externe",montant:v,libelle:lib,categorie:cat, camion_id: camionId || null});
   if(error) return toast("Échec : "+error.message);
   fermer(); toast("Dépense enregistrée."); await recharger();
 };
@@ -1202,6 +1342,37 @@ window.validerApport = async () => {
   fermer(); toast("Apport enregistré."); await recharger();
 };
 
+
+window.formRenouveler = (camionId, type) => {
+  const c = camion(camionId); if(!c) return;
+  const libelle = type==="visite" ? "Visite technique" : "Assurance";
+  ouvrir("Renouveler — " + libelle,
+    `<p class="mt" style="margin-bottom:12px">${esc(c.nom)}. La date et le paiement sont enregistrés ensemble.</p>
+     <label class="ch"><span>Date du renouvellement</span><input type="date" id="rn-date" value="${auj()}"></label>
+     <label class="ch"><span>Montant payé</span><input type="number" inputmode="numeric" id="rn-montant"></label>
+     <div id="rn-msg"></div>
+     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn" id="rn-ok" onclick="validerRenouveler('${camionId}','${type}')">Enregistrer</button></div>`);
+};
+window.validerRenouveler = async (camionId, type) => {
+  const v = nb("rn-montant");
+  if(v<=0) return document.getElementById("rn-msg").innerHTML =
+    `<div class="alerte a-rouge"><div>Renseigne le montant payé.</div></div>`;
+  const b = document.getElementById("rn-ok");
+  b.disabled = true; b.textContent = "Enregistrement…";
+  const { error } = await sb.rpc("sb2_renouveler_document",
+    { p_camion:camionId, p_type:type, p_date:val("rn-date")||auj(), p_montant:v });
+  if(error){
+    const msg = String(error.message||"");
+    document.getElementById("rn-msg").innerHTML = `<div class="alerte a-rouge"><div>${
+      msg.includes("PERIODE_CLOTUREE") ? "Cette date tombe dans une période déjà clôturée."
+      : "Échec : " + esc(msg)}</div></div>`;
+    b.disabled = false; b.textContent = "Enregistrer";
+    return;
+  }
+  fermer(); toast("Renouvellement enregistré."); await recharger();
+};
+
 /* ================= 11. CAMIONS ================= */
 function vCamions(){
   if(etatVue.detail) return detailCamion(etatVue.detail);
@@ -1213,8 +1384,10 @@ function vCamions(){
   for(const c of D.camions){
     const b=bilanCamion(c.id);
     tot.r+=b.recette; tot.rep+=b.reparations; tot.a+=b.arret; tot.m+=b.manque; tot.n+=b.net;
+    const pire = pireStatutDocuments(c);
     h+=`<tr onclick="setVue('detail','${c.id}')" style="cursor:pointer">
-      <td><b>${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">inactif</span>'}<br><small class="mt">${esc(c.modele||"")}</small></td>
+      <td><b>${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">inactif</span>'}
+        ${pire.etat!=="ok" ? " "+badgeDocument(pire) : ""}<br><small class="mt">${esc(c.modele||"")}</small></td>
       <td class="n">${fmt(b.recette)}</td><td class="n">${fmt(b.reparations)}</td>
       <td class="n">${b.arret||"—"}</td><td class="n">${fmt(b.manque)}</td>
       <td class="n" style="font-weight:700;color:${b.net<0?"var(--minium)":"var(--vert)"}">${fmt(b.net)}</td></tr>`;
@@ -1241,6 +1414,19 @@ function detailCamion(id){
       <span class="num" style="font-size:18px;font-weight:700;color:var(--minium)">${fmtF(b.coutReel)}</span></div>
     <div class="ligne"><div class="lib"><b>Net</b></div>
       <span class="num" style="font-size:18px;font-weight:700;color:${b.net<0?"var(--minium)":"var(--vert)"}">${fmtF(b.net)}</span></div></div>`;
+  const docs = documentsCamion(c);
+  h += `<div class="titre-sec">Documents administratifs</div><div class="carte">`;
+  for(const d of docs){
+    h += `<div class="ligne"><div class="lib"><b>${esc(d.libelle)}</b>
+      <small>${d.echeance ? "Échéance le "+dateLongue(d.echeance) : "Aucune date renseignée"}</small></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${badgeDocument(d) || '<span class="tag t-vert">à jour</span>'}
+        ${admin() && d.type!=="tvm" ? `<button class="btn mini sec no-print" onclick="formRenouveler('${id}','${d.type}')">Renouveler</button>` : ""}
+      </div></div>`;
+  }
+  h += `<p class="mt" style="margin-top:9px">La TVM se recalcule au 1er janvier ; utilise le bouton 🧾 TVM
+    depuis une dépense pour la déclarer payée.</p></div>`;
+
   const ps=D.pannes.filter(p=>p.camion_id===id);
   h+=`<div class="titre-sec">Historique</div><div class="carte">`;
   if(!ps.length) h+=`<div class="vide"><b>Aucune panne</b></div>`;
@@ -1453,6 +1639,12 @@ function vRapports(){
     h+=`</tbody></table></div><p class="mt" style="margin-top:10px">Du plus coûteux au plus rentable.</p></div>`;
     h+=`<div class="titre-sec">Dépenses externes</div>`+tableauExternes(b.d1,b.d2);
   }
+
+  h += `<div class="imprime-signature">
+    <div><div class="trait-sign"></div><b>${esc(moi?.nom || "L'administrateur")}</b>
+      <small>Établi le ${dateLongue(auj())}</small></div>
+    <div><div class="trait-sign"></div><b>Directeur Général</b><small>Vu et approuvé</small></div>
+  </div>`;
   return h;
 }
 function tableauPannes(d1,d2){
@@ -1533,8 +1725,13 @@ function vReglages(){
       <label class="ch"><span>Seuil d'alerte (F)</span><input type="number" id="p-seuil" value="${D.prefs.seuil}"></label>
       <label class="ch"><span>Fenêtre retours (j)</span><input type="number" id="p-fen" value="${D.prefs.fenetre_retour}"></label></div>
     <div class="rang">
+    <div class="rang">
       <label class="ch"><span>Alerte panne non affectée (h)</span><input type="number" id="p-del" value="${D.prefs.delai_alerte_h}"></label>
       <label class="ch"><span>Nom sur les rapports</span><input id="p-ent" value="${esc(D.prefs.entreprise)}"></label></div>
+    <div class="rang">
+      <label class="ch"><span>Alerte visite technique (j avant)</span><input type="number" id="p-visite" value="${D.prefs.delai_visite_j ?? 45}"></label>
+      <label class="ch"><span>Alerte assurance (j avant)</span><input type="number" id="p-assurance" value="${D.prefs.delai_assurance_j ?? 30}"></label></div>
+    <label class="ch"><span>Alerte TVM (j avant le 1er janvier)</span><input type="number" id="p-tvm" value="${D.prefs.delai_tvm_j ?? 30}"></label>
     <button class="btn" onclick="majPrefs()">Enregistrer</button></div>`;
 
   h+=`<div class="titre-sec">Session</div><div class="carte">
@@ -1605,7 +1802,9 @@ window.creerInvitation = async () => {
 window.majPrefs = async () => {
   const {error}=await sb.from("sb2_prefs").update({
     seuil:nb("p-seuil"), fenetre_retour:nb("p-fen")||30,
-    delai_alerte_h:nb("p-del")||2, entreprise:val("p-ent").trim()||"ETS DSN"
+    delai_alerte_h:nb("p-del")||2, entreprise:val("p-ent").trim()||"ETS DSN",
+    delai_visite_j:nb("p-visite")||45, delai_assurance_j:nb("p-assurance")||30,
+    delai_tvm_j:nb("p-tvm")||30
   }).eq("id",1);
   if(error) return toast("Échec : "+error.message);
   toast("Paramètres enregistrés."); await recharger();
