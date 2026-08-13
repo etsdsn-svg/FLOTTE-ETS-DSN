@@ -581,11 +581,13 @@ const ICONES = {
   camions:'<svg viewBox="0 0 24 24"><path d="M2 16V8h11v8M13 11h4l3 3v2h-3"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
   garages:'<svg viewBox="0 0 24 24"><path d="M14.5 3.5a4.5 4.5 0 0 0 6 6M20.5 9.5 10 20a3 3 0 0 1-4.2-4.2L16.3 5.3"/></svg>',
   rapports:'<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
+  carte:'<svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
   reglages:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>'
 };
 function vues(){
   const v=[{id:"bord",lbl:"Bord"},{id:"pannes",lbl:"Pannes"},{id:"vendredi",lbl:"Vendredi"},
-           {id:"camions",lbl:"Camions"},{id:"garages",lbl:"Garages"},{id:"rapports",lbl:"Rapports"}];
+           {id:"camions",lbl:"Camions"},{id:"carte",lbl:"Carte"},
+           {id:"garages",lbl:"Garages"},{id:"rapports",lbl:"Rapports"}];
   if(moi.role==="admin") v.push({id:"reglages",lbl:"Réglages"});
   return v;
 }
@@ -762,7 +764,7 @@ function rendu(){
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===vue));
   bandeaux();
   const f={bord:vBord,pannes:vPannes,vendredi:vVendredi,camions:vCamions,
-           garages:vGarages,rapports:vRapports,reglages:vReglages}[vue];
+           carte:vCarte,garages:vGarages,rapports:vRapports,reglages:vReglages}[vue];
   document.getElementById("main").innerHTML=f();
   if(window["apres_"+vue]) window["apres_"+vue]();
 }
@@ -1586,7 +1588,154 @@ function detailCamion(id){
   return h;
 }
 
-/* ================= 12. GARAGES ================= */
+/* ================= 12. CARTE GPS ================= */
+/* Leaflet.js charge dynamiquement depuis CDN la premiere fois.
+   Ensuite il est cache par le navigateur. */
+let LEAFLET_PRET = false;
+function chargerLeaflet(){
+  if(LEAFLET_PRET || document.getElementById("leaflet-css")) return Promise.resolve();
+  return new Promise((ok,ko)=>{
+    const css=document.createElement("link");
+    css.id="leaflet-css"; css.rel="stylesheet";
+    css.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(css);
+    const js=document.createElement("script");
+    js.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    js.onload=()=>{ LEAFLET_PRET=true; ok(); };
+    js.onerror=()=>ko(new Error("Leaflet indisponible"));
+    document.head.appendChild(js);
+  });
+}
+
+/* Couleur du marqueur selon l'activité du camion */
+function couleurMarqueur(pos){
+  if(!pos) return "#999";
+  const minutesDepuis = (Date.now() - new Date(pos.created_at))/60000;
+  if(minutesDepuis > 120) return "#888";        // gris — hors ligne > 2h
+  if(Number(pos.vitesse) > 2) return "#17453A"; // vert DSN — en mouvement
+  return "#E07B39";                             // orange — arrêté
+}
+
+function vCarte(){
+  return `
+    <div class="titre-sec" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Flotte — positions en temps réel</span>
+      <button class="btn mini sec no-print" onclick="actualiserCarte()">↺ Actualiser</button>
+    </div>
+    <div id="carte-map" style="height:58vh;width:100%;border-radius:12px;overflow:hidden;
+      background:#d4e8df;display:flex;align-items:center;justify-content:center">
+      <span style="color:#17453A;font-size:14px">Chargement de la carte…</span>
+    </div>
+    <div id="carte-liste" style="margin-top:12px"></div>`;
+}
+
+let carteL = null; /* instance Leaflet globale */
+window.apres_carte = async () => {
+  try {
+    await chargerLeaflet();
+  } catch(e) {
+    document.getElementById("carte-map").innerHTML =
+      `<div class="vide"><b>Carte indisponible</b>Vérifie ta connexion internet.</div>`;
+    return;
+  }
+  /* Init ou réutilisation de la carte Leaflet */
+  const el = document.getElementById("carte-map");
+  el.style.cssText = "height:58vh;width:100%;border-radius:12px;overflow:hidden;";
+  if(carteL){ carteL.remove(); carteL=null; }
+  /* Cotonou centré */
+  carteL = L.map("carte-map", { zoomControl:true }).setView([6.365, 2.418], 11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom:18
+  }).addTo(carteL);
+
+  /* Recuperer les dernières positions depuis Supabase */
+  const { data:positions } = await sb.from("sb2_derniere_position").select("*");
+  const posMap = {};
+  (positions||[]).forEach(p=>{ posMap[p.camion_id]=p; });
+
+  /* Placer les marqueurs */
+  const enLigne=[], horsLigne=[];
+  for(const c of D.camions){
+    if(!c.actif) continue;
+    const pos = posMap[c.id];
+    const ch = chauffeurDe(c.id);
+    const couleur = couleurMarqueur(pos);
+    if(pos){
+      const icon = L.divIcon({
+        className:"",
+        html:`<div style="
+          background:${couleur};color:#fff;border-radius:50% 50% 50% 0;
+          width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+          font-size:10px;font-weight:700;border:2px solid #fff;
+          box-shadow:0 2px 6px rgba(0,0,0,.35);transform:rotate(-45deg)">
+          <span style="transform:rotate(45deg);text-align:center;line-height:1.1">${esc(c.nom.slice(0,6))}</span>
+        </div>`,
+        iconSize:[36,36], iconAnchor:[12,36], popupAnchor:[6,-36]
+      });
+      const minutesDepuis = Math.round((Date.now()-new Date(pos.created_at))/60000);
+      const vitesse = Math.round(Number(pos.vitesse)||0);
+      const marker = L.marker([pos.lat, pos.lng], {icon}).addTo(carteL);
+      marker.bindPopup(`
+        <b style="font-size:14px">${esc(c.nom)}</b><br>
+        <span style="color:#555">${esc(c.modele||"")}</span><br><br>
+        🧑 ${ch ? esc(ch.nom) : "—"}<br>
+        🚛 ${vitesse > 2 ? vitesse+" km/h" : "À l'arrêt"}<br>
+        🕐 Il y a ${minutesDepuis < 60 ? minutesDepuis+" min" : Math.round(minutesDepuis/60)+" h"}<br>
+        📍 ${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}<br>
+        ${pos.km_compteur ? "📟 "+fmtKm(pos.km_compteur) : ""}
+      `);
+      enLigne.push({c,pos,ch,couleur,vitesse,minutesDepuis});
+    } else {
+      horsLigne.push({c,ch});
+    }
+  }
+
+  /* Ajuster le zoom si des positions existent */
+  if(enLigne.length){
+    const grp = L.featureGroup(
+      enLigne.map(x=>L.marker([x.pos.lat,x.pos.lng]))
+    );
+    carteL.fitBounds(grp.getBounds().pad(0.2));
+  }
+
+  /* Liste sous la carte */
+  let liste = "";
+  if(enLigne.length){
+    liste += `<div class="titre-sec">En ligne (${enLigne.length})</div><div class="carte">`;
+    for(const x of enLigne){
+      const statut = Number(x.pos.vitesse)>2
+        ? `<span class="tag t-vert">En mouvement · ${x.vitesse} km/h</span>`
+        : `<span class="tag t-ocre">Arrêté</span>`;
+      liste += `<div class="ligne">
+        <div class="lib"><b>${esc(x.c.nom)}</b>
+          <small>${x.ch?esc(x.ch.nom):"—"} · il y a ${x.minutesDepuis<60?x.minutesDepuis+" min":Math.round(x.minutesDepuis/60)+" h"}</small>
+        </div>${statut}</div>`;
+    }
+    liste += `</div>`;
+  }
+  if(horsLigne.length){
+    liste += `<div class="titre-sec">Hors ligne / Pas de GPS (${horsLigne.length})</div><div class="carte">`;
+    for(const x of horsLigne){
+      liste += `<div class="ligne">
+        <div class="lib"><b>${esc(x.c.nom)}</b>
+          <small>${x.ch?esc(x.ch.nom):"sans chauffeur"}</small>
+        </div><span class="tag t-gris">Aucune position</span></div>`;
+    }
+    liste += `</div>`;
+  }
+  if(!enLigne.length && !horsLigne.length){
+    liste = `<div class="carte"><div class="vide"><b>Aucun camion actif</b></div></div>`;
+  }
+  document.getElementById("carte-liste").innerHTML = liste;
+};
+
+window.actualiserCarte = async () => {
+  if(vue !== "carte") return;
+  await recharger();
+};
+
+/* ================= 13. GARAGES ================= */
 function vGarages(){
   if(!D.garages.length) return `<div class="carte"><div class="vide"><b>Aucun garage</b></div></div>`;
   const rangs=D.garages.map(g=>({g,p:perfGarage(g.id)})).sort((a,b)=>b.p.total-a.p.total);
