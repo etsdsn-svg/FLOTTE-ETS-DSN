@@ -243,6 +243,72 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .logo-mono{height:22px;width:auto;color:#fff;flex:none}
 .logo-fond{position:absolute;right:-15%;top:-28%;height:176%;color:#fff;opacity:.11;pointer-events:none}
 .logo-accueil{height:104px;width:auto;margin:0 auto 14px;color:#27368B}
+
+/* ── Tableau de bord Industrial Orange (Concept C) ── */
+#zone.bord-dark { background:#111015; }
+#zone.bord-dark #topbar { background:#111015; border-bottom:2px solid #ff5b3d; }
+#zone.bord-dark #topbar .marque { color:#fff; }
+#zone.bord-dark #topbar .solde-haut { display:none; }
+#zone.bord-dark #topbar .cycle { color:#ff5b3d; }
+#zone.bord-dark #topbar .etat { color:#6a6a8a; }
+.bord-ticker-wrap { overflow:hidden; background:#ff5b3d; padding:5px 0; }
+.bord-ticker { display:inline-block; white-space:nowrap; animation:ticker 28s linear infinite; }
+.bord-ticker span { font-size:10px; font-weight:700; color:#fff; letter-spacing:.8px; padding:0 24px; }
+@keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+.bord-gauge-section { padding:18px 16px 4px; text-align:center; }
+.bord-gauge-lbl { font-size:9px; letter-spacing:3px; color:#ff5b3d; text-transform:uppercase; margin-bottom:10px; }
+.bord-gauge-wrap { position:relative; width:200px; margin:0 auto; }
+.bord-gauge-wrap svg { width:200px; height:110px; display:block; }
+.bord-gauge-val { position:absolute; bottom:0; left:0; right:0; text-align:center; }
+.bord-gauge-num { font-size:24px; font-weight:900; color:#fff; font-variant-numeric:tabular-nums; }
+.bord-gauge-unit { font-size:9px; color:#ff5b3d; letter-spacing:2px; }
+.bord-stats { display:flex; gap:1px; margin:12px 0 0; }
+.bord-stat { flex:1; padding:12px 4px; text-align:center; background:rgba(255,255,255,.04); border-top:3px solid transparent; }
+.bord-stat.rouge { border-color:#ef4444; }
+.bord-stat.orange { border-color:#ff5b3d; }
+.bord-stat.vert { border-color:#22c55e; }
+.bord-stat.gris { border-color:#4a4a5a; }
+.bord-stat-val { font-size:22px; font-weight:900; color:#fff; }
+.bord-stat-val.rouge { color:#ef4444; }
+.bord-stat-val.orange { color:#ff5b3d; }
+.bord-stat-val.vert { color:#22c55e; }
+.bord-stat-lbl { font-size:8px; color:#6a6a7a; text-transform:uppercase; letter-spacing:.8px; margin-top:3px; }
+.bord-section { padding:12px 12px 0; }
+.bord-section-head { display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid rgba(255,91,61,.3); padding-bottom:7px; margin-bottom:9px; }
+.bord-section-head .lbl { font-size:9px; letter-spacing:2px; color:#ff5b3d; text-transform:uppercase; font-weight:700; }
+.bord-section-head .ct { font-size:11px; color:#fff; font-weight:700; }
+.bord-incident { background:rgba(255,255,255,.04); border-left:3px solid #ef4444;
+  border-radius:0 8px 8px 0; padding:9px 11px; margin-bottom:7px; }
+.bord-incident.orange { border-color:#ff5b3d; }
+.bord-incident.vert { border-color:#22c55e; }
+.bord-incident.ocre { border-color:#fbbf24; }
+.bord-incident-head { display:flex; justify-content:space-between; align-items:center; }
+.bord-incident-nom { font-size:12px; font-weight:700; color:#fff; }
+.bord-incident-tag { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; text-transform:uppercase; }
+.bord-tag-rouge { background:rgba(239,68,68,.2); color:#f87171; border:1px solid rgba(239,68,68,.4); }
+.bord-tag-orange { background:rgba(255,91,61,.15); color:#ff8c70; border:1px solid rgba(255,91,61,.35); }
+.bord-tag-vert { background:rgba(34,197,94,.1); color:#4ade80; border:1px solid rgba(34,197,94,.3); }
+.bord-tag-ocre { background:rgba(251,191,36,.1); color:#fde68a; border:1px solid rgba(251,191,36,.35); }
+.bord-incident-detail { font-size:10px; color:#6a6a7a; margin-top:3px; }
+.bord-fleet { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; padding:4px 0 20px; }
+.bord-fleet-item { border:1px solid rgba(255,255,255,.08); border-radius:7px; padding:8px 3px; text-align:center; }
+.bord-fleet-item.ok { border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.05); }
+.bord-fleet-item.panne { border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.07); }
+.bord-fleet-item.immo { border-color:rgba(255,91,61,.4); background:rgba(255,91,61,.06); }
+.bord-fleet-icon { font-size:15px; }
+.bord-fleet-nom { font-size:7px; color:#6a6a7a; font-weight:600; margin-top:3px; }
+.bord-fleet-nom.ok { color:#4ade80; }
+.bord-fleet-nom.panne { color:#f87171; }
+.bord-fleet-nom.immo { color:#fb923c; }
+.bord-mouv-item { display:flex; justify-content:space-between; align-items:center;
+  padding:8px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+.bord-mouv-item:last-child { border-bottom:none; }
+.bord-mouv-lib { font-size:11px; font-weight:600; color:#e0e0e0; }
+.bord-mouv-date { font-size:9px; color:#5a5a6a; margin-top:1px; }
+.bord-mouv-val { font-size:12px; font-weight:700; }
+.bord-mouv-val.plus { color:#22c55e; }
+.bord-mouv-val.moins { color:#ef4444; }
 .logo-entete{height:74px;width:auto;color:#27368B;flex:none}
 .imprime-cloture{display:none;font-size:8.5pt;color:#444;margin:-6px 0 10px;font-style:italic}
 .imprime-signature{display:none;margin-top:30px;padding-top:4px;gap:30px}
@@ -613,7 +679,7 @@ function charpente(){
     vues().map(v=>`<button data-v="${v.id}">${ICONES[v.id]}<span>${v.lbl}</span></button>`).join("");
   n.querySelectorAll("button").forEach(b=>b.onclick=()=>aller(b.dataset.v));
 }
-function aller(v){ vue=v; etatVue={}; rendu(); window.scrollTo(0,0); }
+function aller(v){ vue=v; etatVue={}; document.getElementById("zone")?.classList.remove("bord-dark"); rendu(); window.scrollTo(0,0); }
 window.aller = aller;
 window.setVue = (k,v) => { etatVue[k]=v; rendu(); };
 /* exposés pour inspection et tests */
@@ -777,142 +843,242 @@ async function recharger(){
 window.recharger = recharger;
 const admin = () => moi.role==="admin";
 
-/* ================= 6. TABLEAU DE BORD ================= */
+/* ================= 6. TABLEAU DE BORD — Industrial Orange ================= */
 function vBord(){
   const c=caisse(), max=referenceSablier();
-  const hSolde=Math.max(0,Math.min(100,c.solde/max*100));
-  const part = x => c.solde>0 ? Math.max(0,Math.min(100, x/c.solde*100)) : 0;
-  const pFlotte=part(Math.min(c.partFlotte,c.solde));
-  const pEngage=part(Math.min(c.engage, Math.max(0,c.solde-c.partFlotte)));
-  const hSeuil=Math.max(0,Math.min(100,c.seuil/max*100));
+  const pct=Math.max(0,Math.min(1, c.solde/max));
 
-  /* ---- colonne A : l'argent ---- */
-  let A = `<div class="sablier-bloc">
-    <svg viewBox="17.5 -22.8 743.3 1122.4" class="logo logo-fond" aria-hidden="true"><use href="#mono"/></svg>
-    <div class="colonne">
-      <div class="remplissage" style="height:${hSolde.toFixed(1)}%">
-        <div class="p-libre" style="height:${Math.max(0,100-pFlotte-pEngage).toFixed(1)}%"></div>
-        <div class="p-engage" style="height:${pEngage.toFixed(1)}%"></div>
-        <div class="p-flotte" style="height:${pFlotte.toFixed(1)}%"></div>
-      </div>
-      <div class="seuil" style="bottom:${hSeuil.toFixed(1)}%"><span>SEUIL</span></div>
-    </div>
-    <div class="chiffres">
-      <div class="lbl">En caisse</div>
-      <div class="gros num">${fmtF(c.solde)}</div>
-      ${c.nbARegler ? `<div class="lbl" style="margin-top:9px">Après paiements en attente</div>
-        <div class="moyen num">${fmtF(c.previsionnel)}</div>` : ""}
-      <div class="repart">
-        <div><span class="puce" style="background:var(--sable)"></span>Part libre<b>${fmtF(c.partLibre)}</b></div>
-        <div><span class="puce" style="background:#fff"></span>Part flotte<b>${fmtF(c.partFlotte)}</b></div>
-        ${c.nbARegler ? `<div style="border-top:1px solid var(--ciment);padding-top:7px"><span class="puce p-engage"></span>dont à régler (${c.nbARegler})<b>${fmtF(c.engage)}</b></div>` : ""}
-      </div>
-    </div></div>`;
-
-  if(c.sousSeuil) A += `<div class="alerte a-rouge"><div><b>Caisse au seuil</b>
-    Il reste ${fmtF(c.solde)}, seuil à ${fmtF(c.seuil)}. C'est le moment de solliciter le DG.</div></div>`;
-  if(c.previsionnel<=c.seuil && !c.sousSeuil) A += `<div class="alerte a-ocre"><div><b>Le prévisionnel passe sous le seuil</b>
-    Une fois les ${c.nbARegler} réparations terminées réglées, il ne restera que ${fmtF(c.previsionnel)}.</div></div>`;
-  if(c.sansEstimation) A += `<div class="alerte a-ocre"><div><b>${c.sansEstimation} réparation${c.sansEstimation>1?"s":""} sans montant estimé</b>
-    Aucun historique pour les chiffrer. Ouvre-les pour donner un ordre de grandeur, sinon le prévisionnel est faux.</div></div>`;
-  if(c.libreNegatif) A += `<div class="alerte a-ocre"><div><b>Les sorties externes entament la part flotte</b>
-    Part libre à ${fmtF(c.partLibre)}.</div></div>`;
-
-  /* Juste apres le solde : les derniers mouvements, pour verifier une saisie
-     sans avoir a descendre sous les pannes et les boutons d'action. */
-  const derniers=[...D.mouvements]
-    .sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,7);
-  A += `<div class="carte"><div class="titre-sec" style="margin-top:0">Derniers mouvements</div>`;
-  if(!derniers.length) A += `<div class="vide"><b>Rien encore</b>Recettes, apports et dépenses apparaîtront ici.</div>`;
-  else for(const m of derniers){
-    const plus = m.sens==="entree";
-    A += `<div class="ligne"><div class="lib"><b>${esc(m.libelle)}</b>
-      <small>${dateCourte(m.date)} · ${esc(etiquetteMouvement(m))}</small></div>
-      <span class="num" style="color:${plus?"var(--vert)":"var(--minium)"}">${plus?"+":"−"}${fmt(m.montant)}</span></div>`;
-  }
-  A += `</div>`;
-
-  /* ---- colonne B : le travail ---- */
+  /* ── Ticker : textes d'alertes concaténés ── */
   const ec=enCours();
   const aAffecter=ec.filter(p=>p.statut==="signalee");
   const auGarage=ec.filter(p=>p.statut==="affectee");
   const aRegler=ec.filter(p=>p.statut==="terminee");
   const retard=aAffecter.filter(enRetard);
+  const imm=D.pannes.filter(p=>p.immobilise&&!p.immob_fin);
+  const actifs=D.camions.filter(c=>c.actif);
 
-  let B = `<div class="etapes">
-    <div class="etape${retard.length?" urgent":""}"><div class="n">${aAffecter.length}</div><div class="t">à affecter</div></div>
-    <div class="etape"><div class="n">${auGarage.length}</div><div class="t">au garage</div></div>
-    <div class="etape"><div class="n">${aRegler.length}</div><div class="t">à régler</div></div>
+  let tickerMsgs=[];
+  retard.forEach(p=>tickerMsgs.push(`⚠ ${nomCamion(p.camion_id)} sans garage ${Math.floor(heuresDepuis(p.date_signalement))}h`));
+  imm.forEach(p=>tickerMsgs.push(`🔴 ${nomCamion(p.camion_id)} immobilisé ${joursArret(p)}j`));
+  /* alertes documents */
+  for(const cam of actifs){
+    const docs=documentsCamion(cam);
+    for(const d of docs){
+      if(d.etat==="echue") tickerMsgs.push(`📋 ${cam.nom} — ${d.libelle} échue`);
+      else if(d.etat==="proche") tickerMsgs.push(`📋 ${cam.nom} — ${d.libelle} bientôt`);
+    }
+  }
+  if(!tickerMsgs.length) tickerMsgs=["✅ Flotte opérationnelle","💰 "+fmtF(c.solde)+" en caisse"];
+  const tickerTxt = (tickerMsgs.join("  ·  ")+"  ·  ").repeat(3);
+
+  /* ── Jauge caisse : aiguille SVG ── */
+  const ANG=Math.PI*pct; /* 0=gauche(min) π=droite(max) */
+  const cx=100,cy=102,r=78;
+  const nx=cx+r*Math.cos(Math.PI-ANG), ny=cy-r*Math.sin(Math.PI-ANG);
+  /* arc coloré masqué selon niveau */
+  const arcTot=Math.PI*r; /* longueur totale demi-cercle */
+  const dashRed=arcTot*0.25, dashOcre=arcTot*0.2, dashVert=arcTot*0.55;
+  /* stroke-dashoffset pour ne montrer que jusqu'au pct */
+  const niveauMasque=arcTot*(1-pct);
+
+  /* ── Stats camions ── */
+  const nbEnRoute=actifs.filter(cam=>{
+    const ec2=D.pannes.filter(p=>p.camion_id===cam.id&&p.immobilise&&!p.immob_fin);
+    return !ec2.length;
+  }).length;
+  const nbImmo=imm.length;
+  const nbAttente=aAffecter.length;
+
+  /* ── Recette de la semaine courante ── */
+  const lundi=lundiDe(auj());
+  const recSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="recette"&&m.date>=lundi)
+    .reduce((s,m)=>s+Number(m.montant),0);
+
+  /* ── Incidents : pannes en cours triées par urgence ── */
+  let incidents="";
+  const PRIO=[["signalee","rouge"],["affectee","orange"],["terminee","vert"]];
+  const LABEL={signalee:"URGENT",affectee:"AU GARAGE",terminee:"À RÉGLER"};
+  const TAG={signalee:"bord-tag-rouge",affectee:"bord-tag-orange",terminee:"bord-tag-vert"};
+  for(const [statut] of PRIO){
+    const liste=ec.filter(p=>p.statut===statut);
+    for(const p of liste){
+      const cls=PRIO.find(x=>x[0]===statut)[1];
+      const ch=chauffeurDe(p.camion_id);
+      const detail=[p.description||p.piece||"",nomGarage(p.garage_id)||"",ch?ch.nom:""].filter(Boolean).join(" · ");
+      incidents+=`<div class="bord-incident ${cls}" onclick="ouvrirPanne('${p.id}')" style="cursor:pointer">
+        <div class="bord-incident-head">
+          <span class="bord-incident-nom">${esc(nomCamion(p.camion_id))}</span>
+          <span class="bord-incident-tag ${TAG[statut]}">${LABEL[statut]}</span>
+        </div>
+        ${detail?`<div class="bord-incident-detail">${esc(detail)}</div>`:""}
+      </div>`;
+    }
+  }
+  if(!ec.length) incidents=`<div style="color:#4a4a5a;font-size:12px;padding:8px 0">Aucune panne en cours — flotte opérationnelle ✅</div>`;
+
+  /* ── Alertes documents ── */
+  const alertesDoc=[]; const tvmEnRetard=[];
+  for(const cam of actifs){
+    for(const d of documentsCamion(cam)){
+      if(d.etat!=="echue"&&d.etat!=="proche") continue;
+      if(d.type==="tvm") tvmEnRetard.push({cam,d});
+      else alertesDoc.push({cam,d});
+    }
+  }
+  let docsHtml="";
+  for(const x of alertesDoc){
+    const cls=x.d.etat==="echue"?"rouge":"ocre";
+    const tag=x.d.etat==="echue"?"bord-tag-rouge":"bord-tag-ocre";
+    docsHtml+=`<div class="bord-incident ${cls}">
+      <div class="bord-incident-head">
+        <span class="bord-incident-nom">${esc(x.cam.nom)} — ${esc(x.d.libelle)}</span>
+        <span class="bord-incident-tag ${tag}">${x.d.etat==="echue"?"ÉCHUE":"BIENTÔT"}</span>
+      </div></div>`;
+  }
+  if(tvmEnRetard.length){
+    const cls=tvmEnRetard.some(x=>x.d.etat==="echue")?"rouge":"ocre";
+    const tag=cls==="rouge"?"bord-tag-rouge":"bord-tag-ocre";
+    docsHtml+=`<div class="bord-incident ${cls}">
+      <div class="bord-incident-head">
+        <span class="bord-incident-nom">TVM — ${tvmEnRetard.length} camion${tvmEnRetard.length>1?"s":""}</span>
+        <span class="bord-incident-tag ${tag}">${tvmEnRetard.some(x=>x.d.etat==="echue")?"ÉCHUE":"BIENTÔT"}</span>
+      </div></div>`;
+  }
+
+  /* ── Grille camions ── */
+  let fleet="";
+  for(const cam of D.camions){
+    if(!cam.actif) continue;
+    const isImmo=D.pannes.some(p=>p.camion_id===cam.id&&p.immobilise&&!p.immob_fin);
+    const hasPanne=D.pannes.some(p=>p.camion_id===cam.id&&["signalee","affectee"].includes(p.statut));
+    const cls=isImmo?"immo":hasPanne?"panne":"ok";
+    const icon=isImmo?"🟡":hasPanne?"🔴":"🚛";
+    fleet+=`<div class="bord-fleet-item ${cls}" onclick="setVue('detail','${cam.id}');aller('camions')" style="cursor:pointer">
+      <div class="bord-fleet-icon">${icon}</div>
+      <div class="bord-fleet-nom ${cls}">${esc(cam.nom.slice(0,6))}</div>
+    </div>`;
+  }
+
+  /* ── Derniers mouvements ── */
+  const derniers=[...D.mouvements].sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,5);
+  let mouvHtml="";
+  for(const m of derniers){
+    const plus=m.sens==="entree";
+    mouvHtml+=`<div class="bord-mouv-item">
+      <div><div class="bord-mouv-lib">${esc(m.libelle)}</div>
+        <div class="bord-mouv-date">${dateCourte(m.date)} · ${esc(etiquetteMouvement(m))}</div></div>
+      <div class="bord-mouv-val ${plus?"plus":"moins"}">${plus?"+":"−"}${fmt(m.montant)}</div>
+    </div>`;
+  }
+  if(!derniers.length) mouvHtml=`<div style="color:#5a5a6a;font-size:11px;padding:8px 0">Aucun mouvement enregistré.</div>`;
+
+  /* ── Boutons d'action ── */
+  let btns="";
+  if(admin()) btns=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 16px">
+    <button class="btn" onclick="formPanneAdmin()">+ Panne</button>
+    <button class="btn sec" onclick="formSortie()">Dépense</button>
+    <button class="btn sec" onclick="formApportDG()">Apport DG</button>
+    <button class="btn sec" onclick="aller('vendredi')">Collecte</button>
+    <button class="btn sec" style="grid-column:1/-1" onclick="formRecapWeekend()">📊 Récap DG</button>
   </div>`;
 
-  for(const p of retard)
-    B += `<div class="alerte a-rouge"><div><b>${esc(nomCamion(p.camion_id))} sans garage depuis ${Math.floor(heuresDepuis(p.date_signalement))} h</b>
-      ${esc(p.description||"Sans description")} — signalé par ${esc(nomChauffeur(p.chauffeur_id))}</div></div>`;
+  return `
+  <!-- Ticker -->
+  <div class="bord-ticker-wrap">
+    <div class="bord-ticker"><span>${esc(tickerTxt)}</span></div>
+  </div>
 
-  const imm=D.pannes.filter(p=>p.immobilise && !p.immob_fin);
-  if(imm.length) B += `<div class="alerte a-rouge"><div><b>${imm.length} camion${imm.length>1?"s":""} immobilisé${imm.length>1?"s":""}</b>` +
-    imm.map(p=>`${esc(nomCamion(p.camion_id))} — ${joursArret(p)} j ouvrés d'arrêt`).join("<br>") + `</div></div>`;
+  <!-- Jauge caisse -->
+  <div class="bord-gauge-section">
+    <div class="bord-gauge-lbl">Trésorerie active</div>
+    <div class="bord-gauge-wrap">
+      <svg viewBox="0 0 200 110">
+        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#1e1e28" stroke-width="15" stroke-linecap="round"/>
+        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#ef4444" stroke-width="15"
+          stroke-dasharray="${arcTot}" stroke-dashoffset="${arcTot*0.75}" stroke-linecap="round"/>
+        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#f59e0b" stroke-width="15"
+          stroke-dasharray="${arcTot}" stroke-dashoffset="${arcTot*0.55}" stroke-linecap="round"/>
+        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#22c55e" stroke-width="15"
+          stroke-dasharray="${arcTot}" stroke-dashoffset="0" stroke-linecap="round"/>
+        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#111015" stroke-width="17"
+          stroke-dasharray="${arcTot}" stroke-dashoffset="${(-niveauMasque).toFixed(1)}" stroke-linecap="round"/>
+        <!-- marqueur seuil -->
+        ${(()=>{ const sp=Math.max(0,Math.min(1,c.seuil/max)); const sa=Math.PI*sp;
+          const sx=cx+r*Math.cos(Math.PI-sa), sy=cy-r*Math.sin(Math.PI-sa);
+          return `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="5" fill="#fbbf24" opacity=".9"/>`;
+        })()}
+        <!-- aiguille -->
+        <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}"
+          stroke="#ff5b3d" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="${cy}" r="6" fill="#ff5b3d"/>
+        <text x="16" y="112" font-size="8" fill="#4a4a5a">MIN</text>
+        <text x="166" y="112" font-size="8" fill="#4a4a5a">MAX</text>
+      </svg>
+      <div class="bord-gauge-val">
+        <div class="bord-gauge-num">${fmt(c.solde)}</div>
+        <div class="bord-gauge-unit">FCFA${c.nbARegler?` · Prév. ${fmt(c.previsionnel)} F`:"" }</div>
+      </div>
+    </div>
+  </div>
 
-  /* Documents administratifs : uniquement echue/proche remontent ici.
-     "a renseigner" n'est pas une urgence, on ne l'affiche pas dans le centre d'alertes.
-     Les TVM en retard sont regroupees sur une ligne pour ne pas noyer les vraies urgences. */
-  const alertesDoc = [];
-  const tvmEnRetard = [];
-  for(const c of D.camions){
-    if(!c.actif) continue;
-    for(const d of documentsCamion(c)){
-      if(d.etat!=="echue" && d.etat!=="proche") continue;
-      if(d.type==="tvm") tvmEnRetard.push({ camion:c, doc:d });
-      else alertesDoc.push({ camion:c, doc:d });
-    }
-  }
-  if(alertesDoc.length || tvmEnRetard.length){
-    alertesDoc.sort((a,b) => (a.doc.etat==="echue"?0:1) - (b.doc.etat==="echue"?0:1));
-    const urgent = alertesDoc.some(a=>a.doc.etat==="echue") || tvmEnRetard.some(a=>a.doc.etat==="echue");
-    let lignes = alertesDoc.map(a => `${esc(a.camion.nom)} — ${esc(phraseDocument(a.camion.nom, a.doc))}`);
-    if(tvmEnRetard.length === 1){
-      lignes.push(`${esc(tvmEnRetard[0].camion.nom)} — ${esc(phraseDocument(tvmEnRetard[0].camion.nom, tvmEnRetard[0].doc))}`);
-    } else if(tvmEnRetard.length > 1){
-      const an = tvmEnRetard[0].doc.tvmAnnee;
-      lignes.push(`TVM ${an} due au 1er janvier — ${tvmEnRetard.length} camions concernés`);
-    }
-    B += `<div class="alerte ${urgent?"a-rouge":"a-ocre"}"><div><b>Documents administratifs</b>` +
-      lignes.join("<br>") + `</div></div>`;
-  }
+  <!-- Stats -->
+  <div class="bord-stats">
+    <div class="bord-stat ${nbImmo?"rouge":"vert"}">
+      <div class="bord-stat-val ${nbImmo?"rouge":"vert"}">${nbImmo}</div>
+      <div class="bord-stat-lbl">Immob.</div>
+    </div>
+    <div class="bord-stat ${nbAttente?"orange":"gris"}">
+      <div class="bord-stat-val ${nbAttente?"orange":""}">${nbAttente}</div>
+      <div class="bord-stat-lbl">En att.</div>
+    </div>
+    <div class="bord-stat vert">
+      <div class="bord-stat-val vert">${nbEnRoute}</div>
+      <div class="bord-stat-lbl">En route</div>
+    </div>
+    <div class="bord-stat gris">
+      <div class="bord-stat-val" style="color:#aaa;font-size:16px">${fmt(recSem/1000)}K</div>
+      <div class="bord-stat-lbl">Sem. F</div>
+    </div>
+  </div>
 
-  /* Vue complete, camion par camion : au-dela de l'alerte urgente ci-dessus,
-     on veut voir d'un coup d'oeil ou en est chaque camion, meme sans probleme. */
-  const actifsDoc = D.camions.filter(c => c.actif);
-  if(actifsDoc.length){
-    B += `<div class="carte"><div class="titre-sec" style="margin-top:0">Documents administratifs — tous les camions</div>`;
-    for(const c of actifsDoc){
-      const docs = documentsCamion(c);
-      const badges = docs.map(d => badgeDocumentEtiquete(d)).filter(Boolean).join(" ");
-      B += `<div class="ligne" style="flex-direction:column;align-items:stretch;gap:6px">
-        <div class="lib"><b>${esc(c.nom)}</b></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          ${badges || `<span class="tag t-vert">à jour</span>`}</div></div>`;
-    }
-    B += `</div>`;
-  }
+  <!-- Incidents -->
+  <div class="bord-section">
+    <div class="bord-section-head">
+      <span class="lbl">Pannes en cours</span>
+      <span class="ct">${ec.length} active${ec.length>1?"s":""}</span>
+    </div>
+    ${incidents}
+  </div>
 
-  B += `<div class="carte"><div class="titre-sec">Pannes en cours</div>`;
-  if(!ec.length) B += `<div class="vide"><b>Rien en cours</b>Tous les camions roulent.</div>`;
-  else for(const p of ec) B += lignePanne(p);
-  B += `</div>`;
+  ${docsHtml?`<div class="bord-section">
+    <div class="bord-section-head">
+      <span class="lbl">Documents & entretien</span>
+      <span class="ct">${alertesDoc.length+tvmEnRetard.length} alerte${alertesDoc.length+tvmEnRetard.length>1?"s":""}</span>
+    </div>
+    ${docsHtml}
+  </div>`:""}
 
-  /* ---- colonne C : ce qui bouge, et les gestes du jour ---- */
-  let C = "";
-  if(admin()) C += `<div class="duo no-print" style="margin-bottom:9px">
-      <button class="btn" onclick="formPanneAdmin()">Noter une panne</button>
-      <button class="btn sec" onclick="formSortie()">Dépense externe</button></div>
-    <div class="duo no-print" style="margin-bottom:9px">
-      <button class="btn sec" onclick="formApportDG()">Apport du DG</button>
-      <button class="btn sec" onclick="aller('vendredi')">Collecte</button></div>
-    <button class="btn sec no-print" style="width:100%;margin-bottom:12px" onclick="formRecapWeekend()">Récap du weekend → DG</button>`;
+  <!-- Flotte grid -->
+  <div class="bord-section">
+    <div class="bord-section-head">
+      <span class="lbl">Flotte</span>
+      <span class="ct">${actifs.length} unités</span>
+    </div>
+    <div class="bord-fleet">${fleet}</div>
+  </div>
 
-  return `<div class="grille"><div>${A}</div><div>${B}</div><div>${C}</div></div>`;
+  <!-- Mouvements -->
+  <div class="bord-section">
+    <div class="bord-section-head">
+      <span class="lbl">Derniers mouvements</span>
+    </div>
+    ${mouvHtml}
+  </div>
+
+  <!-- Actions -->
+  ${btns}`;
 }
+window.apres_bord = () => { document.getElementById("zone")?.classList.add("bord-dark"); };
 function etiquetteMouvement(m){
   if(m.sens==="entree"){
     if(m.source==="dg") return "Apport DG";
