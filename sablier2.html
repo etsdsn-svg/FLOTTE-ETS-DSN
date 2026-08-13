@@ -292,6 +292,7 @@ const fmt = n => {
   return (neg?"-":"") + String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ");
 };
 const fmtF = n => fmt(n) + " F";
+const fmtKm = n => fmt(n) + " km";
 const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
   .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 /* Date locale au format AAAA-MM-JJ. Ne jamais passer par toISOString :
@@ -649,16 +650,35 @@ function statutEcheance(dateEcheance, delaiJours){
   if(j <= delaiJours) return { etat:"proche", jours:j };
   return { etat:"ok", jours:j };
 }
+/* Meme logique que statutEcheance mais au kilometrage : utilisee pour
+   l'entretien preventif (vidange, pneus) plutot que pour une date fixe.
+   Necessite un dernier releve de km sur le camion (c.km) pour se prononcer,
+   sinon on demande de le renseigner, comme pour une date manquante. */
+function statutEcheanceKm(kmActuel, kmDernier, intervalle, marge){
+  if(kmDernier==null || !intervalle) return { etat:"aRenseigner" };
+  const km = Number(kmActuel)||0;
+  const prochain = Number(kmDernier) + Number(intervalle);
+  const reste = prochain - km;
+  if(reste <= 0) return { etat:"echue", reste:-reste };
+  if(reste <= (marge||0)) return { etat:"proche", reste };
+  return { etat:"ok", reste };
+}
 
 function documentsCamion(c){
   const dv = D.prefs.delai_visite_j ?? 45;
   const da = D.prefs.delai_assurance_j ?? 30;
   const dt = D.prefs.delai_tvm_j ?? 30;
   const tvm = echeanceTVM(c.id);
+  const iv = D.prefs.intervalle_vidange_km ?? 8000, mv = D.prefs.marge_vidange_km ?? 800;
+  const ip = D.prefs.intervalle_pneus_km ?? 40000, mp = D.prefs.marge_pneus_km ?? 3000;
   return [
     { type:"visite", libelle:"Visite technique", echeance:echeanceVisite(c), ...statutEcheance(echeanceVisite(c), dv) },
     { type:"assurance", libelle:"Assurance", echeance:echeanceAssurance(c), ...statutEcheance(echeanceAssurance(c), da) },
-    { type:"tvm", libelle:`TVM ${tvm.annee}`, echeance:tvm.date, ...statutEcheance(tvm.date, dt), tvmAnnee:tvm.annee }
+    { type:"tvm", libelle:`TVM ${tvm.annee}`, echeance:tvm.date, ...statutEcheance(tvm.date, dt), tvmAnnee:tvm.annee },
+    { type:"vidange", libelle:"Vidange", kmDernier:c.km_derniere_vidange, intervalle:iv,
+      ...statutEcheanceKm(c.km, c.km_derniere_vidange, iv, mv) },
+    { type:"pneus", libelle:"Pneus", kmDernier:c.km_derniers_pneus, intervalle:ip,
+      ...statutEcheanceKm(c.km, c.km_derniers_pneus, ip, mp) }
   ];
 }
 
@@ -670,6 +690,12 @@ function phraseDocument(camionNom, doc){
     if(doc.etat==="echue") return `${base} — échue depuis ${doc.jours} j`;
     if(doc.etat==="proche") return `${base} — dans ${doc.jours} j`;
     return base;
+  }
+  if(doc.type==="vidange" || doc.type==="pneus"){
+    if(doc.etat==="aRenseigner") return `${doc.libelle} — kilométrage à renseigner`;
+    if(doc.etat==="echue") return `${doc.libelle} en retard de ${fmtKm(doc.reste)}`;
+    if(doc.etat==="proche") return `${doc.libelle} dans ${fmtKm(doc.reste)}`;
+    return `${doc.libelle} à jour`;
   }
   if(doc.etat==="echue") return `${doc.libelle} échue depuis ${doc.jours} j`;
   if(doc.etat==="proche") return `${doc.libelle} à renouveler dans ${doc.jours} j`;
@@ -685,18 +711,24 @@ function pireStatutDocuments(c){
 }
 
 const TAG_DOC = { echue:"t-rouge", proche:"t-ocre", aRenseigner:"t-gris", ok:"t-vert" };
+/* Texte court d'un badge : "j" pour les documents a date, "km" pour l'entretien
+   preventif suivi au kilometrage (vidange, pneus). */
+function texteDocument(doc){
+  if(doc.etat==="aRenseigner") return doc.type==="vidange"||doc.type==="pneus" ? "km à renseigner" : "à renseigner";
+  if(doc.etat==="echue") return "échue";
+  if(doc.type==="vidange"||doc.type==="pneus") return fmtKm(doc.reste);
+  return `${doc.jours} j`;
+}
 function badgeDocument(doc){
   if(doc.etat==="ok") return "";
-  const texte = doc.etat==="echue" ? "échue" : doc.etat==="proche" ? `${doc.jours} j` : "à renseigner";
-  return `<span class="tag ${TAG_DOC[doc.etat]}" style="white-space:nowrap">${esc(texte)}</span>`;
+  return `<span class="tag ${TAG_DOC[doc.etat]}" style="white-space:nowrap">${esc(texteDocument(doc))}</span>`;
 }
 /* Variante compacte, prefixee du document concerne — utile des qu'on affiche
    plusieurs badges cote a cote pour un meme camion, pour lever l'ambiguite. */
-const ABREV_DOC = { visite:"VT", assurance:"Assur.", tvm:"TVM" };
+const ABREV_DOC = { visite:"VT", assurance:"Assur.", tvm:"TVM", vidange:"Vidange", pneus:"Pneus" };
 function badgeDocumentEtiquete(doc){
   if(doc.etat==="ok") return "";
-  const texte = doc.etat==="echue" ? "échue" : doc.etat==="proche" ? `${doc.jours} j` : "à renseigner";
-  return `<span class="tag ${TAG_DOC[doc.etat]}" style="white-space:nowrap">${ABREV_DOC[doc.type]} · ${esc(texte)}</span>`;
+  return `<span class="tag ${TAG_DOC[doc.etat]}" style="white-space:nowrap">${ABREV_DOC[doc.type]} · ${esc(texteDocument(doc))}</span>`;
 }
 
 window.totaux = (d1,d2) => totaux(d1,d2);
@@ -1379,11 +1411,13 @@ window.validerApport = async () => {
 };
 
 
+const LIBELLE_DOC = { visite:"Visite technique", assurance:"Assurance", vidange:"Vidange", pneus:"Pneus" };
 window.formRenouveler = (camionId, type) => {
   const c = camion(camionId); if(!c) return;
-  const libelle = type==="visite" ? "Visite technique" : "Assurance";
-  ouvrir("Renouveler — " + libelle,
-    `<p class="mt" style="margin-bottom:12px">${esc(c.nom)}. La date et le paiement sont enregistrés ensemble.</p>
+  const auKm = type==="vidange" || type==="pneus";
+  ouvrir("Renouveler — " + LIBELLE_DOC[type],
+    `<p class="mt" style="margin-bottom:12px">${esc(c.nom)}. ${auKm?"Le kilométrage, la date et le paiement sont enregistrés ensemble.":"La date et le paiement sont enregistrés ensemble."}</p>
+     ${auKm ? `<label class="ch"><span>Kilométrage actuel</span><input type="number" inputmode="numeric" id="rn-km" value="${c.km||0}"></label>` : ""}
      <label class="ch"><span>Date du renouvellement</span><input type="date" id="rn-date" value="${auj()}"></label>
      <label class="ch"><span>Montant payé</span><input type="number" inputmode="numeric" id="rn-montant"></label>
      <div id="rn-msg"></div>
@@ -1391,13 +1425,17 @@ window.formRenouveler = (camionId, type) => {
      <button class="btn" id="rn-ok" onclick="validerRenouveler('${camionId}','${type}')">Enregistrer</button></div>`);
 };
 window.validerRenouveler = async (camionId, type) => {
+  const auKm = type==="vidange" || type==="pneus";
   const v = nb("rn-montant");
   if(v<=0) return document.getElementById("rn-msg").innerHTML =
     `<div class="alerte a-rouge"><div>Renseigne le montant payé.</div></div>`;
+  const km = auKm ? nb("rn-km") : null;
+  if(auKm && (km==null || km<=0)) return document.getElementById("rn-msg").innerHTML =
+    `<div class="alerte a-rouge"><div>Renseigne le kilométrage actuel.</div></div>`;
   const b = document.getElementById("rn-ok");
   b.disabled = true; b.textContent = "Enregistrement…";
   const { error } = await sb.rpc("sb2_renouveler_document",
-    { p_camion:camionId, p_type:type, p_date:val("rn-date")||auj(), p_montant:v });
+    { p_camion:camionId, p_type:type, p_date:val("rn-date")||auj(), p_montant:v, p_km:km });
   if(error){
     const msg = String(error.message||"");
     document.getElementById("rn-msg").innerHTML = `<div class="alerte a-rouge"><div>${
@@ -1407,6 +1445,61 @@ window.validerRenouveler = async (camionId, type) => {
     return;
   }
   fermer(); toast("Renouvellement enregistré."); await recharger();
+};
+
+/* Simple releve de kilometrage, sans paiement associe. */
+window.formMajKm = (camionId) => {
+  const c = camion(camionId); if(!c) return;
+  ouvrir("Relever le kilométrage",
+    `<p class="mt" style="margin-bottom:12px">${esc(c.nom)} — dernier relevé : ${fmtKm(c.km||0)}.</p>
+     <label class="ch"><span>Kilométrage actuel</span><input type="number" inputmode="numeric" id="km-val" value="${c.km||0}"></label>
+     <div id="km-msg"></div>
+     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn" id="km-ok" onclick="validerMajKm('${camionId}')">Enregistrer</button></div>`);
+};
+window.validerMajKm = async (camionId) => {
+  const km = nb("km-val");
+  if(km==null || km<=0) return document.getElementById("km-msg").innerHTML =
+    `<div class="alerte a-rouge"><div>Renseigne un kilométrage valide.</div></div>`;
+  const b = document.getElementById("km-ok");
+  b.disabled = true; b.textContent = "Enregistrement…";
+  const { error } = await sb.rpc("sb2_maj_km", { p_camion:camionId, p_km:km, p_date:auj() });
+  if(error){
+    document.getElementById("km-msg").innerHTML = `<div class="alerte a-rouge"><div>Échec : ${esc(error.message)}</div></div>`;
+    b.disabled = false; b.textContent = "Enregistrer";
+    return;
+  }
+  fermer(); toast("Kilométrage mis à jour."); await recharger();
+};
+
+/* Fiche technique : marque (modele), annee, tonnage, chassis. Ecriture directe,
+   reservee a l'admin par la politique RLS sur sb2_camions. */
+window.formEditerFiche = (camionId) => {
+  const c = camion(camionId); if(!c) return;
+  ouvrir("Fiche technique — " + c.nom,
+    `<label class="ch"><span>Marque</span><input id="ft-marque" value="${esc(c.modele||"")}"></label>
+     <label class="ch"><span>Année</span><input type="number" inputmode="numeric" id="ft-annee" value="${c.annee||""}"></label>
+     <label class="ch"><span>Tonnage (t)</span><input type="number" inputmode="numeric" id="ft-tonnage" value="${c.tonnage||""}"></label>
+     <label class="ch"><span>Châssis</span><input id="ft-chassis" value="${esc(c.chassis||"")}"></label>
+     <div id="ft-msg"></div>
+     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn" id="ft-ok" onclick="validerFiche('${camionId}')">Enregistrer</button></div>`);
+};
+window.validerFiche = async (camionId) => {
+  const b = document.getElementById("ft-ok");
+  b.disabled = true; b.textContent = "Enregistrement…";
+  const { error } = await sb.from("sb2_camions").update({
+    modele: val("ft-marque").trim(),
+    annee: nb("ft-annee") || null,
+    tonnage: nb("ft-tonnage") || null,
+    chassis: val("ft-chassis").trim()
+  }).eq("id", camionId);
+  if(error){
+    document.getElementById("ft-msg").innerHTML = `<div class="alerte a-rouge"><div>Échec : ${esc(error.message)}</div></div>`;
+    b.disabled = false; b.textContent = "Enregistrer";
+    return;
+  }
+  fermer(); toast("Fiche technique mise à jour."); await recharger();
 };
 
 /* ================= 11. CAMIONS ================= */
@@ -1450,18 +1543,34 @@ function detailCamion(id){
       <span class="num" style="font-size:18px;font-weight:700;color:var(--minium)">${fmtF(b.coutReel)}</span></div>
     <div class="ligne"><div class="lib"><b>Net</b></div>
       <span class="num" style="font-size:18px;font-weight:700;color:${b.net<0?"var(--minium)":"var(--vert)"}">${fmtF(b.net)}</span></div></div>`;
+  h += `<div class="titre-sec">Fiche technique</div><div class="carte">
+    <div class="ligne"><div class="lib"><b>Marque</b></div><span>${esc(c.modele||"—")}</span></div>
+    <div class="ligne"><div class="lib"><b>Année</b></div><span>${c.annee||"—"}</span></div>
+    <div class="ligne"><div class="lib"><b>Tonnage</b></div><span>${c.tonnage?fmt(c.tonnage)+" t":"—"}</span></div>
+    <div class="ligne"><div class="lib"><b>Châssis</b></div><span>${esc(c.chassis||"—")}</span></div>
+    <div class="ligne"><div class="lib"><b>Kilométrage</b><small>${c.km_maj_le?"Relevé le "+dateCourte(c.km_maj_le):"Jamais relevé"}</small></div>
+      <span class="num">${fmtKm(c.km||0)}</span></div>
+    ${admin() ? `<div class="duo no-print" style="margin-top:9px">
+      <button class="btn sec mini" onclick="formEditerFiche('${id}')">Modifier la fiche</button>
+      <button class="btn sec mini" onclick="formMajKm('${id}')">Relever le km</button></div>` : ""}
+    </div>`;
+
   const docs = documentsCamion(c);
-  h += `<div class="titre-sec">Documents administratifs</div><div class="carte">`;
+  h += `<div class="titre-sec">Documents administratifs & entretien</div><div class="carte">`;
   for(const d of docs){
+    const sousLibelle = (d.type==="vidange"||d.type==="pneus")
+      ? (d.kmDernier!=null ? `Dernier à ${fmtKm(d.kmDernier)} · tous les ${fmtKm(d.intervalle)}` : "Aucun relevé enregistré")
+      : (d.echeance ? "Échéance le "+dateLongue(d.echeance) : "Aucune date renseignée");
     h += `<div class="ligne"><div class="lib"><b>${esc(d.libelle)}</b>
-      <small>${d.echeance ? "Échéance le "+dateLongue(d.echeance) : "Aucune date renseignée"}</small></div>
+      <small>${sousLibelle}</small></div>
       <div style="display:flex;align-items:center;gap:8px">
         ${badgeDocument(d) || '<span class="tag t-vert">à jour</span>'}
         ${admin() && d.type!=="tvm" ? `<button class="btn mini sec no-print" onclick="formRenouveler('${id}','${d.type}')">Renouveler</button>` : ""}
       </div></div>`;
   }
   h += `<p class="mt" style="margin-top:9px">La TVM se recalcule au 1er janvier ; utilise le bouton 🧾 TVM
-    depuis une dépense pour la déclarer payée.</p></div>`;
+    depuis une dépense pour la déclarer payée. La vidange et les pneus se suivent au kilométrage :
+    relève le compteur régulièrement pour que les alertes restent fiables.</p></div>`;
 
   const ps=D.pannes.filter(p=>p.camion_id===id);
   h+=`<div class="titre-sec">Historique</div><div class="carte">`;
