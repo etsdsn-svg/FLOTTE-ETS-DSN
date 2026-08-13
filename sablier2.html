@@ -252,7 +252,7 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 #zone.bord-dark #topbar .cycle { color:#ff5b3d; }
 #zone.bord-dark #topbar .etat { color:#6a6a8a; }
 .bord-ticker-wrap { overflow:hidden; background:#ff5b3d; padding:5px 0; }
-.bord-ticker { display:inline-block; white-space:nowrap; animation:ticker 28s linear infinite; }
+.bord-ticker { display:inline-block; white-space:nowrap; animation:ticker 55s linear infinite; }
 .bord-ticker span { font-size:10px; font-weight:700; color:#fff; letter-spacing:.8px; padding:0 24px; }
 @keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
 .bord-gauge-section { padding:18px 16px 4px; text-align:center; }
@@ -308,7 +308,14 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-mouv-date { font-size:9px; color:#5a5a6a; margin-top:1px; }
 .bord-mouv-val { font-size:12px; font-weight:700; }
 .bord-mouv-val.plus { color:#22c55e; }
-.bord-mouv-val.moins { color:#ef4444; }
+.bord-btn-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:0 12px 20px; }
+.bord-btn { border:none; border-radius:10px; padding:14px 8px; font-size:13px; font-weight:700;
+  cursor:pointer; letter-spacing:.3px; transition:opacity .15s; }
+.bord-btn:active { opacity:.75; }
+.bord-btn.primary { background:#ff5b3d; color:#fff; }
+.bord-btn.sec { background:rgba(255,255,255,.07); color:#ccc; border:1px solid rgba(255,255,255,.12); }
+.bord-btn.full { grid-column:1/-1; background:rgba(255,91,61,.1); color:#ff8c70;
+  border:1px solid rgba(255,91,61,.3); }
 .logo-entete{height:74px;width:auto;color:#27368B;flex:none}
 .imprime-cloture{display:none;font-size:8.5pt;color:#444;margin:-6px 0 10px;font-style:italic}
 .imprime-signature{display:none;margin-top:30px;padding-top:4px;gap:30px}
@@ -974,12 +981,12 @@ function vBord(){
 
   /* ── Boutons d'action ── */
   let btns="";
-  if(admin()) btns=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 16px">
-    <button class="btn" onclick="formPanneAdmin()">+ Panne</button>
-    <button class="btn sec" onclick="formSortie()">Dépense</button>
-    <button class="btn sec" onclick="formApportDG()">Apport DG</button>
-    <button class="btn sec" onclick="aller('vendredi')">Collecte</button>
-    <button class="btn sec" style="grid-column:1/-1" onclick="formRecapWeekend()">📊 Récap DG</button>
+  if(admin()) btns=`<div class="bord-btn-grid">
+    <button class="bord-btn primary" onclick="formPanneAdmin()">＋ Panne</button>
+    <button class="bord-btn sec" onclick="formSortie()">Dépense</button>
+    <button class="bord-btn sec" onclick="formApportDG()">Apport DG</button>
+    <button class="bord-btn sec" onclick="aller('vendredi')">Collecte</button>
+    <button class="bord-btn full" onclick="formRecapWeekend()">📊 Récap du weekend → DG</button>
   </div>`;
 
   return `
