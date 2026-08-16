@@ -225,18 +225,55 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
   .grille2>*{margin-bottom:0}
 }
 @media print{
-  @page{size:A4;margin:12mm}
+  /* Marge haute plus large : le titre courant s'y loge. */
+  @page{ size:A4; margin:16mm 14mm 18mm; }
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body{background:#fff;font-size:10.5pt}
-  th{background:var(--vert) !important;color:#fff !important;padding:4px 5px;border:0}
+  body{background:#fff;color:#1a1a1a;font-size:9.5pt;line-height:1.4}
   #nav,#topbar,.no-print,#toast,#modale{display:none !important}
   #main{padding:0;max-width:none}
-  .carte{border:1px solid #bbb;break-inside:avoid;padding:9px;margin-bottom:8px;
-    background:#fff !important;box-shadow:none !important;border-radius:6px}
+  #zone.bord-dark{background:#fff !important}
+
+  /* ── Titres de section : filet plein, pas de pave de couleur ── */
+  .titre-sec{ font-size:10.5pt; font-weight:700; color:#27368B;
+    text-transform:uppercase; letter-spacing:.06em;
+    border-bottom:1.5pt solid #27368B; padding-bottom:2pt;
+    margin:14pt 0 6pt; break-after:avoid; page-break-after:avoid; }
+
+  /* ── Cartes : simple encadre discret, jamais coupe ── */
+  .carte{ border:.5pt solid #c8ccd8; break-inside:avoid; page-break-inside:avoid;
+    padding:7pt 8pt; margin-bottom:7pt; background:#fff !important;
+    box-shadow:none !important; border-radius:3pt; }
+
+  /* ── Tableaux : lisibilite avant tout ── */
   .scroll-x{overflow:visible;margin:0;padding:0}
+  table{ width:100%; border-collapse:collapse; font-size:8.8pt; }
+  thead{ display:table-header-group; }   /* l'en-tete se repete a chaque page */
+  tr{ break-inside:avoid; page-break-inside:avoid; }
+  th{ background:#27368B !important; color:#fff !important;
+    padding:4pt 5pt; border:0; text-align:left; font-size:8pt;
+    text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
+  th.n, td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  td{ padding:3.5pt 5pt; border-bottom:.5pt solid #dfe2ea; vertical-align:top; }
+  /* Alternance discrete : facilite le suivi des lignes longues */
+  tbody tr:nth-child(even) td{ background:#f6f7fa; }
+  tbody tr:last-child td{ border-bottom:.5pt solid #9aa0b4; }
+  /* Ligne de total : reperable sans couleur criarde */
+  tbody tr:last-child td b{ font-size:9.2pt; }
+  table small{ font-size:7.5pt; color:#666; }
+
+  /* ── Chiffres cles ── */
+  .num,.gros{ font-variant-numeric:tabular-nums; }
+  .tag{ border:.5pt solid #999 !important; background:#fff !important;
+    color:#333 !important; font-size:7.5pt; padding:1pt 4pt; }
+
+  /* ── Blocs reserves a l'impression ── */
   .imprime-entete{display:block !important}
   .imprime-cloture{display:block !important}
   .imprime-signature{display:flex !important}
+  .imprime-pied{display:block !important}
+
+  /* Les gros aplats sombres du tableau de bord n'ont pas leur place ici. */
+  .bord-ticker-wrap,.bord-btn-grid{display:none !important}
 }
 .logo{display:block;color:currentColor}
 .logo-cote{height:40px;width:auto;color:var(--vert);flex:none}
@@ -254,53 +291,60 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-ticker-wrap { overflow:hidden; background:#ff5b3d; padding:5px 0; }
 .bord-ticker { display:inline-block; white-space:nowrap; animation:ticker 55s linear infinite; }
 .bord-ticker span { font-size:10px; font-weight:700; color:#fff; letter-spacing:.8px; padding:0 24px; }
-@keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
-.bord-gauge-section { padding:18px 16px 4px; text-align:center; }
-.bord-gauge-lbl { font-size:9px; letter-spacing:3px; color:#ff5b3d; text-transform:uppercase; margin-bottom:10px; }
-.bord-gauge-wrap { position:relative; width:200px; margin:0 auto; }
-.bord-gauge-wrap svg { width:200px; height:110px; display:block; }
-.bord-gauge-val { position:absolute; bottom:0; left:0; right:0; text-align:center; }
-.bord-gauge-num { font-size:24px; font-weight:900; color:#fff; font-variant-numeric:tabular-nums; }
-.bord-gauge-unit { font-size:9px; color:#ff5b3d; letter-spacing:2px; }
-.bord-stats { display:flex; gap:1px; margin:12px 0 0; }
-.bord-stat { flex:1; padding:12px 4px; text-align:center; background:rgba(255,255,255,.04); border-top:3px solid transparent; }
-.bord-stat.rouge { border-color:#ef4444; }
-.bord-stat.orange { border-color:#ff5b3d; }
-.bord-stat.vert { border-color:#22c55e; }
-.bord-stat.gris { border-color:#4a4a5a; }
-.bord-stat-val { font-size:22px; font-weight:900; color:#fff; }
-.bord-stat-val.rouge { color:#ef4444; }
-.bord-stat-val.orange { color:#ff5b3d; }
-.bord-stat-val.vert { color:#22c55e; }
-.bord-stat-lbl { font-size:8px; color:#6a6a7a; text-transform:uppercase; letter-spacing:.8px; margin-top:3px; }
-.bord-section { padding:12px 12px 0; }
+.bord-section { padding:14px 12px 0; }
 .bord-section-head { display:flex; align-items:center; justify-content:space-between;
   border-bottom:1px solid rgba(255,91,61,.3); padding-bottom:7px; margin-bottom:9px; }
-.bord-section-head .lbl { font-size:9px; letter-spacing:2px; color:#ff5b3d; text-transform:uppercase; font-weight:700; }
-.bord-section-head .ct { font-size:11px; color:#fff; font-weight:700; }
-.bord-incident { background:rgba(255,255,255,.04); border-left:3px solid #ef4444;
-  border-radius:0 8px 8px 0; padding:9px 11px; margin-bottom:7px; }
-.bord-incident.orange { border-color:#ff5b3d; }
-.bord-incident.vert { border-color:#22c55e; }
-.bord-incident.ocre { border-color:#fbbf24; }
-.bord-incident-head { display:flex; justify-content:space-between; align-items:center; }
-.bord-incident-nom { font-size:12px; font-weight:700; color:#fff; }
-.bord-incident-tag { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; text-transform:uppercase; }
-.bord-tag-rouge { background:rgba(239,68,68,.2); color:#f87171; border:1px solid rgba(239,68,68,.4); }
-.bord-tag-orange { background:rgba(255,91,61,.15); color:#ff8c70; border:1px solid rgba(255,91,61,.35); }
-.bord-tag-vert { background:rgba(34,197,94,.1); color:#4ade80; border:1px solid rgba(34,197,94,.3); }
-.bord-tag-ocre { background:rgba(251,191,36,.1); color:#fde68a; border:1px solid rgba(251,191,36,.35); }
-.bord-incident-detail { font-size:10px; color:#6a6a7a; margin-top:3px; }
-.bord-fleet { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; padding:4px 0 20px; }
-.bord-fleet-item { border:1px solid rgba(255,255,255,.08); border-radius:7px; padding:8px 3px; text-align:center; }
-.bord-fleet-item.ok { border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.05); }
-.bord-fleet-item.panne { border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.07); }
-.bord-fleet-item.immo { border-color:rgba(255,91,61,.4); background:rgba(255,91,61,.06); }
-.bord-fleet-icon { font-size:15px; }
-.bord-fleet-nom { font-size:7px; color:#6a6a7a; font-weight:600; margin-top:3px; }
-.bord-fleet-nom.ok { color:#4ade80; }
-.bord-fleet-nom.panne { color:#f87171; }
-.bord-fleet-nom.immo { color:#fb923c; }
+.bord-section-head .lbl { font-size:9px; letter-spacing:2px; color:#ff5b3d;
+  text-transform:uppercase; font-weight:700; }
+.bord-section-head .ct { font-size:10.5px; color:#fff; font-weight:700; }
+@keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+/* Liste "a traiter aujourd'hui" */
+.bord-tache { background:rgba(255,255,255,.04); border-left:3px solid #ef4444;
+  border-radius:0 9px 9px 0; padding:11px 12px; margin-bottom:6px;
+  display:flex; align-items:flex-start; gap:10px; cursor:pointer; transition:background .12s; }
+.bord-tache:active { background:rgba(255,255,255,.08); }
+.bord-tache.o { border-color:#ff5b3d; }
+.bord-tache.j { border-color:#fbbf24; }
+.bord-tache.v { border-color:#22c55e; }
+.bord-tache-num { width:23px; height:23px; border-radius:50%; flex:none;
+  background:rgba(239,68,68,.18); color:#f87171;
+  display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; }
+.bord-tache.o .bord-tache-num { background:rgba(255,91,61,.15); color:#ff8c70; }
+.bord-tache.j .bord-tache-num { background:rgba(251,191,36,.12); color:#fde68a; }
+.bord-tache.v .bord-tache-num { background:rgba(34,197,94,.12); color:#4ade80; }
+.bord-tache-txt { min-width:0; }
+.bord-tache-txt b { font-size:12.5px; color:#fff; display:block; line-height:1.3; }
+.bord-tache-txt small { font-size:10.5px; color:#6a6a7a; display:block; margin-top:2px; }
+.bord-tache-plus { font-size:10.5px; color:#5a5a6a; padding:6px 2px 0; font-style:italic; }
+
+/* Bloc caisse compact */
+.bord-caisse { margin:14px 12px 0; background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:14px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.bord-caisse-lbl { font-size:9px; letter-spacing:1.6px; color:#6a6a7a; text-transform:uppercase; }
+.bord-caisse-val { font-size:23px; font-weight:900; color:#fff;
+  font-variant-numeric:tabular-nums; line-height:1.15; }
+.bord-caisse-sub { font-size:10.5px; color:#4ade80; margin-top:2px; }
+.bord-caisse-sub.alerte { color:#f87171; }
+.bord-caisse-anneau { width:58px; height:58px; flex:none; }
+
+/* Liste flotte : une ligne par camion, statut lisible sans clic */
+.bord-flotte { display:grid; grid-template-columns:1fr; gap:6px; padding-bottom:2px; }
+@container (min-width:520px){ .bord-flotte { grid-template-columns:1fr 1fr; } }
+.bord-camion { border:1px solid rgba(255,255,255,.08); border-radius:10px;
+  padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer; }
+.bord-camion:active { background:rgba(255,255,255,.06); }
+.bord-camion.ok { border-color:rgba(34,197,94,.22); background:rgba(34,197,94,.04); }
+.bord-camion.panne { border-color:rgba(255,91,61,.38); background:rgba(255,91,61,.06); }
+.bord-camion.immo { border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.07); }
+.bord-camion-ic { font-size:18px; flex:none; }
+.bord-camion-info { min-width:0; flex:1; }
+.bord-camion-nom { font-size:12.5px; font-weight:800; color:#fff; letter-spacing:.2px; }
+.bord-camion-etat { font-size:10px; color:#6a6a7a; margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bord-camion-etat.r { color:#f87171; }
+.bord-camion-etat.o { color:#ff8c70; }
+
 .bord-mouv-item { display:flex; justify-content:space-between; align-items:center;
   padding:8px 0; border-bottom:1px solid rgba(255,255,255,.06); }
 .bord-mouv-item:last-child { border-bottom:none; }
@@ -317,20 +361,38 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-btn.full { grid-column:1/-1; background:rgba(255,91,61,.1); color:#ff8c70;
   border:1px solid rgba(255,91,61,.3); }
 .logo-entete{height:74px;width:auto;color:#27368B;flex:none}
-.imprime-cloture{display:none;font-size:8.5pt;color:#444;margin:-6px 0 10px;font-style:italic}
-.imprime-signature{display:none;margin-top:30px;padding-top:4px;gap:30px}
+.imprime-cloture{display:none;font-size:8.5pt;color:#444;margin:-3pt 0 8pt;font-style:italic}
+
+/* ── En-tete officiel ETS DSN, visible seulement a l'impression ── */
+.imprime-entete{display:none;position:relative;overflow:hidden;
+  border-bottom:2pt solid #27368B;padding:0 0 8pt;margin:0 0 12pt}
+.imprime-entete .tete{display:flex;align-items:flex-start;justify-content:space-between;
+  gap:16pt;position:relative}
+.imprime-entete .marque{display:flex;align-items:center;gap:9pt}
+.imprime-entete .logo-entete{height:46pt;width:auto;color:#27368B;flex:none}
+.imprime-entete .raison{font-size:12pt;font-weight:800;color:#27368B;
+  letter-spacing:-.01em;line-height:1.15}
+.imprime-entete .activite{font-size:7.5pt;color:#555;letter-spacing:.05em;
+  text-transform:uppercase;margin-top:1pt}
+.imprime-entete .ident{font-size:7pt;color:#555;line-height:1.45;text-align:right;flex:none}
+.imprime-entete .objet{margin-top:9pt;display:flex;align-items:baseline;
+  justify-content:space-between;gap:12pt}
+.imprime-entete h1{font-size:13pt;color:#1a1a1a;font-weight:800;letter-spacing:-.01em}
+.imprime-entete .periode{font-size:8.5pt;color:#444;margin-top:1pt}
+.imprime-entete .edite{font-size:7.5pt;color:#777;white-space:nowrap;flex:none}
+
+/* ── Pied de page ── */
+.imprime-pied{display:none;margin-top:14pt;padding-top:5pt;
+  border-top:.5pt solid #c8ccd8;font-size:7pt;color:#777;
+  justify-content:space-between;gap:12pt}
+
+/* ── Bloc signatures ── */
+.imprime-signature{display:none;margin-top:26pt;padding-top:4pt;gap:34pt;break-inside:avoid}
 .imprime-signature>div{flex:1;text-align:center}
-.imprime-signature .trait-sign{border-top:1px solid #333;margin:36px 14px 6px}
-.imprime-signature b{display:block;font-size:9pt}
-.imprime-signature small{font-size:8pt;color:#555}
-.imprime-entete{display:none;position:relative;overflow:hidden;background:var(--vert);color:#fff;
-  padding:13px 15px;margin:0 0 13px;border-radius:8px}
-.imprime-entete .tete{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative}
-.imprime-entete h1{font-size:15pt;color:#fff}
-.imprime-entete p{font-size:9pt;opacity:.9}
-.imprime-entete .ident{font-size:8pt;opacity:.78;line-height:1.4;text-align:right}
-.imprime-entete .filigrane{position:absolute;right:-3%;top:-52%;height:230%;color:#fff;opacity:.14}
-@media print{ .logo-entete{height:80px} }
+.imprime-signature .trait-sign{border-top:.75pt solid #333;margin:34pt 12pt 5pt}
+.imprime-signature b{display:block;font-size:8.5pt;color:#1a1a1a}
+.imprime-signature small{font-size:7.5pt;color:#666}
+@media print{ .imprime-pied{display:flex !important} }
 @media(prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
@@ -739,6 +801,13 @@ function statutEcheanceKm(kmActuel, kmDernier, intervalle, marge){
   return { etat:"ok", reste };
 }
 
+/* Un relevé de compteur trop vieux rend les alertes vidange/pneus peu
+   fiables : le camion a roulé depuis, mais l'appli l'ignore. */
+const JOURS_RELEVE_FIABLE = 30;
+function releveAncien(c){
+  return !c.km_maj_le || jrs(c.km_maj_le, auj()) > JOURS_RELEVE_FIABLE;
+}
+
 function documentsCamion(c){
   const dv = D.prefs.delai_visite_j ?? 45;
   const da = D.prefs.delai_assurance_j ?? 30;
@@ -746,13 +815,14 @@ function documentsCamion(c){
   const tvm = echeanceTVM(c.id);
   const iv = D.prefs.intervalle_vidange_km ?? 8000, mv = D.prefs.marge_vidange_km ?? 800;
   const ip = D.prefs.intervalle_pneus_km ?? 40000, mp = D.prefs.marge_pneus_km ?? 3000;
+  const vieux = releveAncien(c);
   return [
     { type:"visite", libelle:"Visite technique", echeance:echeanceVisite(c), ...statutEcheance(echeanceVisite(c), dv) },
     { type:"assurance", libelle:"Assurance", echeance:echeanceAssurance(c), ...statutEcheance(echeanceAssurance(c), da) },
     { type:"tvm", libelle:`TVM ${tvm.annee}`, echeance:tvm.date, ...statutEcheance(tvm.date, dt), tvmAnnee:tvm.annee },
-    { type:"vidange", libelle:"Vidange", kmDernier:c.km_derniere_vidange, intervalle:iv,
+    { type:"vidange", libelle:"Vidange", kmDernier:c.km_derniere_vidange, intervalle:iv, releveAncien:vieux,
       ...statutEcheanceKm(c.km, c.km_derniere_vidange, iv, mv) },
-    { type:"pneus", libelle:"Pneus", kmDernier:c.km_derniers_pneus, intervalle:ip,
+    { type:"pneus", libelle:"Pneus", kmDernier:c.km_derniers_pneus, intervalle:ip, releveAncien:vieux,
       ...statutEcheanceKm(c.km, c.km_derniers_pneus, ip, mp) }
   ];
 }
@@ -850,136 +920,203 @@ async function recharger(){
 window.recharger = recharger;
 const admin = () => moi.role==="admin";
 
-/* ================= 6. TABLEAU DE BORD — Industrial Orange ================= */
+/* ================= 6. TABLEAU DE BORD — Action + Flotte ================= */
+
+/* Construit la liste de ce qu'il faut traiter, classee par urgence reelle
+   plutot que par categorie. Chaque tache porte un rang : plus il est bas,
+   plus c'est urgent. On s'arrete a MAX_TACHES pour garder l'ecran lisible. */
+const MAX_TACHES = 6;
+function tachesDuJour(){
+  const t = [];
+  const actifs = D.camions.filter(c=>c.actif);
+  const ec = enCours();
+
+  /* 1. Un document echu ou sur le point de l'etre sur un camion qui roule :
+        c'est ce qui bloque un chargement du jour au lendemain. */
+  for(const c of actifs){
+    const immo = D.pannes.some(p=>p.camion_id===c.id && p.immobilise && !p.immob_fin);
+    for(const d of documentsCamion(c)){
+      if(d.etat!=="echue" && d.etat!=="proche") continue;
+      if(d.type==="vidange" || d.type==="pneus") continue; /* traites plus bas */
+      const bloquant = !immo && d.etat==="echue";
+      t.push({
+        rang: bloquant ? 0 : 1,
+        ton: d.etat==="echue" ? "" : "j",
+        titre: `${c.nom} — ${d.libelle} ${d.etat==="echue" ? "échue" : `dans ${d.jours} j`}`,
+        detail: immo ? "Camion déjà immobilisé" : "Camion en service — blocage à prévoir",
+        action: () => { aller("camions"); setVue("detail", c.id); }
+      });
+    }
+  }
+
+  /* 2. Panne signalee depuis trop longtemps sans garage affecte. */
+  for(const p of ec.filter(enRetard)){
+    const h = Math.floor(heuresDepuis(p.date_signalement));
+    t.push({
+      rang: 2, ton: "",
+      titre: `${nomCamion(p.camion_id)} — sans garage depuis ${h > 47 ? Math.floor(h/24)+" j" : h+" h"}`,
+      detail: p.description ? p.description.slice(0,70) : "Aucun garage choisi",
+      action: () => ouvrirPanne(p.id)
+    });
+  }
+
+  /* 3. Les autres pannes encore a affecter. */
+  for(const p of ec.filter(p=>p.statut==="signalee" && !enRetard(p))){
+    t.push({
+      rang: 3, ton: "o",
+      titre: `${nomCamion(p.camion_id)} — panne à affecter`,
+      detail: p.description ? p.description.slice(0,70) : "Choisir un garage",
+      action: () => ouvrirPanne(p.id)
+    });
+  }
+
+  /* 4. Travaux termines dont le reglement reste en attente. */
+  const aRegler = ec.filter(p=>p.statut==="terminee");
+  if(aRegler.length) t.push({
+    rang: 4, ton: "v",
+    titre: `${aRegler.length} réparation${aRegler.length>1?"s":""} à régler`,
+    detail: aRegler.map(p=>nomCamion(p.camion_id)).slice(0,4).join(" · "),
+    action: () => aller("pannes")
+  });
+
+  /* 5. Camions au garage : a suivre, sans urgence immediate. */
+  const auGarage = ec.filter(p=>p.statut==="affectee");
+  if(auGarage.length){
+    const noms = [...new Set(auGarage.map(p=>nomCamion(p.camion_id)))];
+    t.push({
+      rang: 5, ton: "o",
+      titre: `${noms.length} camion${noms.length>1?"s":""} au garage`,
+      detail: noms.slice(0,4).join(" · ") + (noms.length>4?` +${noms.length-4}`:""),
+      action: () => aller("pannes")
+    });
+  }
+
+  /* 6. Vidange ou pneus reellement depasses (le compteur est a jour). */
+  const entretien = [];
+  for(const c of actifs){
+    if(releveAncien(c)) continue;
+    for(const d of documentsCamion(c))
+      if((d.type==="vidange"||d.type==="pneus") && d.etat==="echue")
+        entretien.push(`${c.nom} (${d.libelle.toLowerCase()})`);
+  }
+  if(entretien.length) t.push({
+    rang: 6, ton: "j",
+    titre: `${entretien.length} entretien${entretien.length>1?"s":""} dépassé${entretien.length>1?"s":""}`,
+    detail: entretien.slice(0,3).join(" · "),
+    action: () => aller("camions")
+  });
+
+  /* 7. Compteurs jamais releves : les alertes ci-dessus sont aveugles. */
+  const vieux = actifs.filter(releveAncien);
+  if(vieux.length) t.push({
+    rang: 7, ton: "j",
+    titre: `${vieux.length} compteur${vieux.length>1?"s":""} à relever`,
+    detail: "Sans relevé récent, les alertes vidange et pneus restent muettes",
+    action: () => aller("camions")
+  });
+
+  t.sort((a,b)=>a.rang-b.rang);
+  return t;
+}
+
+/* Le dictionnaire des actions est reconstruit a chaque rendu : les
+   onclick du HTML n'y renvoient que par un index. */
+let ACTIONS_BORD = [];
+window.tacheBord = i => ACTIONS_BORD[i] && ACTIONS_BORD[i]();
+
 function vBord(){
   const c=caisse(), max=referenceSablier();
-  const pct=Math.max(0,Math.min(1, c.solde/max));
-
-  /* ── Ticker : textes d'alertes concaténés ── */
+  const pct=Math.max(0,Math.min(1, max ? c.solde/max : 0));
+  const actifs=D.camions.filter(x=>x.actif);
   const ec=enCours();
-  const aAffecter=ec.filter(p=>p.statut==="signalee");
-  const auGarage=ec.filter(p=>p.statut==="affectee");
-  const aRegler=ec.filter(p=>p.statut==="terminee");
-  const retard=aAffecter.filter(enRetard);
-  const imm=D.pannes.filter(p=>p.immobilise&&!p.immob_fin);
-  const actifs=D.camions.filter(c=>c.actif);
 
-  let tickerMsgs=[];
-  retard.forEach(p=>tickerMsgs.push(`⚠ ${nomCamion(p.camion_id)} sans garage ${Math.floor(heuresDepuis(p.date_signalement))}h`));
-  imm.forEach(p=>tickerMsgs.push(`🔴 ${nomCamion(p.camion_id)} immobilisé ${joursArret(p)}j`));
-  /* alertes documents */
-  for(const cam of actifs){
-    const docs=documentsCamion(cam);
-    for(const d of docs){
-      if(d.etat==="echue") tickerMsgs.push(`📋 ${cam.nom} — ${d.libelle} échue`);
-      else if(d.etat==="proche") tickerMsgs.push(`📋 ${cam.nom} — ${d.libelle} bientôt`);
-    }
-  }
-  if(!tickerMsgs.length) tickerMsgs=["✅ Flotte opérationnelle","💰 "+fmtF(c.solde)+" en caisse"];
-  const tickerTxt = (tickerMsgs.join("  ·  ")+"  ·  ").repeat(3);
+  /* ── Ticker ── */
+  let msgs=[];
+  for(const p of ec.filter(enRetard))
+    msgs.push(`⚠ ${nomCamion(p.camion_id)} sans garage ${Math.floor(heuresDepuis(p.date_signalement))} h`);
+  for(const p of D.pannes.filter(p=>p.immobilise&&!p.immob_fin))
+    msgs.push(`🔴 ${nomCamion(p.camion_id)} immobilisé ${joursArret(p)} j`);
+  if(!msgs.length) msgs=["✅ Flotte opérationnelle", "💰 "+fmtF(c.solde)+" en caisse"];
+  const ticker=(msgs.join("  ·  ")+"  ·  ").repeat(3);
 
-  /* ── Jauge caisse : aiguille SVG ── */
-  const ANG=Math.PI*pct; /* 0=gauche(min) π=droite(max) */
-  const cx=100,cy=102,r=78;
-  const nx=cx+r*Math.cos(Math.PI-ANG), ny=cy-r*Math.sin(Math.PI-ANG);
-  /* arc coloré masqué selon niveau */
-  const arcTot=Math.PI*r; /* longueur totale demi-cercle */
-  const dashRed=arcTot*0.25, dashOcre=arcTot*0.2, dashVert=arcTot*0.55;
-  /* stroke-dashoffset pour ne montrer que jusqu'au pct */
-  const niveauMasque=arcTot*(1-pct);
-
-  /* ── Stats camions ── */
-  const nbEnRoute=actifs.filter(cam=>{
-    const ec2=D.pannes.filter(p=>p.camion_id===cam.id&&p.immobilise&&!p.immob_fin);
-    return !ec2.length;
-  }).length;
-  const nbImmo=imm.length;
-  const nbAttente=aAffecter.length;
-
-  /* ── Recette de la semaine courante ── */
-  const lundi=lundiDe(auj());
-  const recSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="recette"&&m.date>=lundi)
-    .reduce((s,m)=>s+Number(m.montant),0);
-
-  /* ── Incidents : pannes en cours triées par urgence ── */
-  let incidents="";
-  const PRIO=[["signalee","rouge"],["affectee","orange"],["terminee","vert"]];
-  const LABEL={signalee:"URGENT",affectee:"AU GARAGE",terminee:"À RÉGLER"};
-  const TAG={signalee:"bord-tag-rouge",affectee:"bord-tag-orange",terminee:"bord-tag-vert"};
-  for(const [statut] of PRIO){
-    const liste=ec.filter(p=>p.statut===statut);
-    for(const p of liste){
-      const cls=PRIO.find(x=>x[0]===statut)[1];
-      const ch=chauffeurDe(p.camion_id);
-      const detail=[p.description||p.piece||"",nomGarage(p.garage_id)||"",ch?ch.nom:""].filter(Boolean).join(" · ");
-      incidents+=`<div class="bord-incident ${cls}" onclick="ouvrirPanne('${p.id}')" style="cursor:pointer">
-        <div class="bord-incident-head">
-          <span class="bord-incident-nom">${esc(nomCamion(p.camion_id))}</span>
-          <span class="bord-incident-tag ${TAG[statut]}">${LABEL[statut]}</span>
-        </div>
-        ${detail?`<div class="bord-incident-detail">${esc(detail)}</div>`:""}
-      </div>`;
-    }
-  }
-  if(!ec.length) incidents=`<div style="color:#4a4a5a;font-size:12px;padding:8px 0">Aucune panne en cours — flotte opérationnelle ✅</div>`;
-
-  /* ── Alertes documents ── */
-  const alertesDoc=[]; const tvmEnRetard=[];
-  for(const cam of actifs){
-    for(const d of documentsCamion(cam)){
-      if(d.etat!=="echue"&&d.etat!=="proche") continue;
-      if(d.type==="tvm") tvmEnRetard.push({cam,d});
-      else alertesDoc.push({cam,d});
-    }
-  }
-  let docsHtml="";
-  for(const x of alertesDoc){
-    const cls=x.d.etat==="echue"?"rouge":"ocre";
-    const tag=x.d.etat==="echue"?"bord-tag-rouge":"bord-tag-ocre";
-    docsHtml+=`<div class="bord-incident ${cls}">
-      <div class="bord-incident-head">
-        <span class="bord-incident-nom">${esc(x.cam.nom)} — ${esc(x.d.libelle)}</span>
-        <span class="bord-incident-tag ${tag}">${x.d.etat==="echue"?"ÉCHUE":"BIENTÔT"}</span>
-      </div></div>`;
-  }
-  if(tvmEnRetard.length){
-    const cls=tvmEnRetard.some(x=>x.d.etat==="echue")?"rouge":"ocre";
-    const tag=cls==="rouge"?"bord-tag-rouge":"bord-tag-ocre";
-    docsHtml+=`<div class="bord-incident ${cls}">
-      <div class="bord-incident-head">
-        <span class="bord-incident-nom">TVM — ${tvmEnRetard.length} camion${tvmEnRetard.length>1?"s":""}</span>
-        <span class="bord-incident-tag ${tag}">${tvmEnRetard.some(x=>x.d.etat==="echue")?"ÉCHUE":"BIENTÔT"}</span>
-      </div></div>`;
-  }
-
-  /* ── Grille camions ── */
-  let fleet="";
-  for(const cam of D.camions){
-    if(!cam.actif) continue;
-    const isImmo=D.pannes.some(p=>p.camion_id===cam.id&&p.immobilise&&!p.immob_fin);
-    const hasPanne=D.pannes.some(p=>p.camion_id===cam.id&&["signalee","affectee"].includes(p.statut));
-    const cls=isImmo?"immo":hasPanne?"panne":"ok";
-    const icon=isImmo?"🟡":hasPanne?"🔴":"🚛";
-    fleet+=`<div class="bord-fleet-item ${cls}" onclick="setVue('detail','${cam.id}');aller('camions')" style="cursor:pointer">
-      <div class="bord-fleet-icon">${icon}</div>
-      <div class="bord-fleet-nom ${cls}">${esc(cam.nom.slice(0,6))}</div>
+  /* ── Bloc 1 : à traiter aujourd'hui ── */
+  const taches=tachesDuJour();
+  ACTIONS_BORD = taches.map(x=>x.action);
+  let listeTaches="";
+  taches.slice(0, MAX_TACHES).forEach((x,i)=>{
+    listeTaches+=`<div class="bord-tache ${x.ton}" onclick="tacheBord(${i})">
+      <div class="bord-tache-num">${i+1}</div>
+      <div class="bord-tache-txt"><b>${esc(x.titre)}</b><small>${esc(x.detail)}</small></div>
     </div>`;
-  }
+  });
+  if(taches.length > MAX_TACHES)
+    listeTaches+=`<div class="bord-tache-plus">+ ${taches.length-MAX_TACHES} autre${
+      taches.length-MAX_TACHES>1?"s":""} point${taches.length-MAX_TACHES>1?"s":""} à traiter</div>`;
+  if(!taches.length)
+    listeTaches=`<div class="bord-tache v"><div class="bord-tache-num">✓</div>
+      <div class="bord-tache-txt"><b>Rien d'urgent</b>
+      <small>Aucune panne en cours, aucun document échu.</small></div></div>`;
 
-  /* ── Derniers mouvements ── */
+  /* ── Bloc 2 : caisse ── */
+  const recSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="recette"&&m.date>=lundiDe(auj()))
+    .reduce((s,m)=>s+Number(m.montant),0);
+  const CIRC=2*Math.PI*25;
+  const couleurAnneau = c.sousSeuil ? "#ef4444" : pct<0.4 ? "#f59e0b" : "#22c55e";
+
+  /* ── Bloc 3 : flotte, camions à problème en tête ── */
+  const rangs=[];
+  for(const cam of actifs){
+    const pImmo=D.pannes.find(p=>p.camion_id===cam.id&&p.immobilise&&!p.immob_fin);
+    const pOuv=D.pannes.find(p=>p.camion_id===cam.id&&["signalee","affectee"].includes(p.statut));
+    const docPire=documentsCamion(cam).find(d=>d.etat==="echue")
+                || documentsCamion(cam).find(d=>d.etat==="proche");
+    let cls="ok", icone="🚛", etat="En route", tonEtat="";
+    if(pImmo){
+      cls="immo"; icone="🔴"; tonEtat="r";
+      const g=pOuv&&pOuv.garage_id ? nomGarage(pOuv.garage_id) : null;
+      etat = g ? `Immobilisé · chez ${g}` : `Immobilisé · ${joursArret(pImmo)} j sans garage`;
+    } else if(pOuv){
+      cls="panne"; icone="🟠"; tonEtat="o";
+      etat = pOuv.garage_id ? `Au garage · ${nomGarage(pOuv.garage_id)}` : "Panne à affecter";
+    } else if(docPire && docPire.etat==="echue"){
+      cls="panne"; icone="🟠"; tonEtat="r";
+      etat = `${docPire.libelle} échue`;
+    } else if(docPire){
+      cls="ok"; icone="🚛"; tonEtat="";
+      etat = docPire.type==="vidange"||docPire.type==="pneus"
+        ? `${docPire.libelle} dans ${fmtKm(docPire.reste)}`
+        : `${docPire.libelle} dans ${docPire.jours} j`;
+    }
+    rangs.push({cam, cls, icone, etat, tonEtat,
+      poids: pImmo?0 : pOuv?1 : (docPire&&docPire.etat==="echue")?2 : docPire?3 : 4});
+  }
+  rangs.sort((a,b)=>a.poids-b.poids || a.cam.nom.localeCompare(b.cam.nom));
+  const nbImmo=new Set(D.pannes.filter(p=>p.immobilise&&!p.immob_fin).map(p=>p.camion_id)).size;
+  const nbRoute=actifs.length-nbImmo;
+
+  let flotte="";
+  for(const r of rangs)
+    flotte+=`<div class="bord-camion ${r.cls}" onclick="aller('camions');setVue('detail','${r.cam.id}')">
+      <div class="bord-camion-ic">${r.icone}</div>
+      <div class="bord-camion-info">
+        <div class="bord-camion-nom">${esc(r.cam.nom)}</div>
+        <div class="bord-camion-etat ${r.tonEtat}">${esc(r.etat)}</div>
+      </div></div>`;
+
+  /* ── Bloc 4 : derniers mouvements ── */
   const derniers=[...D.mouvements].sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,5);
-  let mouvHtml="";
+  let mouv="";
   for(const m of derniers){
     const plus=m.sens==="entree";
-    mouvHtml+=`<div class="bord-mouv-item">
+    mouv+=`<div class="bord-mouv-item">
       <div><div class="bord-mouv-lib">${esc(m.libelle)}</div>
         <div class="bord-mouv-date">${dateCourte(m.date)} · ${esc(etiquetteMouvement(m))}</div></div>
       <div class="bord-mouv-val ${plus?"plus":"moins"}">${plus?"+":"−"}${fmt(m.montant)}</div>
     </div>`;
   }
-  if(!derniers.length) mouvHtml=`<div style="color:#5a5a6a;font-size:11px;padding:8px 0">Aucun mouvement enregistré.</div>`;
+  if(!derniers.length) mouv=`<div style="color:#5a5a6a;font-size:11px;padding:8px 0">Aucun mouvement enregistré.</div>`;
 
-  /* ── Boutons d'action ── */
+  /* ── Actions ── */
   let btns="";
   if(admin()) btns=`<div class="bord-btn-grid">
     <button class="bord-btn primary" onclick="formPanneAdmin()">＋ Panne</button>
@@ -990,99 +1127,48 @@ function vBord(){
   </div>`;
 
   return `
-  <!-- Ticker -->
-  <div class="bord-ticker-wrap">
-    <div class="bord-ticker"><span>${esc(tickerTxt)}</span></div>
-  </div>
+  <div class="bord-ticker-wrap"><div class="bord-ticker"><span>${esc(ticker)}</span></div></div>
 
-  <!-- Jauge caisse -->
-  <div class="bord-gauge-section">
-    <div class="bord-gauge-lbl">Trésorerie active</div>
-    <div class="bord-gauge-wrap">
-      <svg viewBox="0 0 200 110">
-        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#1e1e28" stroke-width="15" stroke-linecap="round"/>
-        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#ef4444" stroke-width="15"
-          stroke-dasharray="${arcTot}" stroke-dashoffset="${arcTot*0.75}" stroke-linecap="round"/>
-        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#f59e0b" stroke-width="15"
-          stroke-dasharray="${arcTot}" stroke-dashoffset="${arcTot*0.55}" stroke-linecap="round"/>
-        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#22c55e" stroke-width="15"
-          stroke-dasharray="${arcTot}" stroke-dashoffset="0" stroke-linecap="round"/>
-        <path d="M18,102 A82,82 0 0,1 182,102" fill="none" stroke="#111015" stroke-width="17"
-          stroke-dasharray="${arcTot}" stroke-dashoffset="${(-niveauMasque).toFixed(1)}" stroke-linecap="round"/>
-        <!-- marqueur seuil -->
-        ${(()=>{ const sp=Math.max(0,Math.min(1,c.seuil/max)); const sa=Math.PI*sp;
-          const sx=cx+r*Math.cos(Math.PI-sa), sy=cy-r*Math.sin(Math.PI-sa);
-          return `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="5" fill="#fbbf24" opacity=".9"/>`;
-        })()}
-        <!-- aiguille -->
-        <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}"
-          stroke="#ff5b3d" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="${cx}" cy="${cy}" r="6" fill="#ff5b3d"/>
-        <text x="16" y="112" font-size="8" fill="#4a4a5a">MIN</text>
-        <text x="166" y="112" font-size="8" fill="#4a4a5a">MAX</text>
-      </svg>
-      <div class="bord-gauge-val">
-        <div class="bord-gauge-num">${fmt(c.solde)}</div>
-        <div class="bord-gauge-unit">FCFA${c.nbARegler?` · Prév. ${fmt(c.previsionnel)} F`:"" }</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Stats -->
-  <div class="bord-stats">
-    <div class="bord-stat ${nbImmo?"rouge":"vert"}">
-      <div class="bord-stat-val ${nbImmo?"rouge":"vert"}">${nbImmo}</div>
-      <div class="bord-stat-lbl">Immob.</div>
-    </div>
-    <div class="bord-stat ${nbAttente?"orange":"gris"}">
-      <div class="bord-stat-val ${nbAttente?"orange":""}">${nbAttente}</div>
-      <div class="bord-stat-lbl">En att.</div>
-    </div>
-    <div class="bord-stat vert">
-      <div class="bord-stat-val vert">${nbEnRoute}</div>
-      <div class="bord-stat-lbl">En route</div>
-    </div>
-    <div class="bord-stat gris">
-      <div class="bord-stat-val" style="color:#aaa;font-size:16px">${fmt(recSem/1000)}K</div>
-      <div class="bord-stat-lbl">Sem. F</div>
-    </div>
-  </div>
-
-  <!-- Incidents -->
   <div class="bord-section">
     <div class="bord-section-head">
-      <span class="lbl">Pannes en cours</span>
-      <span class="ct">${ec.length} active${ec.length>1?"s":""}</span>
+      <span class="lbl">À traiter aujourd'hui</span>
+      <span class="ct">${taches.length || "—"}</span>
     </div>
-    ${incidents}
+    ${listeTaches}
   </div>
 
-  ${docsHtml?`<div class="bord-section">
-    <div class="bord-section-head">
-      <span class="lbl">Documents & entretien</span>
-      <span class="ct">${alertesDoc.length+tvmEnRetard.length} alerte${alertesDoc.length+tvmEnRetard.length>1?"s":""}</span>
+  <div class="bord-caisse">
+    <div>
+      <div class="bord-caisse-lbl">En caisse</div>
+      <div class="bord-caisse-val">${fmtF(c.solde)}</div>
+      <div class="bord-caisse-sub ${c.sousSeuil?"alerte":""}">${
+        c.sousSeuil ? `Sous le seuil de ${fmtF(c.seuil)}`
+        : `+${fmtF(recSem)} cette semaine`}</div>
     </div>
-    ${docsHtml}
-  </div>`:""}
+    <svg class="bord-caisse-anneau" viewBox="0 0 60 60">
+      <circle cx="30" cy="30" r="25" fill="none" stroke="#1e1e28" stroke-width="7"/>
+      <circle cx="30" cy="30" r="25" fill="none" stroke="${couleurAnneau}" stroke-width="7"
+        stroke-dasharray="${CIRC.toFixed(1)}"
+        stroke-dashoffset="${(CIRC*(1-pct)).toFixed(1)}"
+        stroke-linecap="round" transform="rotate(-90 30 30)"/>
+      <text x="30" y="34" text-anchor="middle" font-size="12" font-weight="800"
+        fill="#fff">${Math.round(pct*100)}%</text>
+    </svg>
+  </div>
 
-  <!-- Flotte grid -->
   <div class="bord-section">
     <div class="bord-section-head">
       <span class="lbl">Flotte</span>
-      <span class="ct">${actifs.length} unités</span>
+      <span class="ct">${nbRoute} en route · ${nbImmo} immobilisé${nbImmo>1?"s":""}</span>
     </div>
-    <div class="bord-fleet">${fleet}</div>
+    <div class="bord-flotte">${flotte}</div>
   </div>
 
-  <!-- Mouvements -->
   <div class="bord-section">
-    <div class="bord-section-head">
-      <span class="lbl">Derniers mouvements</span>
-    </div>
-    ${mouvHtml}
+    <div class="bord-section-head"><span class="lbl">Derniers mouvements</span></div>
+    ${mouv}
   </div>
 
-  <!-- Actions -->
   ${btns}`;
 }
 window.apres_bord = () => { document.getElementById("zone")?.classList.add("bord-dark"); };
@@ -1731,9 +1817,16 @@ function detailCamion(id){
     </div>`;
 
   const docs = documentsCamion(c);
+  const vieuxReleve = releveAncien(c);
   h += `<div class="titre-sec">Documents administratifs & entretien</div><div class="carte">`;
+  if(vieuxReleve) h += `<div class="alerte a-ocre" style="margin-bottom:9px"><div>
+    <b>Relevé kilométrique ancien</b>
+    ${c.km_maj_le ? `Dernier relevé il y a ${jrs(c.km_maj_le, auj())} jours.` : "Aucun relevé enregistré."}
+    Les alertes vidange et pneus ne sont pas fiables tant que le compteur n'est pas remis à jour.
+    </div></div>`;
   for(const d of docs){
-    const sousLibelle = (d.type==="vidange"||d.type==="pneus")
+    const auKm = d.type==="vidange" || d.type==="pneus";
+    const sousLibelle = auKm
       ? (d.kmDernier!=null ? `Dernier à ${fmtKm(d.kmDernier)} · tous les ${fmtKm(d.intervalle)}` : "Aucun relevé enregistré")
       : (d.echeance ? "Échéance le "+dateLongue(d.echeance) : "Aucune date renseignée");
     h += `<div class="ligne"><div class="lib"><b>${esc(d.libelle)}</b>
@@ -1764,20 +1857,25 @@ function detailCamion(id){
 /* ================= 12. CARTE GPS ================= */
 /* Leaflet.js charge dynamiquement depuis CDN la premiere fois.
    Ensuite il est cache par le navigateur. */
-let LEAFLET_PRET = false;
+/* On mémorise la promesse elle-même, pas un drapeau : si l'utilisateur
+   ouvre Carte deux fois de suite, le second appel attend le même
+   chargement au lieu de croire à tort que Leaflet est déjà prêt. */
+let LEAFLET_CHARGE = null;
 function chargerLeaflet(){
-  if(LEAFLET_PRET || document.getElementById("leaflet-css")) return Promise.resolve();
-  return new Promise((ok,ko)=>{
+  if(window.L) return Promise.resolve();
+  if(LEAFLET_CHARGE) return LEAFLET_CHARGE;
+  LEAFLET_CHARGE = new Promise((ok,ko)=>{
     const css=document.createElement("link");
     css.id="leaflet-css"; css.rel="stylesheet";
     css.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
     document.head.appendChild(css);
     const js=document.createElement("script");
     js.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    js.onload=()=>{ LEAFLET_PRET=true; ok(); };
-    js.onerror=()=>ko(new Error("Leaflet indisponible"));
+    js.onload=()=>ok();
+    js.onerror=()=>{ LEAFLET_CHARGE=null; ko(new Error("Leaflet indisponible")); };
     document.head.appendChild(js);
   });
+  return LEAFLET_CHARGE;
 }
 
 /* Couleur du marqueur selon l'activité du camion */
@@ -2042,15 +2140,28 @@ function vRapports(){
       <button class="btn sec mini" onclick="decaler(1)">Suivant →</button>
       <button class="btn mini" onclick="window.print()">Imprimer</button></div>
     <div class="imprime-entete">
-      <svg viewBox="17.5 -22.8 743.3 1122.4" class="logo filigrane" aria-hidden="true"><use href="#mono"/></svg>
       <div class="tete">
+        <div class="marque">
+          <svg viewBox="17.5 -22.8 743.3 1122.4" class="logo logo-entete" aria-hidden="true"><use href="#sceau"/></svg>
+          <div>
+            <div class="raison">ETS DJOLO SALIFOU NAWAL</div>
+            <div class="activite">BTP · Commerce général</div>
+          </div>
+        </div>
+        <div class="ident">
+          RCCM RB/COT/17 A 34908<br>IFU 0201710173898<br>
+          St-Jean Gbégamey, Ilot 212 Carré 0456, Cotonou<br>
+          (00229) 01 96 69 99 90 / 01 95 13 21 21<br>etsdsn@gmail.com
+        </div>
+      </div>
+      <div class="objet">
         <div>
           <h1>Rapport ${{semaine:"hebdomadaire",mois:"mensuel",annee:"annuel"}[per]}</h1>
-          <p>${esc(b.titre)} · du ${dateLongue(b.d1)} au ${dateLongue(b.d2)}</p>
+          <div class="periode">${esc(b.titre)} · du ${dateLongue(b.d1)} au ${dateLongue(b.d2)}</div>
         </div>
-        <div class="ident">ETS DJOLO SALIFOU NAWAL<br>BTP · Commerce général<br>
-          RCCM RB/COT/17 A 34908 · IFU 0201710173898<br>édité le ${dateLongue(auj())}</div>
-      </div></div>
+        <div class="edite">Édité le ${dateLongue(auj())}</div>
+      </div>
+    </div>
     <div class="carte no-print" style="padding:11px 14px"><b>${esc(b.titre)}</b>
       <div class="mt">Du ${dateLongue(b.d1)} au ${dateLongue(b.d2)}</div></div>`;
   const close = clotureDe(per, b.d1);
@@ -2110,7 +2221,12 @@ function vRapports(){
   h += `<div class="imprime-signature">
     <div><div class="trait-sign"></div><b>${esc(moi?.nom || "L'administrateur")}</b>
       <small>Établi le ${dateLongue(auj())}</small></div>
-    <div><div class="trait-sign"></div><b>Directeur Général</b><small>Vu et approuvé</small></div>
+    <div><div class="trait-sign"></div><b>Directrice Générale</b><small>Vu et approuvé</small></div>
+  </div>
+  <div class="imprime-pied">
+    <span>ETS DJOLO SALIFOU NAWAL — Rapport ${
+      {semaine:"hebdomadaire",mois:"mensuel",annee:"annuel"}[per]} · ${esc(b.titre)}</span>
+    <span>Document interne — GestFlot</span>
   </div>`;
   return h;
 }
@@ -2349,10 +2465,17 @@ function rendreChauffeur(){
       h += `<div class="carte">
         <div class="lbl" style="margin-bottom:8px">Documents du camion</div>`;
       for(const d of C.documents){
-        const [txt,tagCls] = { echue:["Échue","t-rouge"], proche:[`Dans ${d.jours} j`,"t-ocre"],
-          aRenseigner:["À renseigner par SARANA","t-gris"], ok:["À jour","t-vert"] }[d.etat] || [d.etat,"t-gris"];
+        const auKm = d.type==="vidange" || d.type==="pneus";
+        /* Pour l'entretien au kilométrage, l'écart se lit en km, pas en jours. */
+        const txtProche = auKm ? `Dans ${fmtKm(d.reste_km)}` : `Dans ${d.jours} j`;
+        const txtRenseigner = auKm ? "Kilométrage à relever" : "À renseigner par SARANA";
+        const [txt,tagCls] = { echue:["Échue","t-rouge"], proche:[txtProche,"t-ocre"],
+          aRenseigner:[txtRenseigner,"t-gris"], ok:["À jour","t-vert"] }[d.etat] || [d.etat,"t-gris"];
+        const sous = auKm
+          ? (d.releve_ancien ? "<small>Dernier relevé ancien — à vérifier</small>" : "")
+          : (d.echeance ? `<small>Échéance le ${dateLongue(d.echeance)}</small>` : "");
         h += `<div class="ligne"><div class="lib"><b>${esc(d.libelle)}</b>
-          ${d.echeance ? `<small>Échéance le ${dateLongue(d.echeance)}</small>` : ""}</div>
+          ${sous}</div>
           <span class="tag ${tagCls}" style="white-space:nowrap">${esc(txt)}</span></div>`;
       }
       h += `</div>`;
