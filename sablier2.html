@@ -1777,6 +1777,43 @@ window.validerFiche = async (camionId) => {
   fermer(); toast("Fiche technique mise à jour."); await recharger();
 };
 
+/* Retrait doux : le camion passe inactif mais rien n'est supprimé.
+   Historique, recettes et pannes restent consultables ; l'opération
+   est réversible depuis la même fiche. */
+window.formRetirerCamion = (id) => {
+  const c = camion(id); if(!c) return;
+  const ch = chauffeurDe(id);
+  ouvrir("Retirer " + c.nom + " de la flotte",
+    `<p class="mt" style="margin-bottom:12px">Le camion disparaîtra du tableau de bord, de la collecte
+     et des alertes. Son historique — recettes, pannes, documents — reste consultable ici.</p>
+     ${ch ? `<div class="alerte a-ocre" style="margin-bottom:12px"><div>
+       <b>Chauffeur affecté</b>${esc(ch.nom)} sera automatiquement libéré de ce camion.</div></div>` : ""}
+     <p class="mt" style="margin-bottom:14px">Réversible : un bouton « Remettre en service »
+     apparaîtra sur cette même fiche.</p>
+     <div id="rc-msg"></div>
+     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn danger" id="rc-ok" onclick="validerRetraitCamion('${id}')">Retirer de la flotte</button></div>`);
+};
+window.validerRetraitCamion = async (id) => {
+  const b = document.getElementById("rc-ok");
+  b.disabled = true; b.textContent = "Retrait…";
+  const aujdhui = auj();
+  const { error } = await sb.from("sb2_camions").update({ actif:false, date_sortie:aujdhui }).eq("id", id);
+  if(error){
+    document.getElementById("rc-msg").innerHTML = `<div class="alerte a-rouge"><div>Échec : ${esc(error.message)}</div></div>`;
+    b.disabled = false; b.textContent = "Retirer de la flotte";
+    return;
+  }
+  // Libere le chauffeur eventuellement affecte ; n'empeche jamais le retrait si ca echoue.
+  await sb.from("sb2_affectations").update({ fin:aujdhui }).eq("camion_id", id).is("fin", null);
+  fermer(); toast("Camion retiré de la flotte."); await recharger();
+};
+window.reintegrerCamion = async (id) => {
+  const { error } = await sb.from("sb2_camions").update({ actif:true, date_sortie:null }).eq("id", id);
+  if(error) return toast("Échec : " + error.message);
+  toast("Camion remis en service."); await recharger();
+};
+
 /* ================= 11. CAMIONS ================= */
 function vCamions(){
   if(etatVue.detail) return detailCamion(etatVue.detail);
@@ -1788,9 +1825,9 @@ function vCamions(){
   for(const c of D.camions){
     const b=bilanCamion(c.id);
     tot.r+=b.recette; tot.rep+=b.reparations; tot.a+=b.arret; tot.m+=b.manque; tot.n+=b.net;
-    const pire = pireStatutDocuments(c);
+    const pire = c.actif ? pireStatutDocuments(c) : {etat:"ok"};
     h+=`<tr onclick="setVue('detail','${c.id}')" style="cursor:pointer">
-      <td><b class="im">${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">inactif</span>'}
+      <td><b class="im">${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">retiré</span>'}
         ${pire.etat!=="ok" ? " "+badgeDocument(pire) : ""}<br><small class="mt">${esc(c.modele||"")}</small></td>
       <td class="n">${fmt(b.recette)}</td><td class="n">${fmt(b.reparations)}</td>
       <td class="n">${b.arret||"—"}</td><td class="n">${fmt(b.manque)}</td>
@@ -1819,6 +1856,9 @@ function detailCamion(id){
     <div class="ligne"><div class="lib"><b>Net</b></div>
       <span class="num" style="font-size:18px;font-weight:700;color:${b.net<0?"var(--minium)":"var(--vert)"}">${fmtF(b.net)}</span></div></div>`;
   h += `<div class="titre-sec">Fiche technique</div><div class="carte">
+    <div class="ligne"><div class="lib"><b>Statut</b>${
+      !c.actif && c.date_sortie ? `<small>Retiré de la flotte le ${dateLongue(c.date_sortie)}</small>` : ""}</div>
+      <span class="tag ${c.actif?"t-vert":"t-gris"}">${c.actif?"en service":"retiré"}</span></div>
     <div class="ligne"><div class="lib"><b>Marque</b></div><span>${esc(c.modele||"—")}</span></div>
     <div class="ligne"><div class="lib"><b>Année</b></div><span>${c.annee||"—"}</span></div>
     <div class="ligne"><div class="lib"><b>Tonnage</b></div><span>${c.tonnage?fmt(c.tonnage)+" t":"—"}</span></div>
@@ -1827,7 +1867,10 @@ function detailCamion(id){
       <span class="num">${fmtKm(c.km||0)}</span></div>
     ${admin() ? `<div class="duo no-print" style="margin-top:9px">
       <button class="btn sec mini" onclick="formEditerFiche('${id}')">Modifier la fiche</button>
-      <button class="btn sec mini" onclick="formMajKm('${id}')">Relever le km</button></div>` : ""}
+      <button class="btn sec mini" onclick="formMajKm('${id}')">Relever le km</button></div>
+      ${c.actif
+        ? `<button class="btn danger mini no-print" style="width:100%;margin-top:9px" onclick="formRetirerCamion('${id}')">Retirer de la flotte</button>`
+        : `<button class="btn sec mini no-print" style="width:100%;margin-top:9px" onclick="reintegrerCamion('${id}')">Remettre en service</button>`}` : ""}
     </div>`;
 
   const docs = documentsCamion(c);
@@ -3490,4 +3533,3 @@ function echecLien(cause){
 </script>
 </body>
 </html>
-
