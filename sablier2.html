@@ -162,6 +162,20 @@ input[type=number]{font-family:"Archivo";font-variant-numeric:tabular-nums}
   border:none;display:flex;align-items:center;justify-content:center}
 .rec-stop svg{width:12px;height:12px;fill:#fff}
 
+/* ── Discussion attachée à une panne ── */
+.fil-msg{max-height:52vh;overflow-y:auto}
+.fil-msg::after{content:"";display:block;clear:both}
+.bulle-msg{max-width:80%;margin-bottom:11px;clear:both}
+.bulle-msg.moi{float:right;text-align:right}
+.bulle-msg:not(.moi){float:left;text-align:left}
+.bulle-aut{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--encre-doux);margin-bottom:3px}
+.bulle-corps{display:inline-block;text-align:left;background:var(--ciment);color:var(--encre);
+  border-radius:12px 12px 12px 3px;padding:8px 11px;font-size:13.5px;line-height:1.4;
+  max-width:100%;word-wrap:break-word;white-space:pre-wrap}
+.bulle-msg.moi .bulle-corps{background:var(--vert);color:#fff;border-radius:12px 12px 3px 12px}
+.bulle-heure{font-family:var(--mono);font-size:9px;color:var(--encre-doux);margin-top:3px}
+
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--encre-doux);
@@ -443,6 +457,14 @@ const jrs = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
 const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 const dateCourte = d => d ? (x=>x.getDate()+" "+MOIS[x.getMonth()].slice(0,4))(new Date(d.slice(0,10)+"T00:00:00")) : "—";
 const dateLongue = d => d ? (x=>x.getDate()+" "+MOIS[x.getMonth()]+" "+x.getFullYear())(new Date(d.slice(0,10)+"T00:00:00")) : "—";
+const heureCourte = iso => { const d=new Date(iso); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); };
+/* Compte les messages d'une panne non encore lus par le rôle donné,
+   en excluant ses propres messages (on ne se notifie pas soi-même). */
+const COL_LU = {admin:"lu_admin", chauffeur:"lu_chauffeur", garage:"lu_garage"};
+function compterNonLus(liste, panneId, role){
+  const col = COL_LU[role];
+  return (liste||[]).filter(m => m.panne_id===panneId && m.expediteur_role!==role && !m[col]).length;
+}
 function joursOuvres(d1,d2){
   if(!d1) return 0;
   const a=new Date(d1.slice(0,10)+"T00:00:00"), b=new Date((d2||auj()).slice(0,10)+"T00:00:00");
@@ -472,7 +494,11 @@ function ouvrir(titre, corps, apres){
   m.onclick=e=>{ if(e.target===m) fermer(); };
   if(apres) apres();
 }
-const fermer = () => document.getElementById("modale").classList.remove("on");
+let canalMessagerie = null;
+const fermer = () => {
+  document.getElementById("modale").classList.remove("on");
+  if(canalMessagerie){ sb.removeChannel(canalMessagerie); canalMessagerie = null; }
+};
 window.fermer = fermer;
 
 function segm(id, cb){
@@ -506,7 +532,7 @@ function chauffeurDe(camionId, date){
 }
 
 async function charger(){
-  const [cam,ch,ga,af,ty,pa,mv,pr,clo,me] = await Promise.all([
+  const [cam,ch,ga,af,ty,pa,mv,pr,clo,me,ms] = await Promise.all([
     sb.from("sb2_camions").select("*").order("nom"),
     sb.from("sb2_chauffeurs").select("*").order("nom"),
     sb.from("sb2_garages").select("*").order("nom"),
@@ -516,7 +542,8 @@ async function charger(){
     sb.from("sb2_mouvements").select("*").order("date",{ascending:false}),
     sb.from("sb2_prefs").select("*").maybeSingle(),
     sb.from("sb2_clotures").select("*").order("d1",{ascending:false}),
-    sb.from("sb2_medias").select("*")
+    sb.from("sb2_medias").select("*"),
+    sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage")
   ]);
   const err = [cam,ch,ga,af,ty,pa,mv,me].find(r=>r.error);
   if(err) throw new Error(err.error.message);
@@ -524,7 +551,7 @@ async function charger(){
     camions:cam.data||[], chauffeurs:ch.data||[], garages:ga.data||[],
     affectations:af.data||[], types:(ty.data||[]).map(t=>t.libelle),
     pannes:pa.data||[], mouvements:mv.data||[], medias:me.data||[],
-    clotures: clo.data||[],
+    clotures: clo.data||[], messages: ms.data||[],
     prefs: pr.data || {seuil:10000, fenetre_retour:30, delai_alerte_h:2, entreprise:"ETS DSN"}
   };
   try{ localStorage.setItem(CACHE, JSON.stringify(D)); }catch(e){}
@@ -1212,6 +1239,9 @@ window.ouvrirPanne = id => {
     ${med.length?`<div class="medias" id="med-${id}">${med.map(m=>`<span class="mt">chargement…</span>`).join("")}</div>`:""}
   </div>`;
 
+  h += `<button class="btn sec" style="width:100%;margin-bottom:9px" onclick="ouvrirDiscussion('${id}','admin','${id}')">
+    Discussion${(()=>{const n=compterNonLus(D.messages,id,"admin");return n?` <span class="tag t-rouge" style="margin-left:4px">${n}</span>`:"";})()}</button>`;
+
   if(admin()){
     if(p.statut==="signalee"||p.statut==="affectee")
       h += `<button class="btn" style="width:100%;margin-bottom:9px" onclick="formAffecter('${id}')">${p.garage_id?"Changer de garage":"Affecter un garage"}</button>`;
@@ -1236,6 +1266,107 @@ async function chargerMedias(id){
   }
   z.innerHTML = html || '<span class="mt">Aucune pièce jointe</span>';
 }
+
+/* ================= Discussion attachée à une panne =================
+   Un fil par panne, partagé entre admin, chauffeur et garage. Se ferme
+   tout seul côté base de données dès que la panne est payée — ici on ne
+   fait que refléter cet état, sans le décider. */
+const LIBELLE_ROLE_MSG = {admin:"Admin", chauffeur:"Chauffeur", garage:"Garage"};
+
+window.ouvrirDiscussion = (panneId, role, retourPanneId) => {
+  const nomCam = { admin: () => nomCamion((D.pannes.find(x=>x.id===panneId)||{}).camion_id),
+                    chauffeur: () => (C.camions[0]||{}).nom || "votre camion",
+                    garage: () => camionG((G.pannes.find(x=>x.id===panneId)||{}).camion_id) }[role]();
+  /* Le bouton "Retour" ne recoit jamais de code : seulement l'identifiant de la
+     panne a rouvrir, en toute securite meme si l'id contenait un caractere
+     inattendu (id UUID ici, mais le principe protege contre tout guillemet). */
+  ouvrir("Discussion — " + nomCam, `
+    ${retourPanneId ? `<button class="btn sec mini no-print" style="margin-bottom:11px" onclick="ouvrirPanne('${esc(retourPanneId)}')">← Retour</button>` : ""}
+    <div id="msg-liste" class="carte fil-msg"><div class="vide">Chargement…</div></div>
+    <div id="msg-zone"></div>
+    <div id="msg-erreur"></div>`,
+    () => chargerDiscussion(panneId, role));
+};
+
+async function chargerDiscussion(panneId, role){
+  const [{ data: p }, { data: msgs, error }] = await Promise.all([
+    sb.from("sb2_pannes").select("statut").eq("id", panneId).single(),
+    sb.from("sb2_messages").select("*").eq("panne_id", panneId).order("cree_le")
+  ]);
+  const zone = document.getElementById("msg-liste");
+  if(!zone) return; // la modale a été fermée entre-temps
+  if(error){ zone.innerHTML = `<div class="vide">Impossible de charger la discussion.</div>`; return; }
+
+  zone.innerHTML = "";
+  (msgs||[]).forEach(m => ajouterBulle(m, role));
+  if(!(msgs||[]).length) zone.innerHTML = `<div class="vide">Aucun message pour l'instant.</div>`;
+  zone.scrollTop = zone.scrollHeight;
+
+  // Marque comme lu tout ce qui ne vient pas de nous.
+  const col = COL_LU[role];
+  const nonLus = (msgs||[]).filter(m => m.expediteur_role!==role && !m[col]).map(m=>m.id);
+  if(nonLus.length) await sb.from("sb2_messages").update({[col]:true}).in("id", nonLus);
+
+  const ferme = !p || p.statut === "payee";
+  document.getElementById("msg-zone").innerHTML = ferme
+    ? `<div class="alerte a-verte" style="margin-top:2px"><div>
+        <b>Discussion clôturée</b>La panne est réglée, l'échange reste consultable mais on ne peut plus écrire.</div></div>`
+    : `<div class="duo" style="margin-top:2px">
+        <input id="msg-texte" placeholder="Écrire un message…" maxlength="2000" style="flex:1">
+        <button class="btn mini" style="width:auto" id="msg-envoyer" onclick="envoyerMessage('${panneId}','${role}')">Envoyer</button>
+      </div>`;
+  const champ = document.getElementById("msg-texte");
+  if(champ) champ.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); envoyerMessage(panneId, role); } };
+
+  // Abonnement temps réel : les nouveaux messages apparaissent sans réouvrir la modale.
+  if(canalMessagerie) sb.removeChannel(canalMessagerie);
+  canalMessagerie = sb.channel("messages-"+panneId)
+    .on("postgres_changes", {event:"INSERT", schema:"public", table:"sb2_messages", filter:"panne_id=eq."+panneId},
+      payload => {
+        const liste = document.getElementById("msg-liste");
+        if(!liste) return;
+        if(payload.new.expediteur_role === role) return; // déjà affiché en local à l'envoi
+        ajouterBulle(payload.new, role);
+        liste.scrollTop = liste.scrollHeight;
+        sb.from("sb2_messages").update({[col]:true}).eq("id", payload.new.id);
+      })
+    .subscribe();
+}
+
+function ajouterBulle(m, role){
+  const zone = document.getElementById("msg-liste"); if(!zone) return;
+  if(zone.querySelector(".vide")) zone.innerHTML = "";
+  const mine = m.expediteur_role === role;
+  const div = document.createElement("div");
+  div.className = "bulle-msg" + (mine ? " moi" : "");
+  div.innerHTML = `${mine ? "" : `<div class="bulle-aut">${esc(LIBELLE_ROLE_MSG[m.expediteur_role]||m.expediteur_role)}</div>`}
+    <div class="bulle-corps"></div>
+    <div class="bulle-heure">${heureCourte(m.cree_le)}</div>`;
+  div.querySelector(".bulle-corps").textContent = m.contenu; // jamais de innerHTML sur un texte saisi par un tiers
+  zone.appendChild(div);
+}
+
+window.envoyerMessage = async (panneId, role) => {
+  const champ = document.getElementById("msg-texte");
+  if(!champ) return;
+  const contenu = champ.value.trim();
+  if(!contenu) return;
+  const btn = document.getElementById("msg-envoyer");
+  champ.disabled = true; if(btn) btn.disabled = true;
+  const { data, error } = await sb.from("sb2_messages")
+    .insert({panne_id:panneId, expediteur_role:role, contenu}).select().single();
+  champ.disabled = false; if(btn) btn.disabled = false;
+  const err = document.getElementById("msg-erreur");
+  if(error){
+    if(err) err.innerHTML = `<div class="alerte a-rouge"><div>Message non envoyé : ${esc(error.message)}</div></div>`;
+    return;
+  }
+  if(err) err.innerHTML = "";
+  champ.value = ""; champ.focus();
+  ajouterBulle(data, role);
+  const liste = document.getElementById("msg-liste");
+  if(liste) liste.scrollTop = liste.scrollHeight;
+};
 
 window.formAffecter = id => {
   const p=D.pannes.find(x=>x.id===id);
@@ -2488,15 +2619,17 @@ let enAttenteFile = [];
 async function chargerChauffeur(){
   await viderFile(true).catch(()=>{});
   try{ enAttenteFile = await fileLire(); }catch(e){ enAttenteFile = []; }
-  const [cam, pan, gar, med] = await Promise.all([
+  const [cam, pan, gar, med, msg] = await Promise.all([
     sb.from("sb2_camions").select("*"),
     sb.from("sb2_pannes").select("*").order("date_signalement",{ascending:false}),
     sb.from("sb2_garages").select("id,nom,ville"),
-    sb.from("sb2_medias").select("panne_id,genre")
+    sb.from("sb2_medias").select("panne_id,genre"),
+    sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage")
   ]);
   const e=[cam,pan,gar].find(r=>r.error);
   if(e) throw new Error(e.error.message);
-  C = { camions:cam.data||[], pannes:pan.data||[], garages:gar.data||[], medias:med.data||[], documents:[] };
+  C = { camions:cam.data||[], pannes:pan.data||[], garages:gar.data||[], medias:med.data||[],
+        messages:msg.data||[], documents:[] };
   /* Statut des documents administratifs de son camion — jamais un montant :
      la fonction serveur ne renvoie que l'échéance et l'état. */
   if(C.camions[0]){
@@ -2589,20 +2722,29 @@ function rendreChauffeur(){
       const [txt,tag]=etatLisible(p);
       // Tant qu'aucun garage n'est affecte, le chauffeur peut encore corriger.
       const modifiable = p.statut === "signalee";
+      const nl = compterNonLus(C.messages, p.id, "chauffeur");
       h += `<div class="ligne"${modifiable?` style="cursor:pointer" onclick="modifierSignalement('${p.id}')"`:""}>
         <div class="lib"><b>${esc(p.description||p.piece||"Panne")}</b>
         <small>Signalée le ${dateLongue(p.date_signalement)}<br>${esc(detailEtat(p))}${
           modifiable ? ` · <span style="color:var(--vert);font-weight:600">touchez pour compléter</span>` : ""}</small></div>
-        <span class="tag ${tag}" style="white-space:nowrap">${esc(txt)}</span></div>`;
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="tag ${tag}" style="white-space:nowrap">${esc(txt)}</span>
+          <button class="btn mini sec no-print" onclick="event.stopPropagation();ouvrirDiscussion('${p.id}','chauffeur')">
+            Discussion${nl?` <span class="tag t-rouge" style="margin-left:3px">${nl}</span>`:""}</button>
+        </div></div>`;
     }
     h += `</div>`;
 
     const finies = C.pannes.filter(p=>p.statut==="payee").slice(0,5);
     if(finies.length){
       h += `<div class="titre-sec">Réparations terminées</div><div class="carte">`;
-      for(const p of finies) h += `<div class="ligne"><div class="lib"><b>${esc(p.piece||p.description||"Réparation")}</b>
+      for(const p of finies) h += `<div class="ligne">
+        <div class="lib"><b>${esc(p.piece||p.description||"Réparation")}</b>
         <small>${esc(nomGarageC(p.garage_id))} · ${dateCourte(p.date_paiement)}</small></div>
-        <span class="tag t-gris" style="white-space:nowrap">terminée</span></div>`;
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="tag t-gris" style="white-space:nowrap">terminée</span>
+          <button class="btn mini sec no-print" onclick="ouvrirDiscussion('${p.id}','chauffeur')">Discussion</button>
+        </div></div>`;
       h += `</div>`;
     }
   }
@@ -2993,16 +3135,17 @@ async function mettreEnAttente(brouillon, message){
 let G = null;
 
 async function chargerGarage(){
-  const [cam, pan, med, ch] = await Promise.all([
+  const [cam, pan, med, ch, msg] = await Promise.all([
     sb.from("sb2_camions").select("*"),
     sb.from("sb2_pannes").select("*").order("date_affectation",{ascending:true}),
     sb.from("sb2_medias").select("*"),
-    sb.from("sb2_chauffeurs").select("id,nom")
+    sb.from("sb2_chauffeurs").select("id,nom"),
+    sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage")
   ]);
   const e=[cam,pan,med].find(r=>r.error);
   if(e) throw new Error(e.error.message);
   G = { camions:cam.data||[], pannes:pan.data||[], medias:med.data||[],
-        chauffeurs:ch.data||[] };
+        chauffeurs:ch.data||[], messages:msg.data||[] };
 }
 const camionG = id => (G.camions.find(c=>c.id===id)||{}).nom || "Camion";
 const modeleG = id => (G.camions.find(c=>c.id===id)||{}).modele || "";
@@ -3035,6 +3178,7 @@ function rendreGarage(){
     h += `<div class="titre-sec">À réparer</div>`;
     for(const p of aFaire){
       const md = G.medias.filter(m=>m.panne_id===p.id);
+      const nl = compterNonLus(G.messages, p.id, "garage");
       h += `<div class="carte">
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
           <div><b style="font-size:18px">${esc(camionG(p.camion_id))}</b>
@@ -3049,7 +3193,9 @@ function rendreGarage(){
           <div><b>Camion immobilisé</b>Il ne roule plus depuis le signalement.</div></div>` : ""}
         ${md.length ? `<div class="lbl" style="margin:13px 0 6px">Photos et sons du chauffeur</div>
           <div id="md-${p.id}" class="mt">chargement…</div>` : ""}
-        <button class="btn" style="width:100%;margin-top:13px" onclick="formTerminer('${p.id}')">
+        <button class="btn sec no-print" style="width:100%;margin-top:13px" onclick="ouvrirDiscussion('${p.id}','garage')">
+          Discussion${nl?` <span class="tag t-rouge" style="margin-left:4px">${nl}</span>`:""}</button>
+        <button class="btn" style="width:100%;margin-top:9px" onclick="formTerminer('${p.id}')">
           J'ai terminé la réparation</button>
       </div>`;
     }
@@ -3057,10 +3203,13 @@ function rendreGarage(){
 
   if(finies.length){
     h += `<div class="titre-sec">Vos réparations terminées</div><div class="carte">`;
-    for(const p of finies) h += `<div class="ligne"><div class="lib">
-      <b>${esc(camionG(p.camion_id))}</b>
+    for(const p of finies) h += `<div class="ligne">
+      <div class="lib"><b>${esc(camionG(p.camion_id))}</b>
       <small>${esc(p.piece || p.description || "Réparation")} · ${dateCourte(p.date_fin_travaux || p.date_paiement)}</small></div>
-      <span class="tag t-vert" style="white-space:nowrap">terminée</span></div>`;
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="tag t-vert" style="white-space:nowrap">terminée</span>
+        <button class="btn mini sec no-print" onclick="ouvrirDiscussion('${p.id}','garage')">Discussion</button>
+      </div></div>`;
     h += `</div>`;
   }
 
