@@ -379,6 +379,53 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-btn.sec{background:var(--craie);color:var(--nuit);border-color:var(--filet-fonce)}
 .bord-btn.full{grid-column:1/-1;background:var(--craie);color:var(--minium);border-color:var(--minium)}
 
+/* ── Bandeau collecte ──
+   Ne s'affiche que si la semaine est incomplete ET qu'on est en fin de
+   semaine ou que la collecte a commence. Sinon il serait permanent, donc
+   invisible a force d'etre la. */
+.bord-collecte{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--sable);border-radius:var(--r);padding:11px 14px;margin-bottom:20px;cursor:pointer}
+.bord-collecte b{font-family:var(--mono);font-size:11.5px;font-weight:700;color:#4A3A10}
+.bord-collecte i{font-style:normal;font-size:15px;color:#4A3A10;flex:none}
+
+/* ── Flotte en vignettes ── */
+.bord-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-top:8px}
+@container (min-width:520px){ .bord-grille{grid-template-columns:repeat(5,1fr)} }
+.bord-vig{background:var(--ciment);border-radius:8px;padding:9px 5px 8px;text-align:center;
+  cursor:pointer;border:1px solid transparent}
+.bord-vig.alerte{border-color:var(--filet-fonce)}
+.bord-vig-pt{width:7px;height:7px;border-radius:50%;margin:0 auto 5px;background:var(--filet-fonce)}
+.bord-vig-pt.m{background:var(--minium)}
+.bord-vig-pt.s{background:var(--sable)}
+.bord-vig-nom{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--nuit);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bord-vig-et{font-size:9.5px;color:var(--encre-doux);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bord-vig-et.r{color:var(--minium)}
+.bord-vig-et.o{color:#8A6720}
+
+/* ── Recettes de la semaine ──
+   Une barre par camion attendu. Grise = pas encore encaisse. */
+.bord-barres{display:flex;align-items:flex-end;gap:4px;height:58px;padding-top:12px}
+.bord-barre{flex:1;background:var(--vert);border-radius:3px 3px 0 0;min-height:3px}
+.bord-barre.vide{background:var(--ciment-fonce)}
+.bord-barres-pied{font-family:var(--mono);font-size:10px;color:var(--encre-doux);margin-top:9px}
+
+/* ── Deux colonnes sur grand ecran ──
+   L'ordre du HTML reste celui du telephone ; la grille nommee replace
+   les blocs sur ordinateur sans toucher au balisage. */
+@container (min-width:760px){
+  .bord-wrap{display:grid;grid-template-columns:1fr 1fr;column-gap:28px;row-gap:22px;
+    align-items:start;
+    grid-template-areas:"zc zc" "zcaisse ztaches" "zrec zflotte" "zmouv zbtns"}
+  .bord-wrap .bord-section+.bord-section{margin-top:0}
+  .bord-wrap .bord-btn-grid{margin-top:0}
+  .bord-wrap .bord-collecte{margin-bottom:0}
+  .z-collecte{grid-area:zc} .z-caisse{grid-area:zcaisse} .z-taches{grid-area:ztaches}
+  .z-recettes{grid-area:zrec} .z-flotte{grid-area:zflotte}
+  .z-mouv{grid-area:zmouv} .z-btns{grid-area:zbtns}
+}
+
 .logo-entete{height:74px;width:auto;color:#27368B;flex:none}
 .imprime-cloture{display:none;font-size:8.5pt;color:#444;margin:-3pt 0 8pt;font-style:italic}
 
@@ -1139,26 +1186,29 @@ function vBord(){
     /* pt : couleur du point de statut. Minium seulement quand quelque chose
        t'attend (aucun garage choisi, ou document échu) ; sable quand c'est
        déjà pris en charge (garage affecté) ; gris pour le reste, sans alarme. */
-    let cls="ok", pt="g", etat="En route", tonEtat="";
+    let cls="ok", pt="g", etat="En route", tonEtat="", court="";
     if(pImmo){
       cls="immo"; tonEtat="r";
       const g=pOuv&&pOuv.garage_id ? nomGarage(pOuv.garage_id) : null;
       etat = g ? `Immobilisé · chez ${g}` : `Immobilisé · ${joursArret(pImmo)} j sans garage`;
       pt = g ? "s" : "m";
+      court = g ? "Immobilisé" : "Sans garage";
     } else if(pOuv){
       cls="panne"; tonEtat="o";
       etat = pOuv.garage_id ? `Au garage · ${nomGarage(pOuv.garage_id)}` : "Panne à affecter";
       pt = pOuv.garage_id ? "s" : "m";
+      court = pOuv.garage_id ? "Au garage" : "À affecter";
     } else if(docPire && docPire.etat==="echue"){
       cls="panne"; tonEtat="r"; pt="m";
       etat = `${docPire.libelle} échue`;
+      court = docPire.libelle;
     } else if(docPire){
       cls="ok"; tonEtat="";
       etat = docPire.type==="vidange"||docPire.type==="pneus"
         ? `${docPire.libelle} dans ${fmtKm(docPire.reste)}`
         : `${docPire.libelle} dans ${docPire.jours} j`;
     }
-    rangs.push({cam, cls, pt, etat, tonEtat,
+    rangs.push({cam, cls, pt, etat, tonEtat, court,
       poids: pImmo?0 : pOuv?1 : (docPire&&docPire.etat==="echue")?2 : docPire?3 : 4});
   }
   rangs.sort((a,b)=>a.poids-b.poids || a.cam.nom.localeCompare(b.cam.nom));
@@ -1167,12 +1217,44 @@ function vBord(){
 
   let flotte="";
   for(const r of rangs)
-    flotte+=`<div class="bord-camion ${r.cls}" onclick="aller('camions');setVue('detail','${r.cam.id}')">
-      <div class="bord-camion-ic ${r.pt}"></div>
-      <div class="bord-camion-info">
-        <div class="bord-camion-nom">${esc(r.cam.nom)}</div>
-        <div class="bord-camion-etat ${r.tonEtat}">${esc(r.etat)}</div>
-      </div></div>`;
+    flotte+=`<div class="bord-vig ${r.court?"alerte":""}" onclick="aller('camions');setVue('detail','${r.cam.id}')">
+      <div class="bord-vig-pt ${r.pt}"></div>
+      <div class="bord-vig-nom">${esc(r.cam.nom)}</div>
+      ${r.court ? `<div class="bord-vig-et ${r.tonEtat}">${esc(r.court)}</div>` : ""}
+    </div>`;
+
+  /* ── Bloc collecte de la semaine ──
+     Un camion immobilisé n'a pas de recette à attendre : on ne le compte
+     ni dans les manquants, ni dans les barres. Sinon il ferait croire à
+     un oubli de saisie chaque semaine. */
+  const lundiCur = lundiDe(auj());
+  const horsService = c => D.pannes.some(p=>p.camion_id===c.id && p.immobilise && !p.immob_fin);
+  const attendus = actifs.filter(c=>!horsService(c));
+  const recSemaine = attendus.map(c=>({
+    nom: c.nom,
+    montant: Number(recetteSemaine(c.id, lundiCur)?.montant || 0)
+  }));
+  const nbEncaisses = recSemaine.filter(r=>r.montant>0).length;
+  const restants = attendus.length - nbEncaisses;
+
+  /* Le bandeau n'apparaît qu'en fin de semaine, ou dès que la collecte a
+     commencé. Affiché en permanence dès le lundi, il deviendrait du décor. */
+  const jourSem = new Date(auj()+"T12:00:00").getDay();
+  const finSemaine = jourSem===5 || jourSem===6 || jourSem===0;
+  const montrerCollecte = admin() && restants>0 && (finSemaine || nbEncaisses>0);
+  const bandeauCollecte = montrerCollecte
+    ? `<div class="bord-collecte z-collecte" onclick="aller('vendredi')">
+        <b>Collecte de la semaine · ${restants} camion${restants>1?"s":""} restant${restants>1?"s":""}</b>
+        <i>→</i></div>`
+    : "";
+
+  const maxRec = Math.max(1, ...recSemaine.map(r=>r.montant));
+  const totalRec = recSemaine.reduce((s,r)=>s+r.montant,0);
+  let barres="";
+  for(const r of recSemaine)
+    barres+=`<div class="bord-barre ${r.montant?"":"vide"}"
+      style="height:${r.montant ? Math.max(6, Math.round(r.montant/maxRec*100)) : 6}%"
+      title="${esc(r.nom)} · ${r.montant ? fmt(r.montant) : "pas encore encaissé"}"></div>`;
 
   /* ── Bloc 4 : derniers mouvements ── */
   const derniers=[...D.mouvements].sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,5);
@@ -1189,7 +1271,7 @@ function vBord(){
 
   /* ── Actions ── */
   let btns="";
-  if(admin()) btns=`<div class="bord-btn-grid">
+  if(admin()) btns=`<div class="bord-btn-grid z-btns">
     <button class="bord-btn primary" onclick="formPanneAdmin()">＋ Panne</button>
     <button class="bord-btn sec" onclick="formSortie()">Dépense</button>
     <button class="bord-btn sec" onclick="formApportDG()">Apport DG</button>
@@ -1197,16 +1279,13 @@ function vBord(){
     <button class="bord-btn full" onclick="formRecapWeekend()">📊 Récap du weekend → DG</button>
   </div>`;
 
-  return `
-  <div class="bord-section">
-    <div class="bord-section-head">
-      <span class="lbl">À traiter aujourd'hui</span>
-      <span class="ct">${taches.length || "—"}</span>
-    </div>
-    ${listeTaches}
-  </div>
+  /* L'ordre du HTML ci-dessous est celui du TÉLÉPHONE. Sur ordinateur,
+     la grille nommée de .bord-wrap replace les blocs en deux colonnes
+     sans qu'on ait à dupliquer le balisage. */
+  return `<div class="bord-wrap">
+  ${bandeauCollecte}
 
-  <div class="bord-caisse">
+  <div class="bord-caisse z-caisse">
     <div>
       <div class="bord-caisse-lbl">En caisse</div>
       <div class="bord-caisse-val">${fmtF(c.solde)}</div>
@@ -1225,20 +1304,39 @@ function vBord(){
     </svg>
   </div>
 
-  <div class="bord-section">
+  <div class="bord-section z-taches">
+    <div class="bord-section-head">
+      <span class="lbl">À traiter aujourd'hui</span>
+      <span class="ct">${taches.length || "—"}</span>
+    </div>
+    ${listeTaches}
+  </div>
+
+  <div class="bord-section z-flotte">
     <div class="bord-section-head">
       <span class="lbl">Flotte</span>
       <span class="ct">${nbRoute} en route · ${nbImmo} immobilisé${nbImmo>1?"s":""}</span>
     </div>
-    <div class="bord-flotte">${flotte}</div>
+    <div class="bord-grille">${flotte}</div>
   </div>
 
-  <div class="bord-section">
+  ${attendus.length ? `<div class="bord-section z-recettes">
+    <div class="bord-section-head">
+      <span class="lbl">Recettes de la semaine</span>
+      <span class="ct">${nbEncaisses}/${attendus.length}</span>
+    </div>
+    <div class="bord-barres">${barres}</div>
+    <div class="bord-barres-pied">${fmtF(totalRec)} encaissés${
+      restants ? ` · ${restants} camion${restants>1?"s":""} en attente` : ""}</div>
+  </div>` : ""}
+
+  <div class="bord-section z-mouv">
     <div class="bord-section-head"><span class="lbl">Derniers mouvements</span></div>
     ${mouv}
   </div>
 
-  ${btns}`;
+  ${btns}
+  </div>`;
 }
 function etiquetteMouvement(m){
   if(m.sens==="entree"){
@@ -3393,7 +3491,7 @@ async function vidageReel(silencieux){
 /* ==================================================================
    14 quinquies. NOTIFICATIONS
    ================================================================== */
-const VAPID = "BFDVlAFoCwaeeSLaGxDMXupfXR6h7AsC-cZaIAZfg5ELYW2M3ESyTYaF9S3KwsiYRW1hHLM31f16jISWGEw5Evc";
+const VAPID = "BPL-emjdBylZ9mbGm4XciSQRHU12wmhMVNUE0p2Zx4t-2BauIDmXyHWqEgCm7lb9k7GueOtnhQwsjhoIQHSHdtk";
 
 function b64ToU8(b64){
   const p = "=".repeat((4 - b64.length % 4) % 4);
