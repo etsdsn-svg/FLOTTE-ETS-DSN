@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1B2660">
+<link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GestFlot">
@@ -421,7 +422,7 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 <div id="toast"></div>
 
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4/+esm";
 
 /* ================= 1. CONNEXION ================= */
 const SB_URL = "https://glfffkmmhlrbvasiucok.supabase.co";
@@ -531,21 +532,53 @@ function chauffeurDe(camionId, date){
   return r ? D.chauffeurs.find(c=>c.id===r.chauffeur_id) : null;
 }
 
+/* Supabase ne renvoie qu'un nombre limité de lignes par requête (1000 par
+   défaut) et TRONQUE SANS PRÉVENIR au-delà. Sur les tables qui grossissent
+   (mouvements, pannes, messages…) cela rendrait le solde et les rapports
+   silencieusement faux le jour où le plafond serait atteint.
+
+   tout() redemande donc par tranches jusqu'à avoir la totalité. La 1re
+   requête demande aussi le compte exact des lignes : on sait ainsi
+   combien il en reste, quel que soit le plafond réglé côté serveur.
+
+   L'argument est une FONCTION qui construit la requête, pas la requête
+   elle-même : un constructeur Supabase ne peut servir qu'une fois, il faut
+   pouvoir en fabriquer un neuf à chaque tranche.
+     ex. tout(o => sb.from("sb2_mouvements").select("*", o).order("date"))
+
+   La valeur de retour garde la forme {data, error} des requêtes normales,
+   pour que le reste du code n'ait rien à changer. */
+const PAGE = 1000;
+async function tout(construire){
+  const premier = await construire({count:"exact"}).range(0, PAGE-1);
+  if(premier.error) return premier;
+  const lignes = premier.data || [];
+  const total = premier.count ?? lignes.length;
+  while(lignes.length < total){
+    const suite = await construire({}).range(lignes.length, lignes.length + PAGE - 1);
+    if(suite.error) return suite;
+    const lot = suite.data || [];
+    if(!lot.length) break;          /* sécurité : jamais de boucle infinie */
+    lignes.push(...lot);
+  }
+  return { data: lignes, error: null };
+}
+
 async function charger(){
   const [cam,ch,ga,af,ty,pa,mv,pr,clo,me,ms] = await Promise.all([
     sb.from("sb2_camions").select("*").order("nom"),
     sb.from("sb2_chauffeurs").select("*").order("nom"),
     sb.from("sb2_garages").select("*").order("nom"),
-    sb.from("sb2_affectations").select("*"),
+    tout(o => sb.from("sb2_affectations").select("*", o)),
     sb.from("sb2_types").select("*").order("ordre"),
-    sb.from("sb2_pannes").select("*").order("date_signalement",{ascending:false}),
-    sb.from("sb2_mouvements").select("*").order("date",{ascending:false}),
+    tout(o => sb.from("sb2_pannes").select("*", o).order("date_signalement",{ascending:false})),
+    tout(o => sb.from("sb2_mouvements").select("*", o).order("date",{ascending:false})),
     sb.from("sb2_prefs").select("*").maybeSingle(),
-    sb.from("sb2_clotures").select("*").order("d1",{ascending:false}),
-    sb.from("sb2_medias").select("*"),
-    sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage")
+    tout(o => sb.from("sb2_clotures").select("*", o).order("d1",{ascending:false})),
+    tout(o => sb.from("sb2_medias").select("*", o)),
+    tout(o => sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage", o).order("cree_le"))
   ]);
-  const err = [cam,ch,ga,af,ty,pa,mv,me].find(r=>r.error);
+  const err = [cam,ch,ga,af,ty,pa,mv,pr,clo,me,ms].find(r=>r.error);
   if(err) throw new Error(err.error.message);
   D = {
     camions:cam.data||[], chauffeurs:ch.data||[], garages:ga.data||[],
@@ -738,7 +771,7 @@ function ecranRattachement(){
     if(error) return msg("Code invalide ou expiré.","rouge");
     demarrer();
   };
-  document.getElementById("b-sortir").onclick = async()=>{ await sb.auth.signOut(); location.reload(); };
+  document.getElementById("b-sortir").onclick = async()=>{ await sb.auth.signOut(); try{ localStorage.removeItem(CACHE); }catch(e){} location.reload(); };
 }
 
 /* ================= 5. CHARPENTE ================= */
@@ -945,10 +978,16 @@ function rendu(){
   if(window["apres_"+vue]) window["apres_"+vue]();
 }
 window.rendu = rendu;
-async function recharger(){
+async function recharger(automatique){
   if(moi && moi.role==="chauffeur"){ await chargerChauffeur(); rendreChauffeur(); return; }
   if(moi && moi.role==="garage"){ await chargerGarage(); rendreGarage(); return; }
-  await charger(); guetter(); rendu();
+  await charger(); guetter();
+  /* Rafraîchissement automatique pendant la saisie du vendredi : on garde
+     l'alerte sonore des nouvelles pannes (guetter, ci-dessus) et la barre
+     du haut à jour, mais on ne reconstruit pas #main pour ne pas effacer
+     des montants tapés et pas encore enregistrés. */
+  if(automatique && vue==="vendredi"){ bandeaux(); return; }
+  rendu();
 }
 window.recharger = recharger;
 const admin = () => moi.role==="admin";
@@ -1239,7 +1278,7 @@ window.ouvrirPanne = id => {
     ${med.length?`<div class="medias" id="med-${id}">${med.map(m=>`<span class="mt">chargement…</span>`).join("")}</div>`:""}
   </div>`;
 
-  h += `<button class="btn sec" style="width:100%;margin-bottom:9px" onclick="ouvrirDiscussion('${id}','admin','${id}')">
+  h += `<button class="btn sec" style="width:100%;margin-bottom:9px" onclick="ouvrirDiscussion('${id}','admin',\"ouvrirPanne('${id}')\")">
     Discussion${(()=>{const n=compterNonLus(D.messages,id,"admin");return n?` <span class="tag t-rouge" style="margin-left:4px">${n}</span>`:"";})()}</button>`;
 
   if(admin()){
@@ -1273,15 +1312,12 @@ async function chargerMedias(id){
    fait que refléter cet état, sans le décider. */
 const LIBELLE_ROLE_MSG = {admin:"Admin", chauffeur:"Chauffeur", garage:"Garage"};
 
-window.ouvrirDiscussion = (panneId, role, retourPanneId) => {
+window.ouvrirDiscussion = (panneId, role, retour) => {
   const nomCam = { admin: () => nomCamion((D.pannes.find(x=>x.id===panneId)||{}).camion_id),
                     chauffeur: () => (C.camions[0]||{}).nom || "votre camion",
                     garage: () => camionG((G.pannes.find(x=>x.id===panneId)||{}).camion_id) }[role]();
-  /* Le bouton "Retour" ne recoit jamais de code : seulement l'identifiant de la
-     panne a rouvrir, en toute securite meme si l'id contenait un caractere
-     inattendu (id UUID ici, mais le principe protege contre tout guillemet). */
   ouvrir("Discussion — " + nomCam, `
-    ${retourPanneId ? `<button class="btn sec mini no-print" style="margin-bottom:11px" onclick="ouvrirPanne('${esc(retourPanneId)}')">← Retour</button>` : ""}
+    ${retour ? `<button class="btn sec mini no-print" style="margin-bottom:11px" onclick="${retour}">← Retour</button>` : ""}
     <div id="msg-liste" class="carte fil-msg"><div class="vide">Chargement…</div></div>
     <div id="msg-zone"></div>
     <div id="msg-erreur"></div>`,
@@ -2606,7 +2642,7 @@ window.majPrefs = async () => {
   if(error) return toast("Échec : "+error.message);
   toast("Paramètres enregistrés."); await recharger();
 };
-window.deconnexion = async () => { await sb.auth.signOut(); location.reload(); };
+window.deconnexion = async () => { await sb.auth.signOut(); try{ localStorage.removeItem(CACHE); }catch(e){} location.reload(); };
 
 
 /* ==================================================================
@@ -2621,10 +2657,10 @@ async function chargerChauffeur(){
   try{ enAttenteFile = await fileLire(); }catch(e){ enAttenteFile = []; }
   const [cam, pan, gar, med, msg] = await Promise.all([
     sb.from("sb2_camions").select("*"),
-    sb.from("sb2_pannes").select("*").order("date_signalement",{ascending:false}),
+    tout(o => sb.from("sb2_pannes").select("*", o).order("date_signalement",{ascending:false})),
     sb.from("sb2_garages").select("id,nom,ville"),
-    sb.from("sb2_medias").select("panne_id,genre"),
-    sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage")
+    tout(o => sb.from("sb2_medias").select("panne_id,genre", o)),
+    tout(o => sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage", o))
   ]);
   const e=[cam,pan,gar].find(r=>r.error);
   if(e) throw new Error(e.error.message);
@@ -3137,10 +3173,10 @@ let G = null;
 async function chargerGarage(){
   const [cam, pan, med, ch, msg] = await Promise.all([
     sb.from("sb2_camions").select("*"),
-    sb.from("sb2_pannes").select("*").order("date_affectation",{ascending:true}),
-    sb.from("sb2_medias").select("*"),
+    tout(o => sb.from("sb2_pannes").select("*", o).order("date_affectation",{ascending:true})),
+    tout(o => sb.from("sb2_medias").select("*", o)),
     sb.from("sb2_chauffeurs").select("id,nom"),
-    sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage")
+    tout(o => sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage", o))
   ]);
   const e=[cam,pan,med].find(r=>r.error);
   if(e) throw new Error(e.error.message);
@@ -3357,7 +3393,7 @@ async function vidageReel(silencieux){
 /* ==================================================================
    14 quinquies. NOTIFICATIONS
    ================================================================== */
-const VAPID = "BPL-emjdBylZ9mbGm4XciSQRHU12wmhMVNUE0p2Zx4t-2BauIDmXyHWqEgCm7lb9k7GueOtnhQwsjhoIQHSHdtk";
+const VAPID = "BFDVlAFoCwaeeSLaGxDMXupfXR6h7AsC-cZaIAZfg5ELYW2M3ESyTYaF9S3KwsiYRW1hHLM31f16jISWGEw5Evc";
 
 function b64ToU8(b64){
   const p = "=".repeat((4 - b64.length % 4) % 4);
@@ -3720,7 +3756,9 @@ async function demarrer(){
   }
 
   charpente();
-  setInterval(()=>{ if(!document.hidden && navigator.onLine) recharger().catch(()=>{}); }, 60000);
+  /* 5 minutes : suffisant pour 15 camions, et divise par 5 le trafic
+     sortant Supabase par rapport à un rafraîchissement à la minute. */
+  setInterval(()=>{ if(!document.hidden && navigator.onLine) recharger(true).catch(()=>{}); }, 300000);
   try{ await charger(); guetter(); }
   catch(e){
     if(chargerCache()) toast("Hors ligne — dernières données connues.");
@@ -3732,10 +3770,10 @@ async function demarrer(){
 
 window.addEventListener("online", ()=>{
   enLigne=true;
-  viderFile().then(()=>recharger()).catch(()=>{});
+  viderFile().then(()=>recharger(true)).catch(()=>{});
 });
 window.addEventListener("offline", ()=>{ enLigne=false; if(D) bandeaux(); });
-document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && moi && D) recharger().catch(()=>{}); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && moi && D) recharger(true).catch(()=>{}); });
 
 /* Accès par lien personnel : ?a=JETON
    Une fonction serveur vérifie le jeton et ouvre une vraie session.
