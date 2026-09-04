@@ -379,6 +379,15 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-btn.sec{background:var(--craie);color:var(--nuit);border-color:var(--filet-fonce)}
 .bord-btn.full{grid-column:1/-1;background:var(--craie);color:var(--minium);border-color:var(--minium)}
 
+/* Case « J'ai ete paye » du garage */
+.pointe-paye{display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.pointe-paye input{width:15px;height:15px;accent-color:var(--vert);cursor:pointer;flex:none}
+.pointe-paye span{font-size:11px;color:var(--encre-doux)}
+.pointe-paye input:checked+span{color:var(--vert);font-weight:600}
+
+/* Signal du garage, vu cote direction */
+.tag.t-pointe{background:#E6F0E9;color:#1F5B3C;border:1px solid #BFD9C9}
+
 /* ── Bandeau collecte ──
    Ne s'affiche que si la semaine est incomplete ET qu'on est en fin de
    semaine ou que la collecte a commence. Sinon il serait permanent, donc
@@ -1356,6 +1365,8 @@ function lignePanne(p){
     <div class="lib"><b class="im">${esc(nomCamion(p.camion_id))}</b>${enRetard(p)?' <span class="tag t-rouge">retard</span>':""}${p.immobilise&&!p.immob_fin?' <span class="tag t-rouge">arrêté</span>':""}
       <small>${esc(p.description||p.piece||"—")} · ${age}${med.length?` · ${med.length} pièce${med.length>1?"s":""} jointe${med.length>1?"s":""}`:""}</small></div>
     <div style="text-align:right"><span class="tag ${tags[0]}">${tags[1]}</span>
+      ${p.paiement_confirme_garage&&p.statut!=="payee"
+        ? '<br><span class="tag t-pointe">garage : payé ?</span>' : ""}
       ${p.statut==="terminee"?`<br><span class="num" style="font-size:12.5px;color:var(--encre-doux)">${p.estimation!=null?"~"+fmt(p.estimation):"à chiffrer"}</span>`:""}</div>
   </div>`;
 }
@@ -1498,6 +1509,7 @@ window.envoyerMessage = async (panneId, role) => {
   if(err) err.innerHTML = "";
   champ.value = ""; champ.focus();
   ajouterBulle(data, role);
+  prevenir(panneId, "message");
   const liste = document.getElementById("msg-liste");
   if(liste) liste.scrollTop = liste.scrollHeight;
 };
@@ -1591,9 +1603,11 @@ window.validerEstimation = async id => {
 
 window.formPanneAdmin = () => {
   if(!D.camions.length) return toast("Ajoute d'abord des camions.");
+  piecesJointes = [];
   const j=new Date().getDay();
   ouvrir("Noter une panne",
-    `<label class="ch"><span>Camion</span><select id="n-camion">${
+    `<label class="ch"><span>Camion</span><select id="n-camion">
+       <option value="">— Choisir le camion —</option>${
        D.camions.filter(c=>c.actif).map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join("")}</select></label>
      <div class="segm" id="n-nature" style="margin-bottom:11px">
        <button data-v="imprevue" class="${(j!==0&&j!==6)?"on":""}">Imprévue</button>
@@ -1601,18 +1615,67 @@ window.formPanneAdmin = () => {
      <label class="ch"><span>Ce qu'on te signale</span><input id="n-desc" placeholder="Bruit à l'avant droit"></label>
      <div class="segm" id="n-immo" style="margin-bottom:11px">
        <button data-v="0" class="on">Il roule</button><button data-v="1">Immobilisé</button></div>
-     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
-     <button class="btn" onclick="validerPanneAdmin()">Enregistrer</button></div>`,
-    ()=>{ segm("n-nature"); segm("n-immo"); });
+
+     ${blocPreuve("sg","basculerAudio",true)}
+     <div id="sg-liste"></div>
+     <div id="sg-msg"></div>
+
+     <div class="duo" style="margin-top:6px"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn" id="n-envoyer" onclick="validerPanneAdmin()">Enregistrer</button></div>`,
+    ()=>{
+      segm("n-nature"); segm("n-immo");
+      /* Sélection multiple autorisée en mode galerie : on parcourt tous
+         les fichiers choisis, pas seulement le premier. */
+      const brancher = (id, genre) => {
+        const e = document.getElementById(id); if(!e) return;
+        e.onchange = async ev => {
+          for(const f of ev.target.files) await ajouterFichier(f, genre, 60);
+          ev.target.value = "";   /* pour pouvoir rechoisir le même fichier */
+        };
+      };
+      brancher("sg-photo","photo"); brancher("sg-video","video"); brancher("sg-audio","audio");
+    });
 };
 window.validerPanneAdmin = async () => {
+  /* Aucun camion présélectionné : sans ce contrôle, une panne partirait
+     silencieusement sur le premier camion de la liste. */
+  if(!val("n-camion")) return toast("Choisis d'abord le camion concerné.");
   const immo=valSegm("n-immo")==="1";
-  const {error}=await sb.from("sb2_pannes").insert({
+  const b=document.getElementById("n-envoyer");
+  if(b){ b.disabled=true; b.textContent="Envoi…"; }
+
+  /* .select().single() : on a besoin de l'identifiant de la panne créée
+     pour y rattacher les fichiers. Sans lui, impossible de construire
+     le chemin de stockage. */
+  const {data,error}=await sb.from("sb2_pannes").insert({
     camion_id:val("n-camion"), statut:"signalee", nature:valSegm("n-nature"),
     description:val("n-desc").trim(), immobilise:immo, immob_debut:immo?auj():null
-  });
-  if(error) return toast("Échec : "+error.message);
-  fermer(); toast("Panne enregistrée."); await recharger();
+  }).select().single();
+
+  if(error){
+    if(b){ b.disabled=false; b.textContent="Enregistrer"; }
+    return toast("Échec : "+error.message);
+  }
+
+  /* La panne est enregistrée : à partir d'ici, plus rien ne doit la
+     remettre en cause. Un fichier qui échoue est signalé, pas fatal. */
+  let ratés=0;
+  for(const f of piecesJointes){
+    try{
+      const ext={photo:"jpg",audio:"webm",video:"mp4"}[f.genre];
+      const chemin=`${data.id}/${crypto.randomUUID()}.${ext}`;
+      const up=await sb.storage.from("sb2-medias").upload(chemin,f.blob,{contentType:f.blob.type});
+      if(up.error) throw up.error;
+      await sb.from("sb2_medias").insert({panne_id:data.id, genre:f.genre,
+        chemin, taille:f.blob.size, duree_s:f.duree||null});
+    }catch(e){ ratés++; console.warn("Pièce non envoyée :", e); }
+  }
+  piecesJointes=[];
+
+  fermer();
+  toast(ratés ? `Panne enregistrée, mais ${ratés} pièce${ratés>1?"s":""} non envoyée${ratés>1?"s":""}.`
+              : "Panne enregistrée.");
+  await recharger();
 };
 
 window.formCorriger = id => {
@@ -3082,10 +3145,18 @@ function masquerBarreEnregistrement(rangId){
   if(rang && rang.dataset.avant != null){ rang.innerHTML = rang.dataset.avant; delete rang.dataset.avant; }
 }
 
-/* Rangée d'icônes « ajouter une preuve », partagée entre les deux formulaires. */
-function blocPreuve(prefixe, nomFonctionAudio){
+/* Rangée d'icônes « ajouter une preuve », partagée entre les deux formulaires.
+   galerie = true : on retire capture="environment" pour que le téléphone
+   propose la galerie au lieu d'ouvrir directement l'appareil photo, et on
+   autorise la sélection de plusieurs fichiers d'un coup. C'est le mode de
+   l'admin, qui reçoit souvent les images par un autre canal. */
+function blocPreuve(prefixe, nomFonctionAudio, galerie){
+  const mult = galerie ? " multiple" : "";
+  const capt = galerie ? "" : ` capture="environment"`;
   return `<div class="lbl" style="margin-bottom:7px">Ajouter une preuve</div>
-    <p class="mt" style="margin-bottom:8px">Audio 30 s maximum, vidéo 10 s maximum.</p>
+    <p class="mt" style="margin-bottom:8px">${galerie
+      ? "Depuis la galerie ou l'appareil photo. Vidéo 60 s et 10 Mo maximum."
+      : "Audio 30 s maximum, vidéo 10 s maximum."}</p>
     <div class="rang" id="${prefixe}-rang" style="margin-bottom:9px">
       <button class="btn-ic" onclick="document.getElementById('${prefixe}-photo').click()">
         <svg viewBox="0 0 24 24"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
@@ -3097,8 +3168,8 @@ function blocPreuve(prefixe, nomFonctionAudio){
         <svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
         <span>Vidéo</span></button>
     </div>
-    <input type="file" id="${prefixe}-photo" accept="image/*" style="display:none">
-    <input type="file" id="${prefixe}-video" accept="video/*" capture="environment" style="display:none">
+    <input type="file" id="${prefixe}-photo" accept="image/*"${mult} style="display:none">
+    <input type="file" id="${prefixe}-video" accept="video/*"${capt}${mult} style="display:none">
     <input type="file" id="${prefixe}-audio" accept="audio/*" style="display:none">`;
 }
 
@@ -3167,14 +3238,15 @@ function dureeVideo(fichier){
     v.src=url;
   });
 }
-async function ajouterFichier(fichier, genre){
+async function ajouterFichier(fichier, genre, maxVideo){
   if(!fichier) return;
   msgSg("");
+  const limite = maxVideo || 12;
   let blob=fichier, duree=null;
   if(genre==="photo") blob=await compresser(fichier);
   if(genre==="video"){
     duree=await dureeVideo(fichier);
-    if(duree>12) return msgSg(`Cette vidéo dure ${duree.toFixed(0)} secondes. Refaites-en une de 10 secondes maximum.`,"ocre");
+    if(duree>limite) return msgSg(`Cette vidéo dure ${duree.toFixed(0)} secondes. Maximum ${limite} secondes.`,"ocre");
   }
   if(blob.size>10*1024*1024)
     return msgSg("Ce fichier dépasse 10 Mo. Prenez une photo à la place, c'est bien plus léger.","ocre");
@@ -3246,6 +3318,7 @@ window.envoyerSignalement = async () => {
   fermer();
   toast(ratés ? `Panne signalée, mais ${ratés} pièce${ratés>1?"s":""} non envoyée${ratés>1?"s":""}.`
               : "Panne signalée. SARANA est prévenu.");
+  prevenir(data.id, "panne_signalee");
   await recharger();
 };
 
@@ -3337,13 +3410,29 @@ function rendreGarage(){
 
   if(finies.length){
     h += `<div class="titre-sec">Vos réparations terminées</div><div class="carte">`;
-    for(const p of finies) h += `<div class="ligne">
+    for(const p of finies){
+      /* Les montants sont fixés par la direction. Tant qu'elle ne les a
+         pas saisis, on l'écrit clairement plutôt que d'afficher 0 F,
+         qui laisserait croire à une intervention gratuite. */
+      const mo = Number(p.cout_mo)||0, pi = Number(p.cout_pieces)||0;
+      const chiffre = mo+pi > 0;
+      h += `<div class="ligne">
       <div class="lib"><b>${esc(camionG(p.camion_id))}</b>
-      <small>${esc(p.piece || p.description || "Réparation")} · ${dateCourte(p.date_fin_travaux || p.date_paiement)}</small></div>
+        <small>${esc(p.piece || p.description || "Réparation")} · ${dateCourte(p.date_fin_travaux || p.date_paiement)}</small>
+        <small>${chiffre
+          ? `Main-d'œuvre ${fmt(mo)} · pièces ${fmt(pi)}`
+          : "Montant pas encore fixé par la direction"}</small></div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <span class="tag t-vert" style="white-space:nowrap">terminée</span>
+        ${chiffre?`<span class="num" style="font-weight:700;white-space:nowrap">${fmtF(mo+pi)}</span>`:""}
+        <span class="tag ${p.statut==="payee"?"t-vert":"t-ocre"}" style="white-space:nowrap">${
+          p.statut==="payee" ? "payée" : "en instance"}</span>
+        <label class="pointe-paye no-print">
+          <input type="checkbox" ${p.paiement_confirme_garage?"checked":""}
+            onchange="pointerPaiement('${p.id}', this)">
+          <span>J'ai été payé</span></label>
         <button class="btn mini sec no-print" onclick="ouvrirDiscussion('${p.id}','garage')">Discussion</button>
       </div></div>`;
+    }
     h += `</div>`;
   }
 
@@ -3352,6 +3441,27 @@ function rendreGarage(){
   document.getElementById("racine").innerHTML = h;
   for(const p of aFaire) afficherMedias(p.id);
 }
+
+/* Le garage pointe qu'il a été payé.
+   Ce n'est PAS l'enregistrement du paiement : la sortie de caisse reste
+   déclenchée par la direction seule. C'est un signal, que la direction
+   voit et vérifie. Le garage n'a aucun droit d'écriture sur sb2_pannes ;
+   il appelle une fonction SQL qui ne sait toucher qu'à cette case. */
+window.pointerPaiement = async (panneId, boite) => {
+  const avant = !boite.checked;          /* pour revenir en arrière si ça rate */
+  boite.disabled = true;
+  const { error } = await sb.rpc("sb2_garage_confirme_paiement",
+    { p_panne: panneId, p_confirme: boite.checked });
+  boite.disabled = false;
+  if(error){
+    boite.checked = avant;               /* l'écran ne doit jamais mentir */
+    return toast("Impossible d'enregistrer : " + error.message);
+  }
+  const p = G.pannes.find(x=>x.id===panneId);
+  if(p) p.paiement_confirme_garage = boite.checked;
+  toast(boite.checked ? "Paiement pointé. La direction le verra."
+                      : "Pointage retiré.");
+};
 
 /* Les médias sont privés : on demande une adresse signée, valable une heure. */
 async function afficherMedias(panneId){
@@ -3476,6 +3586,7 @@ async function vidageReel(silencieux){
         }catch(e){ /* la panne est passée : une pièce perdue ne la bloque pas */ }
       }
       await fileSupprimer(el.id);
+      prevenir(data.id, "panne_signalee");
       partis++;
     }catch(e){
       el.tentatives = (el.tentatives||0)+1;
@@ -3491,7 +3602,27 @@ async function vidageReel(silencieux){
 /* ==================================================================
    14 quinquies. NOTIFICATIONS
    ================================================================== */
-const VAPID = "BPL-emjdBylZ9mbGm4XciSQRHU12wmhMVNUE0p2Zx4t-2BauIDmXyHWqEgCm7lb9k7GueOtnhQwsjhoIQHSHdtk";
+const VAPID = "BFDVlAFoCwaeeSLaGxDMXupfXR6h7AsC-cZaIAZfg5ELYW2M3ESyTYaF9S3KwsiYRW1hHLM31f16jISWGEw5Evc";
+
+/* Demander au serveur de prévenir les autres personnes concernées.
+   « Tire et oublie » VOLONTAIREMENT : quand cette fonction est appelée,
+   le message ou la panne est DÉJÀ enregistré en base. Si la notification
+   échoue (réseau coupé, serveur lent), il ne faut surtout pas afficher
+   une erreur : l'utilisateur croirait que son envoi n'est pas parti,
+   alors qu'il l'est. On note dans la console, et c'est tout.
+   Le serveur ne notifie jamais l'expéditeur lui-même. */
+async function prevenir(panneId, evenement){
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session) return;
+    await fetch(SB_URL + "/functions/v1/notifier", {
+      method: "POST",
+      headers: { "Content-Type":"application/json", "apikey": SB_CLE,
+                 "Authorization": "Bearer " + session.access_token },
+      body: JSON.stringify({ panne_id: panneId, evenement })
+    });
+  }catch(e){ console.warn("Notification non envoyée :", e); }
+}
 
 function b64ToU8(b64){
   const p = "=".repeat((4 - b64.length % 4) % 4);
