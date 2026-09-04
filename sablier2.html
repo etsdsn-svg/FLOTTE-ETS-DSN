@@ -688,11 +688,16 @@ function recetteJour(camionId){
 const joursArret = p => (p.immobilise && p.immob_debut) ? joursOuvres(p.immob_debut, p.immob_fin) : 0;
 
 function bilanCamion(id, d1, d2){
-  let recette=0,pieces=0,mo=0,nbP=0,arret=0;
+  let recette=0,pieces=0,mo=0,nbP=0,arret=0,externes=0;
   for(const m of D.mouvements){
-    if(m.sens!=="entree"||m.source!=="recette"||m.camion_id!==id) continue;
+    if(m.camion_id!==id) continue;
     if(d1&&m.date<d1) continue; if(d2&&m.date>d2) continue;
-    recette+=Number(m.montant)||0;
+    if(m.sens==="entree" && m.source==="recette") recette+=Number(m.montant)||0;
+    /* Dépenses externes rattachées à ce camion : carburant, pneus, TVM,
+       assurance, lavage… Elles ne passent pas par une panne, mais elles
+       coûtent bel et bien à ce camion-là. Sans elles, le net d'un camion
+       était plus flatteur que la réalité. */
+    else if(m.sens==="sortie" && m.nature==="externe") externes+=Number(m.montant)||0;
   }
   for(const p of D.pannes){
     if(p.camion_id!==id || p.statut!=="payee") continue;
@@ -701,8 +706,8 @@ function bilanCamion(id, d1, d2){
     pieces+=Number(p.cout_pieces)||0; mo+=Number(p.cout_mo)||0; nbP++; arret+=joursArret(p);
   }
   const rj=recetteJour(id), manque=arret*rj;
-  return { recette,pieces,mo,reparations:pieces+mo,nbPannes:nbP,arret,recetteJour:rj,manque,
-    coutReel:pieces+mo+manque, net:recette-(pieces+mo+manque) };
+  return { recette,pieces,mo,reparations:pieces+mo,nbPannes:nbP,arret,recetteJour:rj,manque,externes,
+    coutReel:pieces+mo+manque+externes, net:recette-(pieces+mo+manque+externes) };
 }
 function aLache(p){
   if(!p.piece||p.statut!=="payee") return null;
@@ -2216,21 +2221,23 @@ function vCamions(){
   if(etatVue.detail) return detailCamion(etatVue.detail);
   let h=`<div class="titre-sec">Ce que chaque camion rapporte, ce qu'il coûte</div>
     <div class="carte"><div class="scroll-x"><table><thead><tr>
-    <th>Camion</th><th class="n">Recette</th><th class="n">Réparations</th>
+    <th>Camion</th><th class="n">Recette</th><th class="n">Réparations</th><th class="n">Externes</th>
     <th class="n">Arrêt</th><th class="n">Manque</th><th class="n">Net</th></tr></thead><tbody>`;
-  const tot={r:0,rep:0,a:0,m:0,n:0};
+  const tot={r:0,rep:0,e:0,a:0,m:0,n:0};
   for(const c of D.camions){
     const b=bilanCamion(c.id);
-    tot.r+=b.recette; tot.rep+=b.reparations; tot.a+=b.arret; tot.m+=b.manque; tot.n+=b.net;
+    tot.r+=b.recette; tot.rep+=b.reparations; tot.e+=b.externes; tot.a+=b.arret; tot.m+=b.manque; tot.n+=b.net;
     const pire = c.actif ? pireStatutDocuments(c) : {etat:"ok"};
     h+=`<tr onclick="setVue('detail','${c.id}')" style="cursor:pointer">
       <td><b class="im">${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">retiré</span>'}
         ${pire.etat!=="ok" ? " "+badgeDocument(pire) : ""}<br><small class="mt">${esc(c.modele||"")}</small></td>
       <td class="n">${fmt(b.recette)}</td><td class="n">${fmt(b.reparations)}</td>
+      <td class="n">${fmt(b.externes)}</td>
       <td class="n">${b.arret||"—"}</td><td class="n">${fmt(b.manque)}</td>
       <td class="n" style="font-weight:700;color:${b.net<0?"var(--minium)":"var(--vert)"}">${fmt(b.net)}</td></tr>`;
   }
   h+=`<tr><td><b>Total flotte</b></td><td class="n"><b>${fmt(tot.r)}</b></td><td class="n"><b>${fmt(tot.rep)}</b></td>
+    <td class="n"><b>${fmt(tot.e)}</b></td>
     <td class="n"><b>${tot.a||"—"}</b></td><td class="n"><b>${fmt(tot.m)}</b></td><td class="n"><b>${fmt(tot.n)}</b></td></tr>
     </tbody></table></div><p class="mt" style="margin-top:11px"><b>Manque</b> = jours ouvrés d'arrêt × recette journalière moyenne.
     <b>Net</b> = recette − réparations − manque.</p></div>`;
@@ -2248,7 +2255,8 @@ function detailCamion(id){
     <div class="ligne"><div class="lib"><b>Main-d'œuvre</b></div><span class="num">${fmtF(b.mo)}</span></div>
     <div class="ligne"><div class="lib"><b>Jours ouvrés d'arrêt</b><small>${b.nbPannes} panne${b.nbPannes>1?"s":""} payée${b.nbPannes>1?"s":""}</small></div><span class="num">${b.arret}</span></div>
     <div class="ligne"><div class="lib"><b>Manque à gagner</b></div><span class="num">${fmtF(b.manque)}</span></div>
-    <div class="ligne"><div class="lib"><b>Coût réel</b><small>Réparations + manque</small></div>
+    <div class="ligne"><div class="lib"><b>Dépenses externes</b><small>Carburant, pneus, TVM, assurance…</small></div><span class="num">${fmtF(b.externes)}</span></div>
+    <div class="ligne"><div class="lib"><b>Coût réel</b><small>Réparations + manque + dépenses externes</small></div>
       <span class="num" style="font-size:18px;font-weight:700;color:var(--minium)">${fmtF(b.coutReel)}</span></div>
     <div class="ligne"><div class="lib"><b>Net</b></div>
       <span class="num" style="font-size:18px;font-weight:700;color:${b.net<0?"var(--minium)":"var(--vert)"}">${fmtF(b.net)}</span></div></div>`;
