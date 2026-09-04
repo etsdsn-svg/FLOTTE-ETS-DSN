@@ -1970,6 +1970,27 @@ window.supprimerRecette = async (mouvementId, camionId) => {
 
 /* ================= 10. CAISSE : SORTIES ET APPORTS ================= */
 const CATEGORIES=["Besoin société","Avance personnel","Demande du DG","Abonnement","TVM","Visite technique","Assurance","Autre"];
+
+/* Les catégories déjà saisies à la main, pour les resuggérer.
+   On exclut celles de la liste fixe : elles sont déjà dans le menu. */
+function categoriesLibres(){
+  /* On regroupe sans tenir compte de la casse : sinon « Carburant » et
+     « carburant » apparaîtraient comme deux suggestions distinctes, ce
+     qui provoquerait précisément la dispersion qu'on veut éviter.
+     On garde l'orthographe la plus souvent employée. */
+  const comptes = new Map();
+  for(const m of D.mouvements){
+    const c = (m.categorie||"").trim();
+    if(!c || c==="Autre" || CATEGORIES.includes(c)) continue;
+    const cle = c.toLocaleLowerCase("fr");
+    const e = comptes.get(cle) || {};
+    e[c] = (e[c]||0) + 1;
+    comptes.set(cle, e);
+  }
+  return [...comptes.values()]
+    .map(e => Object.entries(e).sort((a,b)=>b[1]-a[1])[0][0])
+    .sort((a,b)=>a.localeCompare(b,"fr"));
+}
 window.formSortie = (preremplir) => {
   const c=caisse();
   const estTVM = preremplir==="tvm";
@@ -1977,9 +1998,15 @@ window.formSortie = (preremplir) => {
     `<button type="button" class="btn sec mini no-print" style="margin-bottom:12px" onclick="basculerTVM()">🧾 TVM</button>
      <label class="ch"><span>Objet</span><input id="s-lib" placeholder="Avance salaire Armand" value="${estTVM?"TVM "+new Date().getFullYear():""}"></label>
      <label class="ch"><span>Catégorie</span><select id="s-cat">${CATEGORIES.map(x=>`<option${estTVM&&x==="TVM"?" selected":""}>${esc(x)}</option>`).join("")}</select></label>
-     <div id="s-camion-bloc" style="${estTVM?"":"display:none"}">
-       <label class="ch"><span>Camion concerné</span><select id="s-camion">
-         <option value="">— Choisir —</option>
+     <div id="s-autre-bloc" style="display:none">
+       <label class="ch"><span>Préciser</span>
+         <input id="s-autre" list="s-autre-liste" placeholder="Carburant, Pneus, Lavage, Amende…">
+         <datalist id="s-autre-liste">${
+           categoriesLibres().map(x=>`<option value="${esc(x)}">`).join("")}</datalist></label>
+     </div>
+     <div id="s-camion-bloc">
+       <label class="ch"><span>Camion concerné <small style="font-weight:400;opacity:.7">— si la dépense en concerne un</small></span><select id="s-camion">
+         <option value="">— Aucun camion en particulier —</option>
          ${D.camions.filter(x=>x.actif).map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join("")}
        </select></label>
      </div>
@@ -1994,25 +2021,41 @@ window.formSortie = (preremplir) => {
         z.innerHTML = (v>c.partLibre && v>0)
           ? `<div class="alerte a-ocre"><div><b>Tu entames la part flotte</b>La part libre est de ${fmtF(Math.max(0,c.partLibre))}. Cette dépense prend ${fmtF(v-Math.max(0,c.partLibre))} sur l'argent du DG.</div></div>` : "";
       });
-      document.getElementById("s-cat").addEventListener("change", function(){
-        document.getElementById("s-camion-bloc").style.display =
-          (this.value==="TVM"||this.value==="Visite technique"||this.value==="Assurance") ? "" : "none";
-      });
+      /* « Autre » ouvre un champ libre. Ce que l'utilisateur y tape
+         DEVIENT la catégorie enregistrée : sans ça, toutes les dépenses
+         hors liste finiraient dans un bloc « Autre » impossible à
+         analyser. La liste de suggestions rappelle les précisions déjà
+         employées, pour éviter « Carburant » et « carburant » côte à côte. */
+      const cat = document.getElementById("s-cat");
+      const bascule = () => {
+        document.getElementById("s-autre-bloc").style.display =
+          cat.value === "Autre" ? "" : "none";
+      };
+      cat.addEventListener("change", bascule); bascule();
+
+      /* Le champ camion reste visible quelle que soit la catégorie :
+         carburant, pneus, lavage, amende… beaucoup de dépenses concernent
+         un camion précis sans être des pannes. Il reste facultatif, sauf
+         pour la TVM dont l'échéance se calcule camion par camion. */
       if(estTVM){ document.getElementById("s-camion").focus(); }
     });
 };
 window.basculerTVM = () => {
   document.getElementById("s-lib").value = "TVM " + new Date().getFullYear();
   document.getElementById("s-cat").value = "TVM";
-  document.getElementById("s-camion-bloc").style.display = "";
   document.getElementById("s-camion").focus();
 };
 window.validerSortie = async () => {
-  const lib=val("s-lib").trim(), v=nb("s-m"), cat=val("s-cat");
-  const camionBloc = document.getElementById("s-camion-bloc");
-  const camionId = camionBloc && camionBloc.style.display!=="none" ? val("s-camion") : "";
+  const lib=val("s-lib").trim(), v=nb("s-m");
+  let cat=val("s-cat");
+  const camionId = val("s-camion");
   if(!lib) return toast("Donne un objet.");
   if(v<=0) return toast("Renseigne un montant.");
+  if(cat==="Autre"){
+    const precis = val("s-autre").trim();
+    if(!precis) return toast("Précise la catégorie.");
+    cat = precis;   /* la précision REMPLACE « Autre » */
+  }
   if(cat==="TVM" && !camionId) return toast("Choisis le camion concerné par la TVM.");
   const {error}=await sb.from("sb2_mouvements").insert({date:val("s-date")||auj(),sens:"sortie",
     nature:"externe",montant:v,libelle:lib,categorie:cat, camion_id: camionId || null});
