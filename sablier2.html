@@ -1103,14 +1103,21 @@ function tachesDuJour(){
     });
   }
 
-  /* 4. Travaux termines dont le reglement reste en attente. */
+  /* 4. Travaux termines dont le reglement reste en attente.
+     Le montant est la somme des estimations : le coût réel n'est saisi
+     qu'au moment du paiement, il vaudrait zéro ici. */
   const aRegler = ec.filter(p=>p.statut==="terminee");
-  if(aRegler.length) t.push({
-    rang: 4, ton: "v",
-    titre: `${aRegler.length} réparation${aRegler.length>1?"s":""} à régler`,
-    detail: aRegler.map(p=>nomCamion(p.camion_id)).slice(0,4).join(" · "),
-    action: () => aller("pannes")
-  });
+  if(aRegler.length){
+    const est = aRegler.reduce((s,p)=>s+(Number(p.estimation)||0), 0);
+    const nonChiffrees = aRegler.filter(p=>p.estimation==null).length;
+    t.push({
+      rang: 4, ton: "v",
+      titre: `${aRegler.length} réparation${aRegler.length>1?"s":""} à régler${est ? ` · ~${fmtF(est)}` : ""}`,
+      detail: aRegler.map(p=>nomCamion(p.camion_id)).slice(0,4).join(" · ")
+            + (nonChiffrees ? ` · ${nonChiffrees} non chiffrée${nonChiffrees>1?"s":""}` : ""),
+      action: () => aller("pannes")
+    });
+  }
 
   /* 5. Camions au garage : a suivre, sans urgence immediate. */
   const auGarage = ec.filter(p=>p.statut==="affectee");
@@ -1187,6 +1194,12 @@ function vBord(){
   /* ── Bloc 2 : caisse ── */
   const recSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="recette"&&m.date>=lundiDe(auj()))
     .reduce((s,m)=>s+Number(m.montant),0);
+  /* Sorties depuis lundi, flotte et externes confondues : ce qui est
+     réellement parti de la caisse. Même test que caisse() : tout ce qui
+     n'est pas une entrée est une sortie. */
+  const depSem=D.mouvements.filter(m=>m.sens!=="entree"&&m.date>=lundiDe(auj()))
+    .reduce((s,m)=>s+(Number(m.montant)||0),0);
+  const netSem=recSem-depSem;
   const CIRC=2*Math.PI*25;
   const couleurAnneau = c.sousSeuil ? "var(--minium)" : pct<0.4 ? "var(--sable)" : "var(--vert)";
 
@@ -1264,6 +1277,21 @@ function vBord(){
 
   const maxRec = Math.max(1, ...recSemaine.map(r=>r.montant));
   const totalRec = recSemaine.reduce((s,r)=>s+r.montant,0);
+
+  /* Semaine précédente, même méthode, sur TOUS les camions actifs : un
+     camion immobilisé aujourd'hui a pu rouler la semaine dernière. */
+  const lundiPrec = ajoutJours(lundiCur, -7);
+  const totalPrec = actifs.reduce((s,c)=>s+Number(recetteSemaine(c.id, lundiPrec)?.montant||0), 0);
+  /* La tendance n'apparaît qu'une fois la collecte complète. À
+     mi-semaine, comparer une semaine à moitié saisie à une semaine
+     pleine afficherait une fausse chute chaque mardi. */
+  let tendance = "";
+  if(totalPrec>0 && nbEncaisses>0 && restants===0){
+    const d = Math.round((totalRec-totalPrec)/totalPrec*100);
+    const fleche = d>0 ? "↑" : d<0 ? "↓" : "=";
+    const couleur = d>0 ? "var(--vert)" : d<0 ? "var(--minium)" : "var(--encre-doux)";
+    tendance = ` · <b style="color:${couleur}">${fleche} ${Math.abs(d)} %</b>`;
+  }
   let barres="";
   for(const r of recSemaine)
     barres+=`<div class="bord-barre ${r.montant?"":"vide"}"
@@ -1305,7 +1333,12 @@ function vBord(){
       <div class="bord-caisse-val">${fmtF(c.solde)}</div>
       <div class="bord-caisse-sub ${c.sousSeuil?"alerte":""}">${
         c.sousSeuil ? `Sous le seuil de ${fmtF(c.seuil)}`
+        : depSem ? `+${fmt(recSem)} − ${fmt(depSem)} = ${netSem<0?"−":"+"}${fmtF(Math.abs(netSem))} cette semaine`
         : `+${fmtF(recSem)} cette semaine`}</div>
+      ${c.nbARegler ? `<div class="bord-caisse-sub" style="color:var(--encre-doux)">À régler aux garages : ${
+          c.engage ? `~${fmtF(c.engage)}` : "non chiffré"} (${c.nbARegler}${
+          c.engage && c.sansEstimation ? `, dont ${c.sansEstimation} non chiffrée${c.sansEstimation>1?"s":""}` : ""})${
+          c.engage ? ` → <b style="color:var(--encre)">disponible ${fmtF(c.previsionnel)}</b>` : ""}</div>` : ""}
     </div>
     <svg class="bord-caisse-anneau" viewBox="0 0 60 60">
       <circle cx="30" cy="30" r="25" fill="none" stroke="var(--ciment-fonce)" stroke-width="6"/>
@@ -1341,7 +1374,8 @@ function vBord(){
     </div>
     <div class="bord-barres">${barres}</div>
     <div class="bord-barres-pied">${fmtF(totalRec)} encaissés${
-      restants ? ` · ${restants} camion${restants>1?"s":""} en attente` : ""}</div>
+      restants ? ` · ${restants} camion${restants>1?"s":""} en attente` : ""}${
+      totalPrec ? ` · semaine dernière ${fmtF(totalPrec)}` : ""}${tendance}</div>
   </div>` : ""}
 
   <div class="bord-section z-mouv">
