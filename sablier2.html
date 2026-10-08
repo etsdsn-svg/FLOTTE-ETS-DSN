@@ -2816,16 +2816,19 @@ function vRapports(){
 
   if(per==="semaine"){
     h+=`<div class="titre-sec">Recettes par camion</div><div class="carte"><div class="scroll-x"><table><thead><tr>
-      <th>Camion</th><th>Chauffeur</th><th class="n">Recette</th><th class="n">Réparations</th></tr></thead><tbody>`;
+      <th>Camion</th><th>Chauffeur</th><th class="n">Recette</th><th class="n">Réparations</th><th class="n">Autres</th></tr></thead><tbody>`;
     let vide=true;
     for(const c of D.camions){
       const bb=bilanCamion(c.id,b.d1,b.d2);
-      if(!bb.recette&&!bb.reparations) continue;
+      /* « Autres » : carburant, pneus, TVM… saisies avec ce camion depuis
+         le bouton Dépense. Un camion qui n'a que cela sur la semaine doit
+         apparaître aussi. */
+      if(!bb.recette&&!bb.reparations&&!bb.externes) continue;
       vide=false; const ch=chauffeurDe(c.id,b.d2);
       h+=`<tr><td><b>${esc(c.nom)}</b></td><td>${ch?esc(ch.nom):"—"}</td>
-        <td class="n">${fmt(bb.recette)}</td><td class="n">${fmt(bb.reparations)}</td></tr>`;
+        <td class="n">${fmt(bb.recette)}</td><td class="n">${fmt(bb.reparations)}</td><td class="n">${fmt(bb.externes)}</td></tr>`;
     }
-    if(vide) h+=`<tr><td colspan="4" class="mt">Aucun mouvement cette semaine.</td></tr>`;
+    if(vide) h+=`<tr><td colspan="5" class="mt">Aucun mouvement cette semaine.</td></tr>`;
     h+=`</tbody></table></div></div>`;
     h+=`<div class="titre-sec">Détail des interventions</div>`+tableauPannes(b.d1,b.d2);
     h+=`<div class="titre-sec">Dépenses externes</div>`+tableauExternes(b.d1,b.d2);
@@ -2833,13 +2836,16 @@ function vRapports(){
     h+=`<div class="titre-sec">Quels camions nourrissent, lesquels mangent</div>
       <div class="carte"><div class="scroll-x"><table><thead><tr>
       <th>Camion</th><th class="n">Recette</th><th class="n">Pièces</th><th class="n">MO</th>
-      <th class="n">Arrêt</th><th class="n">Manque</th><th class="n">Net</th></tr></thead><tbody>`;
+      <th class="n">Autres</th><th class="n">Arrêt</th><th class="n">Manque</th><th class="n">Net</th></tr></thead><tbody>`;
+    /* « Autres » : les dépenses externes rattachées au camion (carburant,
+       pneus, TVM…). Elles étaient déjà dans le net ; sans la colonne, le
+       net ne s'additionnait pas sous les yeux du lecteur. */
     const l=D.camions.map(c=>({c,b:bilanCamion(c.id,b.d1,b.d2)}))
-      .filter(x=>x.b.recette||x.b.reparations).sort((a,z)=>a.b.net-z.b.net);
-    if(!l.length) h+=`<tr><td colspan="7" class="mt">Aucun mouvement sur la période.</td></tr>`;
+      .filter(x=>x.b.recette||x.b.reparations||x.b.externes).sort((a,z)=>a.b.net-z.b.net);
+    if(!l.length) h+=`<tr><td colspan="8" class="mt">Aucun mouvement sur la période.</td></tr>`;
     for(const x of l) h+=`<tr><td><b>${esc(x.c.nom)}</b></td><td class="n">${fmt(x.b.recette)}</td>
-      <td class="n">${fmt(x.b.pieces)}</td><td class="n">${fmt(x.b.mo)}</td><td class="n">${x.b.arret||"—"}</td>
-      <td class="n">${fmt(x.b.manque)}</td>
+      <td class="n">${fmt(x.b.pieces)}</td><td class="n">${fmt(x.b.mo)}</td><td class="n">${fmt(x.b.externes)}</td>
+      <td class="n">${x.b.arret||"—"}</td><td class="n">${fmt(x.b.manque)}</td>
       <td class="n" style="font-weight:700;color:${x.b.net<0?"var(--minium)":"var(--vert)"}">${fmt(x.b.net)}</td></tr>`;
     h+=`</tbody></table></div><p class="mt" style="margin-top:10px">Du plus coûteux au plus rentable.</p></div>`;
     h+=`<div class="titre-sec">Dépenses externes</div>`+tableauExternes(b.d1,b.d2);
@@ -2874,17 +2880,18 @@ function tableauExternes(d1,d2){
   const ms=D.mouvements.filter(m=>m.sens==="sortie"&&m.nature!=="flotte"&&m.date>=d1&&m.date<=d2)
     .sort((a,b)=>a.date.localeCompare(b.date));
   let h=`<div class="carte"><div class="scroll-x"><table><thead><tr>
-    <th>Date</th><th>Objet</th><th>Catégorie</th><th class="n">Montant</th></tr></thead><tbody>`;
-  if(!ms.length) h+=`<tr><td colspan="4" class="mt">Aucune dépense externe.</td></tr>`;
-  else if(admin()) h+=`<tr><td colspan="4" class="mt">Touche une ligne pour la corriger ou la supprimer.</td></tr>`;
+    <th>Date</th><th>Objet</th><th>Catégorie</th><th>Camion</th><th class="n">Montant</th></tr></thead><tbody>`;
+  if(!ms.length) h+=`<tr><td colspan="5" class="mt">Aucune dépense externe.</td></tr>`;
+  else if(admin()) h+=`<tr><td colspan="5" class="mt">Touche une ligne pour la corriger ou la supprimer.</td></tr>`;
   let tot=0;
   for(const m of ms){ tot+=Number(m.montant)||0;
     /* Ligne cliquable pour l'admin seul : la direction consulte, elle ne
        corrige pas. */
     h+=`<tr${admin()?` onclick="corrigerDepense('${m.id}')" style="cursor:pointer"`:""}>
       <td>${dateCourte(m.date)}</td><td>${esc(m.libelle)}</td>
-      <td>${esc(m.categorie||"—")}</td><td class="n">${fmt(m.montant)}</td></tr>`; }
-  if(ms.length) h+=`<tr><td colspan="3"><b>Total</b></td><td class="n"><b>${fmt(tot)}</b></td></tr>`;
+      <td>${esc(m.categorie||"—")}</td><td>${m.camion_id?esc(nomCamion(m.camion_id)):"—"}</td>
+      <td class="n">${fmt(m.montant)}</td></tr>`; }
+  if(ms.length) h+=`<tr><td colspan="4"><b>Total</b></td><td class="n"><b>${fmt(tot)}</b></td></tr>`;
   return h+`</tbody></table></div></div>`;
 }
 
