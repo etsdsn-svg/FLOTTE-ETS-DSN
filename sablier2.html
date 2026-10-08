@@ -2067,6 +2067,95 @@ window.validerSortie = async () => {
   if(error) return toast("Échec : "+error.message);
   fermer(); toast("Dépense enregistrée."); await recharger();
 };
+/* ── Corriger une dépense déjà saisie ──
+   Les sorties de nature « flotte » sont générées automatiquement au
+   paiement d'une panne : les modifier ici les désynchroniserait de la
+   panne d'origine. On renvoie donc vers la panne.
+   Les périodes clôturées sont bloquées par la base elle-même ; on se
+   contente de traduire son refus en français. */
+window.corrigerDepense = id => {
+  const m = D.mouvements.find(x => x.id === id);
+  if(!m) return;
+  if(m.nature === "flotte")
+    return toast("Cette ligne vient du paiement d'une panne. Corrige-la depuis la panne.");
+
+  const connue = CATEGORIES.includes(m.categorie);
+  const libres = categoriesLibres();
+  if(!connue && m.categorie && !libres.includes(m.categorie)) libres.push(m.categorie);
+
+  ouvrir("Corriger la dépense",
+    `<label class="ch"><span>Objet</span><input id="s-lib" value="${esc(m.libelle||"")}"></label>
+     <label class="ch"><span>Montant</span><input type="number" inputmode="numeric" id="s-m" value="${Math.round(m.montant)}"></label>
+     <label class="ch"><span>Date</span><input type="date" id="s-date" value="${m.date}"></label>
+     <label class="ch"><span>Catégorie</span><select id="s-cat">${
+       CATEGORIES.map(x=>`<option${
+         (connue && x===m.categorie) || (!connue && x==="Autre") ? " selected":""}>${esc(x)}</option>`).join("")}</select></label>
+     <div id="s-autre-bloc" style="display:none">
+       <label class="ch"><span>Préciser</span>
+         <input id="s-autre" list="s-autre-liste" value="${connue?"":esc(m.categorie||"")}"
+           placeholder="Carburant, Pneus, Lavage, Amende…">
+         <datalist id="s-autre-liste">${libres.map(x=>`<option value="${esc(x)}">`).join("")}</datalist></label>
+     </div>
+     <div id="s-camion-bloc">
+       <label class="ch"><span>Camion concerné <small style="font-weight:400;opacity:.7">— si la dépense en concerne un</small></span><select id="s-camion">
+         <option value="">— Aucun camion en particulier —</option>${
+         D.camions.map(c=>`<option value="${c.id}"${c.id===m.camion_id?" selected":""}>${esc(c.nom)}</option>`).join("")}</select></label>
+     </div>
+     <div id="s-msg"></div>
+     <div class="duo" style="margin-bottom:9px"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn" onclick="validerCorrectionDepense('${id}')">Enregistrer</button></div>
+     <button class="btn danger" onclick="supprimerDepense('${id}')">Supprimer cette dépense</button>`,
+    () => {
+      const cat = document.getElementById("s-cat");
+      const bascule = () => { document.getElementById("s-autre-bloc").style.display =
+        cat.value === "Autre" ? "" : "none"; };
+      cat.addEventListener("change", bascule); bascule();
+    });
+};
+
+/* Traduit le refus de la base en phrase compréhensible. Un admin qui lit
+   « new row violates check constraint » ne sait pas qu'il doit rouvrir
+   une période. */
+function messageEcriture(error){
+  const t = (error.message||"").toLowerCase();
+  if(t.includes("clotur") || t.includes("periode") || t.includes("période"))
+    return "Cette date est dans une période clôturée. Rouvre la période avant de corriger.";
+  return "Échec : " + error.message;
+}
+
+window.validerCorrectionDepense = async id => {
+  const lib = val("s-lib").trim(), v = nb("s-m");
+  let cat = val("s-cat");
+  const camionId = val("s-camion");
+  const zone = document.getElementById("s-msg");
+  const refus = txt => zone.innerHTML = `<div class="alerte a-rouge"><div>${esc(txt)}</div></div>`;
+
+  if(!lib) return refus("Donne un objet.");
+  if(v<=0) return refus("Le montant doit être supérieur à zéro.");
+  if(cat==="Autre"){
+    const precis = val("s-autre").trim();
+    if(!precis) return refus("Précise la catégorie.");
+    cat = precis;
+  }
+  if(cat==="TVM" && !camionId) return refus("Choisis le camion concerné par la TVM.");
+
+  const {error} = await sb.from("sb2_mouvements").update({
+    date: val("s-date")||auj(), montant:v, libelle:lib,
+    categorie:cat, camion_id: camionId || null
+  }).eq("id", id);
+  if(error) return refus(messageEcriture(error));
+  fermer(); toast("Dépense corrigée."); await recharger();
+};
+
+window.supprimerDepense = async id => {
+  const m = D.mouvements.find(x => x.id === id);
+  if(!confirm(`Supprimer définitivement « ${m?.libelle||"cette dépense"} » ?`)) return;
+  const {error} = await sb.from("sb2_mouvements").delete().eq("id", id);
+  if(error) return document.getElementById("s-msg").innerHTML =
+    `<div class="alerte a-rouge"><div>${esc(messageEcriture(error))}</div></div>`;
+  fermer(); toast("Dépense supprimée."); await recharger();
+};
+
 window.formApportDG = () => {
   const c=caisse();
   ouvrir("Apport du DG",
@@ -2711,9 +2800,13 @@ function tableauExternes(d1,d2){
   let h=`<div class="carte"><div class="scroll-x"><table><thead><tr>
     <th>Date</th><th>Objet</th><th>Catégorie</th><th class="n">Montant</th></tr></thead><tbody>`;
   if(!ms.length) h+=`<tr><td colspan="4" class="mt">Aucune dépense externe.</td></tr>`;
+  else if(admin()) h+=`<tr><td colspan="4" class="mt">Touche une ligne pour la corriger ou la supprimer.</td></tr>`;
   let tot=0;
   for(const m of ms){ tot+=Number(m.montant)||0;
-    h+=`<tr><td>${dateCourte(m.date)}</td><td>${esc(m.libelle)}</td>
+    /* Ligne cliquable pour l'admin seul : la direction consulte, elle ne
+       corrige pas. */
+    h+=`<tr${admin()?` onclick="corrigerDepense('${m.id}')" style="cursor:pointer"`:""}>
+      <td>${dateCourte(m.date)}</td><td>${esc(m.libelle)}</td>
       <td>${esc(m.categorie||"—")}</td><td class="n">${fmt(m.montant)}</td></tr>`; }
   if(ms.length) h+=`<tr><td colspan="3"><b>Total</b></td><td class="n"><b>${fmt(tot)}</b></td></tr>`;
   return h+`</tbody></table></div></div>`;
@@ -2778,6 +2871,14 @@ function vReglages(){
       <label class="ch"><span>Alerte assurance (j avant)</span><input type="number" id="p-assurance" value="${D.prefs.delai_assurance_j ?? 30}"></label></div>
     <label class="ch"><span>Alerte TVM (j avant le 1er janvier)</span><input type="number" id="p-tvm" value="${D.prefs.delai_tvm_j ?? 30}"></label>
     <button class="btn" onclick="majPrefs()">Enregistrer</button></div>`;
+
+  h+=`<div class="titre-sec">Sauvegarde</div><div class="carte">
+    <p class="mt" style="margin-bottom:11px">Le plan gratuit de Supabase ne fait <b>aucune sauvegarde automatique</b>.
+      Télécharge ce fichier chaque vendredi après la collecte, et range-le hors de ce téléphone.</p>
+    <button class="btn" style="width:100%" id="b-export" onclick="exporterTout()">Télécharger une sauvegarde complète</button>
+    <p class="mt" style="margin-top:9px">${(()=>{ try{ const d=localStorage.getItem("sablier2_derniere_sauvegarde");
+      return d ? "Dernière sauvegarde depuis cet appareil : "+dateLongue(d) : "Aucune sauvegarde faite depuis cet appareil.";
+    }catch(e){ return ""; } })()}</p></div>`;
 
   h+=`<div class="titre-sec">Session</div><div class="carte">
     <div class="ligne"><div class="lib"><b>${esc(moi.nom)}</b><small>Administrateur</small></div>
@@ -2854,6 +2955,54 @@ window.majPrefs = async () => {
   if(error) return toast("Échec : "+error.message);
   toast("Paramètres enregistrés."); await recharger();
 };
+/* ── Sauvegarde complète ──
+   Toutes les tables de l'application, dans un seul fichier JSON daté.
+   Chaque table est lue séparément : si l'une échoue (droit manquant),
+   l'erreur est notée DANS le fichier au lieu de faire échouer le reste.
+   Une sauvegarde partielle vaut mieux que pas de sauvegarde.
+
+   Volontairement EXCLUS :
+   - les jetons d'accès des chauffeurs et garages : quiconque trouverait
+     le fichier pourrait se connecter à leur place. Après une
+     restauration, il faudra régénérer leurs liens.
+   - sb2_abonnements : les adresses push des téléphones, sans valeur
+     pour une restauration (chacun réactive ses notifications).
+   Non inclus non plus : les photos et vidéos elles-mêmes (stockage à
+   part). Seules leurs références le sont. */
+const TABLES_SAUVEGARDE = [
+  "sb2_camions","sb2_chauffeurs","sb2_garages","sb2_affectations","sb2_types",
+  "sb2_pannes","sb2_mouvements","sb2_clotures","sb2_prefs","sb2_medias",
+  "sb2_messages","sb2_notifications","sb2_membres","sb2_liaisons"
+];
+const SANS_JETON = { sb2_chauffeurs:true, sb2_garages:true };
+
+window.exporterTout = async () => {
+  const b = document.getElementById("b-export");
+  if(b){ b.disabled = true; b.textContent = "Préparation…"; }
+  const sortie = { application:"GestFlot / SABLIER2", cree_le:new Date().toISOString(),
+                   par: moi?.nom || null, tables:{}, erreurs:{} };
+  for(const t of TABLES_SAUVEGARDE){
+    const r = await tout(o => sb.from(t).select("*", o));
+    if(r.error){ sortie.erreurs[t] = r.error.message; continue; }
+    sortie.tables[t] = SANS_JETON[t]
+      ? r.data.map(({jeton, ...reste}) => reste)
+      : r.data;
+  }
+  const nb = Object.values(sortie.tables).reduce((n,l)=>n+l.length, 0);
+  const fichier = new Blob([JSON.stringify(sortie, null, 1)], {type:"application/json"});
+  const lien = document.createElement("a");
+  lien.href = URL.createObjectURL(fichier);
+  lien.download = `gestflot-sauvegarde-${auj()}.json`;
+  document.body.appendChild(lien); lien.click(); lien.remove();
+  setTimeout(()=>URL.revokeObjectURL(lien.href), 5000);
+  try{ localStorage.setItem("sablier2_derniere_sauvegarde", auj()); }catch(e){}
+  if(b){ b.disabled = false; b.textContent = "Télécharger une sauvegarde complète"; }
+  const ratees = Object.keys(sortie.erreurs);
+  toast(ratees.length
+    ? `Sauvegarde faite (${nb} lignes), mais ${ratees.length} table${ratees.length>1?"s":""} illisible${ratees.length>1?"s":""} : ${ratees.join(", ")}.`
+    : `Sauvegarde téléchargée : ${nb} lignes.`);
+};
+
 window.deconnexion = async () => { await sb.auth.signOut(); try{ localStorage.removeItem(CACHE); }catch(e){} location.reload(); };
 
 
@@ -3417,7 +3566,12 @@ const depuis = t => {
 
 function rendreGarage(){
   const aFaire = G.pannes.filter(p=>p.statut==="affectee");
-  const finies = G.pannes.filter(p=>["terminee","payee"].includes(p.statut)).slice(0,8);
+  /* Historique COMPLET, du plus récent au plus ancien. Le garage doit
+     pouvoir retrouver une intervention d'il y a six mois pour justifier
+     une facture : la limite à 8 l'en empêchait. */
+  const finies = G.pannes.filter(p=>["terminee","payee"].includes(p.statut))
+    .sort((a,b)=>String(b.date_fin_travaux||b.date_paiement||"")
+                 .localeCompare(String(a.date_fin_travaux||a.date_paiement||"")));
 
   let h = `<div id="app"><div id="zone">
     <header id="topbar">
@@ -3460,6 +3614,28 @@ function rendreGarage(){
   }
 
   if(finies.length){
+    /* Ce qui reste dû, d'un coup d'œil. Sans ce total, le garage devait
+       additionner ses lignes à la main pour savoir où il en est. */
+    const dus = finies.filter(p=>p.statut!=="payee");
+    const duMo = dus.reduce((t,p)=>t+(Number(p.cout_mo)||0), 0);
+    const duPi = dus.reduce((t,p)=>t+(Number(p.cout_pieces)||0), 0);
+    const payeMo = finies.filter(p=>p.statut==="payee")
+      .reduce((t,p)=>t+(Number(p.cout_mo)||0)+(Number(p.cout_pieces)||0), 0);
+
+    h += `<div class="titre-sec">Vos paiements</div>
+      <div class="carte">
+        <div class="ligne"><div class="lib"><b>En attente de paiement</b>
+          <small>${dus.length} intervention${dus.length>1?"s":""}${
+            duMo+duPi>0 ? ` · main-d'œuvre ${fmt(duMo)} · pièces ${fmt(duPi)}` : ""}</small></div>
+          <span class="num" style="font-size:18px;font-weight:700;color:${
+            duMo+duPi>0?"var(--minium)":"var(--encre-doux)"}">${fmtF(duMo+duPi)}</span></div>
+        <div class="ligne"><div class="lib"><b>Déjà réglé</b></div>
+          <span class="num">${fmtF(payeMo)}</span></div>
+      </div>
+      ${dus.some(p=>!((Number(p.cout_mo)||0)+(Number(p.cout_pieces)||0)))
+        ? `<p class="mt" style="margin-top:-5px">Certaines interventions ne sont pas encore chiffrées par la direction : elles ne figurent pas dans ce total.</p>`
+        : ""}`;
+
     h += `<div class="titre-sec">Vos réparations terminées</div><div class="carte">`;
     for(const p of finies){
       /* Les montants sont fixés par la direction. Tant qu'elle ne les a
