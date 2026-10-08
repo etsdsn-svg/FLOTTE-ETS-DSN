@@ -1414,7 +1414,7 @@ function vBord(){
 
   <div class="dir-duo">
     <section class="dir-bloc argent">
-      <div class="dir-bloc-tete"><h2>Où est parti l'argent cette semaine</h2><b>${fmtF(depSem)}</b></div>
+      <div class="dir-bloc-tete"><h2>Dépenses de la semaine</h2><b>${fmtF(depSem)}</b></div>
       ${depSem ? `<div class="dir-repart"><i style="width:${pFlotte}%;background:var(--vert)"></i><i style="width:${100-pFlotte}%;background:var(--sable)"></i></div>
       <div class="dir-legende">
         <span><i style="background:var(--vert)"></i>Réparations · ${fmtF(depFlotte)}</span>
@@ -1424,7 +1424,7 @@ function vBord(){
     </section>
 
     <section class="dir-bloc attention">
-      <div class="dir-bloc-tete"><h2>Ce qui demande votre attention</h2><b>${taches.length || "—"}</b></div>
+      <div class="dir-bloc-tete"><h2>Points d'attention</h2><b>${taches.length || "—"}</b></div>
       ${listeTaches}
     </section>
   </div>
