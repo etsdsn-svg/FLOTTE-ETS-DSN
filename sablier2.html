@@ -307,15 +307,7 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .logo-fond{position:absolute;right:-15%;top:-28%;height:176%;color:#fff;opacity:.11;pointer-events:none}
 .logo-accueil{height:88px;width:auto;margin:0 auto 18px;color:var(--vert);display:block}
 
-/* ── Tableau de bord : Action + Flotte, à plat, identité DSN ── */
-.bord-section{padding:0}
-.bord-section+.bord-section{margin-top:22px}
-.bord-section-head{display:flex;align-items:baseline;justify-content:space-between;
-  padding-bottom:8px;margin-bottom:2px;border-bottom:1.5px solid var(--vert)}
-.bord-section-head .lbl{font-family:var(--mono);font-size:10px;font-weight:500;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--encre-doux)}
-.bord-section-head .ct{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--vert)}
-
+/* ── Tableau de bord : tâches et flotte, à plat, identité DSN ── */
 .bord-tache{padding:12px 0 11px;border-bottom:1px solid var(--ciment-fonce);
   display:flex;gap:12px;cursor:pointer}
 .bord-tache:last-child{border-bottom:0}
@@ -336,17 +328,6 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-tache-plus{font-family:var(--mono);font-size:10.5px;color:var(--encre-doux);
   padding:10px 2px 0;font-style:italic}
 
-.bord-caisse{display:flex;align-items:center;border-top:1px solid var(--ciment-fonce);
-  border-bottom:1px solid var(--ciment-fonce);margin:4px 0}
-.bord-caisse>div:first-child{flex:1;padding:14px 0}
-.bord-caisse-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--encre-doux)}
-.bord-caisse-val{font-family:"Archivo";font-size:23px;font-weight:800;color:var(--vert);
-  font-variant-numeric:tabular-nums;line-height:1.25;margin-top:3px}
-.bord-caisse-sub{font-family:var(--mono);font-size:10.5px;color:#3E7A54;margin-top:2px}
-.bord-caisse-sub.alerte{color:var(--minium)}
-.bord-caisse-anneau{width:52px;height:52px;flex:none;margin-left:12px}
-
 .bord-flotte{display:grid;grid-template-columns:1fr;gap:0;padding-top:4px}
 @container (min-width:520px){ .bord-flotte{grid-template-columns:1fr 1fr;column-gap:20px} }
 .bord-camion{padding:10px 0;border-bottom:1px solid var(--ciment-fonce);display:flex;
@@ -363,16 +344,6 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-camion-etat.r{color:var(--minium)}
 .bord-camion-etat.o{color:#8A6720}
 
-.bord-mouv-item{display:flex;justify-content:space-between;align-items:center;
-  padding:9px 0;border-bottom:1px solid var(--ciment-fonce)}
-.bord-mouv-item:last-child{border-bottom:none}
-.bord-mouv-lib{font-size:13px;font-weight:600;color:var(--nuit)}
-.bord-mouv-date{font-family:var(--mono);font-size:10px;color:var(--encre-doux);margin-top:1px}
-.bord-mouv-val{font-family:"Archivo";font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
-.bord-mouv-val.plus{color:var(--vert)}
-.bord-mouv-val.moins{color:var(--encre)}
-
-.bord-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:24px}
 .bord-btn{border-radius:8px;padding:14px 8px;font-family:var(--mono);font-size:11px;
   font-weight:500;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;border:1px solid}
 .bord-btn.primary{background:var(--vert);color:#fff;border-color:var(--vert)}
@@ -402,7 +373,7 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 @container (min-width:520px){ .bord-grille{grid-template-columns:repeat(5,1fr)} }
 .bord-vig{background:var(--ciment);border-radius:8px;padding:9px 5px 8px;text-align:center;
   cursor:pointer;border:1px solid transparent}
-.bord-vig.alerte{border-color:var(--filet-fonce)}
+.bord-vig.signal{border-color:var(--filet-fonce)}
 .bord-vig-pt{width:7px;height:7px;border-radius:50%;margin:0 auto 5px;background:var(--filet-fonce)}
 .bord-vig-pt.m{background:var(--minium)}
 .bord-vig-pt.s{background:var(--sable)}
@@ -413,26 +384,71 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .bord-vig-et.r{color:var(--minium)}
 .bord-vig-et.o{color:#8A6720}
 
-/* ── Recettes de la semaine ──
-   Une barre par camion attendu. Grise = pas encore encaisse. */
-.bord-barres{display:flex;align-items:flex-end;gap:4px;height:58px;padding-top:12px}
-.bord-barre{flex:1;background:var(--vert);border-radius:3px 3px 0 0;min-height:3px}
-.bord-barre.vide{background:var(--ciment-fonce)}
-.bord-barres-pied{font-family:var(--mono);font-size:10px;color:var(--encre-doux);margin-top:9px}
-
-/* ── Deux colonnes sur grand ecran ──
-   L'ordre du HTML reste celui du telephone ; la grille nommee replace
-   les blocs sur ordinateur sans toucher au balisage. */
+/* ── Tableau de bord « Direction » ──
+   Le même écran pour l'admin et la direction : trois cartes de chiffres,
+   puis l'argent de la semaine et ce qui demande attention, puis la flotte.
+   Les boutons d'action n'apparaissent que pour l'admin.
+   Chaque bloc est une pile indépendante (flex qui passe à la ligne) : pas
+   de rangées alignées, donc pas de grand vide sous un bloc court. */
+.dir{display:flex;flex-direction:column;gap:18px}
+.dir .bord-collecte{margin-bottom:0}
+.dir-date{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--encre-doux)}
+.dir-titre{margin:4px 0 0;font-family:"Archivo";font-size:26px;font-weight:800;
+  color:var(--nuit);letter-spacing:-.01em}
+.dir-actions{display:flex;flex-wrap:wrap;gap:8px}
+.dir-actions .bord-btn{flex:1 1 130px;padding:13px 12px}
+.dir-actions .bord-btn.full{flex-basis:100%}
+.dir-cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.dir-carte{background:var(--craie);border:1px solid var(--filet);border-radius:var(--r);
+  padding:16px 18px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.dir-carte.clic{cursor:pointer}
+.dir-carte.caisse{flex-direction:row;align-items:center;gap:16px}
+.dir-carte.caisse .dir-val{color:var(--vert)}
+.dir-carte-corps{display:flex;flex-direction:column;gap:5px;min-width:0}
+.dir-anneau{width:78px;height:78px;flex:none}
+.dir-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--encre-doux)}
+.dir-val{font-family:"Archivo";font-size:26px;font-weight:800;color:var(--nuit);
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.dir-val small{font-size:17px;font-weight:700;color:var(--encre-doux)}
+.dir-sub{font-family:var(--mono);font-size:10.5px;color:var(--encre-doux);line-height:1.5}
+/* Minium foncé pour le texte : le minium de la palette est trop clair
+   pour être lu en petit sur fond blanc, surtout en plein soleil. */
+.dir-sub.rouge{color:#B8503A}
+.dir-pastille{align-self:flex-start;padding:3px 9px;border-radius:12px;background:#FBEFEB;
+  color:#B8503A;font-family:var(--mono);font-size:10.5px;font-weight:700}
+.dir-segments{display:flex;gap:3px;margin:4px 0 2px}
+.dir-segments i{flex:1;height:11px;border-radius:2px;background:var(--vert)}
+.dir-segments i.immo{background:var(--sable)}
+.dir-duo{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+.dir-bloc{background:var(--craie);border:1px solid var(--filet);border-radius:var(--r);
+  padding:16px 15px;min-width:0}
+.dir-duo .argent{flex:3 1 340px}
+.dir-duo .attention{flex:2 1 300px}
+.dir-bloc-tete{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  flex-wrap:wrap;margin-bottom:10px}
+.dir-bloc-tete h2{margin:0;font-family:"Archivo";font-size:16px;font-weight:700;color:var(--nuit)}
+.dir-bloc-tete b{font-family:"Archivo";font-size:16px;font-weight:800;color:var(--nuit)}
+.dir-repart{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--ciment-fonce)}
+.dir-repart i{display:block;height:100%}
+.dir-legende{display:flex;flex-wrap:wrap;gap:6px 16px;margin:9px 0 6px;
+  font-family:var(--mono);font-size:10.5px;color:var(--encre)}
+.dir-legende span{display:flex;align-items:center;gap:6px}
+.dir-legende i{width:9px;height:9px;border-radius:2px;flex:none}
+.dir-ligne{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:9px 0;border-top:1px solid var(--ciment)}
+.dir-ligne-lib{font-size:13px;font-weight:600;color:var(--nuit);min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dir-ligne-lib small{display:block;font-family:var(--mono);font-size:10px;font-weight:400;
+  color:var(--encre-doux);margin-top:1px}
+.dir-ligne-val{font-family:"Archivo";font-size:13.5px;font-weight:700;color:var(--encre);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.dir-ligne-val.plus{color:var(--vert)}
 @container (min-width:760px){
-  .bord-wrap{display:grid;grid-template-columns:1fr 1fr;column-gap:28px;row-gap:22px;
-    align-items:start;
-    grid-template-areas:"zc zc" "zcaisse ztaches" "zrec zflotte" "zmouv zbtns"}
-  .bord-wrap .bord-section+.bord-section{margin-top:0}
-  .bord-wrap .bord-btn-grid{margin-top:0}
-  .bord-wrap .bord-collecte{margin-bottom:0}
-  .z-collecte{grid-area:zc} .z-caisse{grid-area:zcaisse} .z-taches{grid-area:ztaches}
-  .z-recettes{grid-area:zrec} .z-flotte{grid-area:zflotte}
-  .z-mouv{grid-area:zmouv} .z-btns{grid-area:zbtns}
+  .dir-titre{font-size:30px}
+  .dir-actions .bord-btn{flex:0 1 auto;padding:12px 16px}
+  .dir-actions .bord-btn.full{flex-basis:auto}
 }
 
 .logo-entete{height:74px;width:auto;color:#27368B;flex:none}
@@ -1187,8 +1203,11 @@ function vBord(){
   const c=caisse(), max=referenceSablier();
   const pct=Math.max(0,Math.min(1, max ? c.solde/max : 0));
   const actifs=D.camions.filter(x=>x.actif);
+  const aujD=new Date(auj()+"T12:00:00"), jourSem=aujD.getDay();
+  const NOMS_JOURS=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+  const dateTitre=`${NOMS_JOURS[jourSem]} ${aujD.getDate()} ${MOIS[aujD.getMonth()]} · semaine ${numSemaine(auj())}`;
 
-  /* ── Bloc 1 : à traiter aujourd'hui ──
+  /* ── Ce qui demande attention ──
      La liste est déjà triée par urgence réelle (tachesDuJour). Seule la
      toute première ligne porte la couleur d'alerte, et seulement si elle
      est vraiment bloquante (ton==="") — pas juste parce qu'elle est en tête. */
@@ -1210,8 +1229,8 @@ function vBord(){
       <div class="bord-tache-txt"><b>Rien d'urgent</b>
       <small>Aucune panne en cours, aucun document échu.</small></div></div>`;
 
-  /* ── Bloc 2 : caisse ── */
-  /* Semaine bornée des deux côtés : une ligne datée par erreur dans le
+  /* ── Argent de la semaine ──
+     Semaine bornée des deux côtés : une ligne datée par erreur dans le
      futur (ex. décembre au lieu d'octobre) ne doit pas compter ici. */
   const lundiSem=lundiDe(auj()), dimSem=ajoutJours(lundiSem,6);
   const dansSemaine = m => m.date>=lundiSem && m.date<=dimSem;
@@ -1220,13 +1239,35 @@ function vBord(){
   /* Sorties de la semaine, flotte et externes confondues : ce qui est
      réellement parti de la caisse. Même test que caisse() : tout ce qui
      n'est pas une entrée est une sortie. */
-  const depSem=D.mouvements.filter(m=>m.sens!=="entree"&&dansSemaine(m))
-    .reduce((s,m)=>s+(Number(m.montant)||0),0);
+  const sortiesSem=D.mouvements.filter(m=>m.sens!=="entree"&&dansSemaine(m));
+  const depSem=sortiesSem.reduce((s,m)=>s+(Number(m.montant)||0),0);
+  const depFlotte=sortiesSem.filter(m=>m.nature==="flotte").reduce((s,m)=>s+(Number(m.montant)||0),0);
+  const depExt=depSem-depFlotte;
   const netSem=recSem-depSem;
+  const apportsSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="dg"&&dansSemaine(m));
+  const pFlotte = depSem ? Math.round(depFlotte/depSem*100) : 0;
+
+  /* Les plus grosses sorties d'abord : c'est ce que la direction veut
+     voir. Le reste est dans Rapports. */
+  const grosses=[...sortiesSem].sort((a,b)=>(Number(b.montant)||0)-(Number(a.montant)||0)).slice(0,5);
+  let lignesArgent="";
+  for(const m of grosses)
+    lignesArgent+=`<div class="dir-ligne">
+      <div class="dir-ligne-lib">${esc(m.libelle)}<small>${dateCourte(m.date)} · ${m.nature==="flotte"?"réparation":"externe"}</small></div>
+      <div class="dir-ligne-val">−${fmt(m.montant)}</div></div>`;
+  if(sortiesSem.length > grosses.length){
+    const n = sortiesSem.length-grosses.length;
+    lignesArgent+=`<div class="dir-sub" style="padding:8px 0 4px">+ ${n} autre${n>1?"s":""} dépense${n>1?"s":""}, détail dans Rapports</div>`;
+  }
+  for(const m of apportsSem)
+    lignesArgent+=`<div class="dir-ligne">
+      <div class="dir-ligne-lib">${esc(m.libelle)}<small>${dateCourte(m.date)} · entrée</small></div>
+      <div class="dir-ligne-val plus">+${fmt(m.montant)}</div></div>`;
+
   const CIRC=2*Math.PI*25;
   const couleurAnneau = c.sousSeuil ? "var(--minium)" : pct<0.4 ? "var(--sable)" : "var(--vert)";
 
-  /* ── Bloc 3 : flotte, camions à problème en tête ── */
+  /* ── Flotte, camions à problème en tête ── */
   const rangs=[];
   for(const cam of actifs){
     const pImmo=D.pannes.find(p=>p.camion_id===cam.id&&p.immobilise&&!p.immob_fin);
@@ -1236,74 +1277,62 @@ function vBord(){
     /* pt : couleur du point de statut. Minium seulement quand quelque chose
        t'attend (aucun garage choisi, ou document échu) ; sable quand c'est
        déjà pris en charge (garage affecté) ; gris pour le reste, sans alarme. */
-    let cls="ok", pt="g", etat="En route", tonEtat="", court="";
+    let pt="g", tonEtat="", court="";
     if(pImmo){
-      cls="immo"; tonEtat="r";
+      tonEtat="r";
       const g=pOuv&&pOuv.garage_id ? nomGarage(pOuv.garage_id) : null;
-      etat = g ? `Immobilisé · chez ${g}` : `Immobilisé · ${joursArret(pImmo)} j sans garage`;
       pt = g ? "s" : "m";
       court = g ? "Immobilisé" : "Sans garage";
     } else if(pOuv){
-      cls="panne"; tonEtat="o";
-      etat = pOuv.garage_id ? `Au garage · ${nomGarage(pOuv.garage_id)}` : "Panne à affecter";
+      tonEtat="o";
       pt = pOuv.garage_id ? "s" : "m";
       court = pOuv.garage_id ? "Au garage" : "À affecter";
     } else if(docPire && docPire.etat==="echue"){
-      cls="panne"; tonEtat="r"; pt="m";
-      etat = `${docPire.libelle} échue`;
+      tonEtat="r"; pt="m";
       court = docPire.libelle;
-    } else if(docPire){
-      cls="ok"; tonEtat="";
-      etat = docPire.type==="vidange"||docPire.type==="pneus"
-        ? `${docPire.libelle} dans ${fmtKm(docPire.reste)}`
-        : `${docPire.libelle} dans ${docPire.jours} j`;
     }
-    rangs.push({cam, cls, pt, etat, tonEtat, court,
+    rangs.push({cam, pt, tonEtat, court,
       poids: pImmo?0 : pOuv?1 : (docPire&&docPire.etat==="echue")?2 : docPire?3 : 4});
   }
   rangs.sort((a,b)=>a.poids-b.poids || a.cam.nom.localeCompare(b.cam.nom));
   const nbImmo=new Set(D.pannes.filter(p=>p.immobilise&&!p.immob_fin).map(p=>p.camion_id)).size;
   const nbRoute=actifs.length-nbImmo;
 
+  /* « signal » et non « alerte » : la classe globale .alerte ajoute marges
+     et rembourrage, elle écartait les rangées de vignettes. */
   let flotte="";
   for(const r of rangs)
-    flotte+=`<div class="bord-vig ${r.court?"alerte":""}" onclick="aller('camions');setVue('detail','${r.cam.id}')">
+    flotte+=`<div class="bord-vig ${r.court?"signal":""}" onclick="aller('camions');setVue('detail','${r.cam.id}')">
       <div class="bord-vig-pt ${r.pt}"></div>
       <div class="bord-vig-nom">${esc(r.cam.nom)}</div>
       ${r.court ? `<div class="bord-vig-et ${r.tonEtat}">${esc(r.court)}</div>` : ""}
     </div>`;
+  const segments = actifs.map((_,i)=>`<i class="${i<Math.max(0,nbRoute)?"":"immo"}"></i>`).join("");
 
-  /* ── Bloc collecte de la semaine ──
+  /* ── Collecte de la semaine ──
      Un camion immobilisé n'a pas de recette à attendre : on ne le compte
-     ni dans les manquants, ni dans les barres. Sinon il ferait croire à
-     un oubli de saisie chaque semaine. */
-  const lundiCur = lundiDe(auj());
+     pas dans les manquants. Sinon il ferait croire à un oubli de saisie
+     chaque semaine. */
   const horsService = c => D.pannes.some(p=>p.camion_id===c.id && p.immobilise && !p.immob_fin);
   const attendus = actifs.filter(c=>!horsService(c));
-  const recSemaine = attendus.map(c=>({
-    nom: c.nom,
-    montant: Number(recetteSemaine(c.id, lundiCur)?.montant || 0)
-  }));
-  const nbEncaisses = recSemaine.filter(r=>r.montant>0).length;
+  const recSemaine = attendus.map(c=>Number(recetteSemaine(c.id, lundiSem)?.montant || 0));
+  const nbEncaisses = recSemaine.filter(v=>v>0).length;
   const restants = attendus.length - nbEncaisses;
+  const totalRec = recSemaine.reduce((s,v)=>s+v,0);
 
   /* Le bandeau n'apparaît qu'en fin de semaine, ou dès que la collecte a
      commencé. Affiché en permanence dès le lundi, il deviendrait du décor. */
-  const jourSem = new Date(auj()+"T12:00:00").getDay();
   const finSemaine = jourSem===5 || jourSem===6 || jourSem===0;
   const montrerCollecte = admin() && restants>0 && (finSemaine || nbEncaisses>0);
   const bandeauCollecte = montrerCollecte
-    ? `<div class="bord-collecte z-collecte" onclick="aller('vendredi')">
+    ? `<div class="bord-collecte" onclick="aller('vendredi')">
         <b>Collecte de la semaine · ${restants} camion${restants>1?"s":""} restant${restants>1?"s":""}</b>
         <i>→</i></div>`
     : "";
 
-  const maxRec = Math.max(1, ...recSemaine.map(r=>r.montant));
-  const totalRec = recSemaine.reduce((s,r)=>s+r.montant,0);
-
   /* Semaine précédente, même méthode, sur TOUS les camions actifs : un
      camion immobilisé aujourd'hui a pu rouler la semaine dernière. */
-  const lundiPrec = ajoutJours(lundiCur, -7);
+  const lundiPrec = ajoutJours(lundiSem, -7);
   const totalPrec = actifs.reduce((s,c)=>s+Number(recetteSemaine(c.id, lundiPrec)?.montant||0), 0);
   /* La tendance n'apparaît qu'une fois la collecte complète. À
      mi-semaine, comparer une semaine à moitié saisie à une semaine
@@ -1312,110 +1341,100 @@ function vBord(){
   if(totalPrec>0 && nbEncaisses>0 && restants===0){
     const d = Math.round((totalRec-totalPrec)/totalPrec*100);
     const fleche = d>0 ? "↑" : d<0 ? "↓" : "=";
-    const couleur = d>0 ? "var(--vert)" : d<0 ? "var(--minium)" : "var(--encre-doux)";
+    const couleur = d>0 ? "var(--vert)" : d<0 ? "#B8503A" : "var(--encre-doux)";
     tendance = ` · <b style="color:${couleur}">${fleche} ${Math.abs(d)} %</b>`;
   }
-  let barres="";
-  for(const r of recSemaine)
-    barres+=`<div class="bord-barre ${r.montant?"":"vide"}"
-      style="height:${r.montant ? Math.max(6, Math.round(r.montant/maxRec*100)) : 6}%"
-      title="${esc(r.nom)} · ${r.montant ? fmt(r.montant) : "pas encore encaissé"}"></div>`;
+  /* Tant que rien n'est encaissé, on dit QUAND a lieu la collecte plutôt
+     qu'un « 0 / 12 » qui ressemble à un échec. */
+  const quand = jourSem===5 ? "Ce soir" : jourSem===4 ? "Demain"
+              : (jourSem===6 || jourSem===0) ? "À saisir" : "Vendredi";
+  const valCollecte = nbEncaisses ? `${nbEncaisses} <small>/ ${attendus.length}</small>` : quand;
+  const subCollecte = nbEncaisses
+    ? `${fmtF(totalRec)} encaissés${restants ? ` · ${restants} en attente` : ""}`
+    : `${attendus.length} camion${attendus.length>1?"s":""} attendu${attendus.length>1?"s":""}`;
 
-  /* ── Bloc 4 : derniers mouvements ── */
-  const derniers=[...D.mouvements].sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,5);
-  let mouv="";
-  for(const m of derniers){
-    const plus=m.sens==="entree";
-    mouv+=`<div class="bord-mouv-item">
-      <div><div class="bord-mouv-lib">${esc(m.libelle)}</div>
-        <div class="bord-mouv-date">${dateCourte(m.date)} · ${esc(etiquetteMouvement(m))}</div></div>
-      <div class="bord-mouv-val ${plus?"plus":"moins"}">${plus?"+":"−"}${fmt(m.montant)}</div>
-    </div>`;
-  }
-  if(!derniers.length) mouv=`<div style="color:#5a5a6a;font-size:11px;padding:8px 0">Aucun mouvement enregistré.</div>`;
-
-  /* ── Actions ── */
-  let btns="";
-  if(admin()) btns=`<div class="bord-btn-grid z-btns">
+  /* ── Actions, pour l'admin seul : la direction consulte ── */
+  const actions = admin() ? `<div class="dir-actions">
     <button class="bord-btn primary" onclick="formPanneAdmin()">＋ Panne</button>
     <button class="bord-btn sec" onclick="formSortie()">Dépense</button>
     <button class="bord-btn sec" onclick="formApportDG()">Apport DG</button>
     <button class="bord-btn sec" onclick="aller('vendredi')">Collecte</button>
     <button class="bord-btn full" onclick="formRecapWeekend()">📊 Récap du weekend → DG</button>
-  </div>`;
+  </div>` : "";
 
-  /* L'ordre du HTML ci-dessous est celui du TÉLÉPHONE. Sur ordinateur,
-     la grille nommée de .bord-wrap replace les blocs en deux colonnes
-     sans qu'on ait à dupliquer le balisage. */
-  return `<div class="bord-wrap">
+  return `<div class="dir">
   ${bandeauCollecte}
 
-  <div class="bord-caisse z-caisse">
-    <div>
-      <div class="bord-caisse-lbl">En caisse</div>
-      <div class="bord-caisse-val">${fmtF(c.solde)}</div>
-      ${c.sousSeuil ? `<div class="bord-caisse-sub alerte">Sous le seuil de ${fmtF(c.seuil)}</div>` : ""}
-      <div class="bord-caisse-sub ${netSem<0?"alerte":""}">${
-        depSem ? `+${fmt(recSem)} − ${fmt(depSem)} = ${netSem<0?"−":"+"}${fmtF(Math.abs(netSem))} cette semaine`
-        : `+${fmtF(recSem)} cette semaine`}</div>
-      ${c.nbARegler ? `<div class="bord-caisse-sub" style="color:var(--encre-doux)">À régler aux garages : ${
-          c.engage ? `~${fmtF(c.engage)}` : "non chiffré"} (${c.nbARegler}${
-          c.engage && c.sansEstimation ? `, dont ${c.sansEstimation} non chiffrée${c.sansEstimation>1?"s":""}` : ""})${
-          c.engage ? ` → <b style="color:var(--encre)">disponible ${fmtF(c.previsionnel)}</b>` : ""}</div>` : ""}
-    </div>
-    <svg class="bord-caisse-anneau" viewBox="0 0 60 60">
-      <circle cx="30" cy="30" r="25" fill="none" stroke="var(--ciment-fonce)" stroke-width="6"/>
-      <circle cx="30" cy="30" r="25" fill="none" stroke="${couleurAnneau}" stroke-width="6"
-        stroke-dasharray="${CIRC.toFixed(1)}"
-        stroke-dashoffset="${(CIRC*(1-pct)).toFixed(1)}"
-        stroke-linecap="round" transform="rotate(-90 30 30)"/>
-      <text x="30" y="34" text-anchor="middle" font-family="Archivo" font-size="12" font-weight="800"
-        fill="#1B2660">${Math.round(pct*100)}%</text>
-    </svg>
+  <div>
+    <div class="dir-date">${esc(dateTitre)}</div>
+    <h1 class="dir-titre">Bonjour.</h1>
   </div>
 
-  <div class="bord-section z-taches">
-    <div class="bord-section-head">
-      <span class="lbl">À traiter aujourd'hui</span>
-      <span class="ct">${taches.length || "—"}</span>
+  ${actions}
+
+  <div class="dir-cartes">
+    <div class="dir-carte caisse">
+      <svg class="dir-anneau" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="25" fill="none" stroke="var(--ciment-fonce)" stroke-width="5"/>
+        <circle cx="30" cy="30" r="25" fill="none" stroke="${couleurAnneau}" stroke-width="5"
+          stroke-dasharray="${CIRC.toFixed(1)}"
+          stroke-dashoffset="${(CIRC*(1-pct)).toFixed(1)}"
+          stroke-linecap="round" transform="rotate(-90 30 30)"/>
+        <text x="30" y="34" text-anchor="middle" font-family="Archivo" font-size="11" font-weight="800"
+          fill="#1B2660">${Math.round(pct*100)}%</text>
+      </svg>
+      <div class="dir-carte-corps">
+        <div class="dir-lbl">En caisse</div>
+        <div class="dir-val">${fmtF(c.solde)}</div>
+        ${c.sousSeuil ? `<span class="dir-pastille">Sous le seuil de ${fmtF(c.seuil)}</span>` : ""}
+        <div class="dir-sub ${netSem<0?"rouge":""}">${
+          depSem ? `+${fmt(recSem)} − ${fmt(depSem)} = ${netSem<0?"−":"+"}${fmtF(Math.abs(netSem))} cette semaine`
+          : `+${fmtF(recSem)} cette semaine`}</div>
+        ${c.nbARegler ? `<div class="dir-sub">À régler aux garages : ${
+            c.engage ? `~${fmtF(c.engage)}` : "non chiffré"} (${c.nbARegler}${
+            c.engage && c.sansEstimation ? `, dont ${c.sansEstimation} non chiffrée${c.sansEstimation>1?"s":""}` : ""})${
+            c.engage ? ` → <b style="color:var(--encre)">disponible ${fmtF(c.previsionnel)}</b>` : ""}</div>` : ""}
+      </div>
     </div>
-    ${listeTaches}
+
+    <div class="dir-carte clic" onclick="aller('camions')">
+      <div class="dir-lbl">Camions disponibles</div>
+      <div class="dir-val">${Math.max(0,nbRoute)} <small>/ ${actifs.length}</small></div>
+      <div class="dir-segments">${segments}</div>
+      <div class="dir-sub">${nbImmo ? `${nbImmo} immobilisé${nbImmo>1?"s":""}` : "Aucun camion immobilisé"}</div>
+    </div>
+
+    <div class="dir-carte ${admin()?"clic":""}"${admin()?` onclick="aller('vendredi')"`:""}>
+      <div class="dir-lbl">Collecte de la semaine</div>
+      <div class="dir-val">${valCollecte}</div>
+      <div class="dir-sub">${subCollecte}</div>
+      ${totalPrec ? `<div class="dir-sub">Semaine dernière : ${fmtF(totalPrec)}${tendance}</div>` : ""}
+    </div>
   </div>
 
-  <div class="bord-section z-flotte">
-    <div class="bord-section-head">
-      <span class="lbl">Flotte</span>
-      <span class="ct">${nbRoute} en route · ${nbImmo} immobilisé${nbImmo>1?"s":""}</span>
-    </div>
+  <div class="dir-duo">
+    <section class="dir-bloc argent">
+      <div class="dir-bloc-tete"><h2>Où est parti l'argent cette semaine</h2><b>${fmtF(depSem)}</b></div>
+      ${depSem ? `<div class="dir-repart"><i style="width:${pFlotte}%;background:var(--vert)"></i><i style="width:${100-pFlotte}%;background:var(--sable)"></i></div>
+      <div class="dir-legende">
+        <span><i style="background:var(--vert)"></i>Réparations · ${fmtF(depFlotte)}</span>
+        <span><i style="background:var(--sable)"></i>Autres dépenses · ${fmtF(depExt)}</span>
+      </div>` : `<div class="dir-sub" style="padding-bottom:6px">Aucune dépense cette semaine.</div>`}
+      ${lignesArgent}
+    </section>
+
+    <section class="dir-bloc attention">
+      <div class="dir-bloc-tete"><h2>Ce qui demande votre attention</h2><b>${taches.length || "—"}</b></div>
+      ${listeTaches}
+    </section>
+  </div>
+
+  <section class="dir-bloc">
+    <div class="dir-bloc-tete"><h2>Flotte</h2>
+      <span class="dir-sub">${Math.max(0,nbRoute)} en route · ${nbImmo} immobilisé${nbImmo>1?"s":""}</span></div>
     <div class="bord-grille">${flotte}</div>
-  </div>
-
-  ${attendus.length ? `<div class="bord-section z-recettes">
-    <div class="bord-section-head">
-      <span class="lbl">Recettes de la semaine</span>
-      <span class="ct">${nbEncaisses}/${attendus.length}</span>
-    </div>
-    <div class="bord-barres">${barres}</div>
-    <div class="bord-barres-pied">${fmtF(totalRec)} encaissés${
-      restants ? ` · ${restants} camion${restants>1?"s":""} en attente` : ""}${
-      totalPrec ? ` · semaine dernière ${fmtF(totalPrec)}` : ""}${tendance}</div>
-  </div>` : ""}
-
-  <div class="bord-section z-mouv">
-    <div class="bord-section-head"><span class="lbl">Derniers mouvements</span></div>
-    ${mouv}
-  </div>
-
-  ${btns}
+  </section>
   </div>`;
-}
-function etiquetteMouvement(m){
-  if(m.sens==="entree"){
-    if(m.source==="dg") return "Apport DG";
-    if(m.source==="ouverture") return "Ouverture";
-    return "Recette";
-  }
-  return m.nature==="flotte" ? "Flotte" : "Externe";
 }
 function lignePanne(p){
   const tags={signalee:["t-rouge","à affecter"],affectee:["t-gris","au garage"],terminee:["t-vert","à régler"]}[p.statut]||["t-gris",p.statut];
