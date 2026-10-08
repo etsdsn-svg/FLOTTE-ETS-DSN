@@ -2050,7 +2050,11 @@ window.supprimerRecette = async (mouvementId, camionId) => {
 };
 
 /* ================= 10. CAISSE : SORTIES ET APPORTS ================= */
-const CATEGORIES=["Besoin société","Avance personnel","Demande du DG","Abonnement","TVM","Visite technique","Assurance","Autre"];
+const CATEGORIES=["Besoin société","Avance personnel","Demande du DG","Abonnement","Dépenses camions","TVM","Visite technique","Assurance","Autre"];
+/* Catégories qui s'imputent toujours à un camion précis : sans camion,
+   la dépense n'entrerait dans le bilan d'aucun camion (colonne « Autres »
+   des rapports), et la TVM ne pourrait pas calculer son échéance. */
+const CATEGORIES_CAMION=["Dépenses camions","TVM","Visite technique","Assurance"];
 
 /* Les catégories déjà saisies à la main, pour les resuggérer.
    On exclut celles de la liste fixe : elles sont déjà dans le menu. */
@@ -2117,7 +2121,7 @@ window.formSortie = (preremplir) => {
       /* Le champ camion reste visible quelle que soit la catégorie :
          carburant, pneus, lavage, amende… beaucoup de dépenses concernent
          un camion précis sans être des pannes. Il reste facultatif, sauf
-         pour la TVM dont l'échéance se calcule camion par camion. */
+         pour les CATEGORIES_CAMION (TVM, assurance…). */
       if(estTVM){ document.getElementById("s-camion").focus(); }
     });
 };
@@ -2137,7 +2141,7 @@ window.validerSortie = async () => {
     if(!precis) return toast("Précise la catégorie.");
     cat = precis;   /* la précision REMPLACE « Autre » */
   }
-  if(cat==="TVM" && !camionId) return toast("Choisis le camion concerné par la TVM.");
+  if(CATEGORIES_CAMION.includes(cat) && !camionId) return toast(`Choisis le camion concerné (${cat}).`);
   const {error}=await sb.from("sb2_mouvements").insert({date:val("s-date")||auj(),sens:"sortie",
     nature:"externe",montant:v,libelle:lib,categorie:cat, camion_id: camionId || null});
   if(error) return toast("Échec : "+error.message);
@@ -2213,7 +2217,7 @@ window.validerCorrectionDepense = async id => {
     if(!precis) return refus("Précise la catégorie.");
     cat = precis;
   }
-  if(cat==="TVM" && !camionId) return refus("Choisis le camion concerné par la TVM.");
+  if(CATEGORIES_CAMION.includes(cat) && !camionId) return refus(`Choisis le camion concerné (${cat}).`);
 
   const {error} = await sb.from("sb2_mouvements").update({
     date: val("s-date")||auj(), montant:v, libelle:lib,
