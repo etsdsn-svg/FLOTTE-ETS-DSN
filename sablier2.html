@@ -1065,19 +1065,38 @@ function tachesDuJour(){
   const ec = enCours();
 
   /* 1. Un document echu ou sur le point de l'etre sur un camion qui roule :
-        c'est ce qui bloque un chargement du jour au lendemain. */
+        c'est ce qui bloque un chargement du jour au lendemain.
+        Les camions qui ont le meme probleme (meme document, meme etat)
+        sont regroupes en une seule ligne : dix lignes « TVM echue »
+        identiques noieraient une vraie urgence plus bas dans la liste. */
+  const groupes = new Map();
   for(const c of actifs){
     const immo = D.pannes.some(p=>p.camion_id===c.id && p.immobilise && !p.immob_fin);
     for(const d of documentsCamion(c)){
       if(d.etat!=="echue" && d.etat!=="proche") continue;
       if(d.type==="vidange" || d.type==="pneus") continue; /* traites plus bas */
-      const bloquant = !immo && d.etat==="echue";
-      t.push({
-        rang: bloquant ? 0 : 1,
-        ton: d.etat==="echue" ? "" : "j",
-        titre: `${c.nom} — ${d.libelle} ${d.etat==="echue" ? "échue" : `dans ${d.jours} j`}`,
+      const cle = `${d.libelle}|${d.etat}|${immo}`;
+      if(!groupes.has(cle)) groupes.set(cle, {d, immo, liste:[]});
+      groupes.get(cle).liste.push({c, jours:d.jours});
+    }
+  }
+  for(const {d, immo, liste} of groupes.values()){
+    const bloquant = !immo && d.etat==="echue";
+    const base = { rang: bloquant ? 0 : 1, ton: d.etat==="echue" ? "" : "j" };
+    if(liste.length===1){
+      const {c, jours} = liste[0];
+      t.push({ ...base,
+        titre: `${c.nom} — ${d.libelle} ${d.etat==="echue" ? "échue" : `dans ${jours} j`}`,
         detail: immo ? "Camion déjà immobilisé" : "Camion en service — blocage à prévoir",
         action: () => { aller("camions"); setVue("detail", c.id); }
+      });
+    } else {
+      const noms = liste.map(x => d.etat==="echue" ? x.c.nom : `${x.c.nom} (${x.jours} j)`);
+      t.push({ ...base,
+        titre: `${liste.length} camions — ${d.libelle} ${d.etat==="echue" ? "échue" : "bientôt échue"}`,
+        detail: (immo ? "Déjà immobilisés · " : "En service — blocage à prévoir · ")
+              + noms.slice(0,4).join(" · ") + (noms.length>4 ? ` +${noms.length-4}` : ""),
+        action: () => aller("camions")
       });
     }
   }
@@ -1192,12 +1211,16 @@ function vBord(){
       <small>Aucune panne en cours, aucun document échu.</small></div></div>`;
 
   /* ── Bloc 2 : caisse ── */
-  const recSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="recette"&&m.date>=lundiDe(auj()))
-    .reduce((s,m)=>s+Number(m.montant),0);
-  /* Sorties depuis lundi, flotte et externes confondues : ce qui est
+  /* Semaine bornée des deux côtés : une ligne datée par erreur dans le
+     futur (ex. décembre au lieu d'octobre) ne doit pas compter ici. */
+  const lundiSem=lundiDe(auj()), dimSem=ajoutJours(lundiSem,6);
+  const dansSemaine = m => m.date>=lundiSem && m.date<=dimSem;
+  const recSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="recette"&&dansSemaine(m))
+    .reduce((s,m)=>s+(Number(m.montant)||0),0);
+  /* Sorties de la semaine, flotte et externes confondues : ce qui est
      réellement parti de la caisse. Même test que caisse() : tout ce qui
      n'est pas une entrée est une sortie. */
-  const depSem=D.mouvements.filter(m=>m.sens!=="entree"&&m.date>=lundiDe(auj()))
+  const depSem=D.mouvements.filter(m=>m.sens!=="entree"&&dansSemaine(m))
     .reduce((s,m)=>s+(Number(m.montant)||0),0);
   const netSem=recSem-depSem;
   const CIRC=2*Math.PI*25;
@@ -1331,9 +1354,9 @@ function vBord(){
     <div>
       <div class="bord-caisse-lbl">En caisse</div>
       <div class="bord-caisse-val">${fmtF(c.solde)}</div>
-      <div class="bord-caisse-sub ${c.sousSeuil?"alerte":""}">${
-        c.sousSeuil ? `Sous le seuil de ${fmtF(c.seuil)}`
-        : depSem ? `+${fmt(recSem)} − ${fmt(depSem)} = ${netSem<0?"−":"+"}${fmtF(Math.abs(netSem))} cette semaine`
+      ${c.sousSeuil ? `<div class="bord-caisse-sub alerte">Sous le seuil de ${fmtF(c.seuil)}</div>` : ""}
+      <div class="bord-caisse-sub ${netSem<0?"alerte":""}">${
+        depSem ? `+${fmt(recSem)} − ${fmt(depSem)} = ${netSem<0?"−":"+"}${fmtF(Math.abs(netSem))} cette semaine`
         : `+${fmtF(recSem)} cette semaine`}</div>
       ${c.nbARegler ? `<div class="bord-caisse-sub" style="color:var(--encre-doux)">À régler aux garages : ${
           c.engage ? `~${fmtF(c.engage)}` : "non chiffré"} (${c.nbARegler}${
