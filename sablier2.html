@@ -195,6 +195,35 @@ td.n{font-family:"Archivo";font-variant-numeric:tabular-nums;font-weight:500;whi
 .t-vert{background:var(--craie);color:var(--vert);border-color:var(--filet-fonce)}
 .t-gris{background:var(--ciment);color:var(--encre-doux);border-color:var(--filet)}
 
+/* ── Rapports : pannes de la période, camion par camion ── */
+.pn-resume{display:flex;flex-wrap:wrap;gap:4px 16px;padding-bottom:10px;margin-bottom:2px;
+  border-bottom:1px solid var(--filet);font-family:var(--mono);font-size:11px;color:var(--encre)}
+.pn-resume b{color:var(--nuit)}
+.pn-revient{margin:8px 0 0;font-family:var(--mono);font-size:11px;color:var(--encre)}
+.pn-revient b{color:var(--nuit)}
+.pn-camion{padding:9px 0 8px;border-bottom:1px solid var(--ciment)}
+.pn-tete{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.pn-tete b{font-family:var(--mono);font-size:12.5px;color:var(--nuit)}
+.pn-tete span{font-family:var(--mono);font-size:10.5px;color:var(--encre-doux);white-space:nowrap}
+.pn-ligne{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;
+  flex-wrap:wrap;padding:5px 0 0 12px}
+.pn-quoi{font-size:13px;color:var(--encre);min-width:0}
+.pn-etat{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pn-etat small{font-family:var(--mono);font-size:10px;color:var(--encre-doux)}
+.pn-mois{display:flex;align-items:baseline;gap:4px 14px;flex-wrap:wrap;padding:8px 0;
+  border-bottom:1px solid var(--ciment)}
+.pn-mois b{flex:0 0 88px;font-family:var(--mono);font-size:12px;color:var(--nuit)}
+.pn-mois .pn-quoi{flex:1 1 220px}
+.pn-dur{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--encre-doux);white-space:nowrap}
+.pn-note{margin:10px 0 0;font-size:11px}
+td.pn-col{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+/* Tableau annuel : les colonnes de chiffres ne sont pas les dernières,
+   il leur faut une marge à droite (th.n/td.n l'enlèvent par défaut). */
+.pn-annee{margin-top:8px}
+.pn-annee th.n,.pn-annee td.n{padding-right:18px}
+/* Minium foncé : lisible en petit, même imprimé. */
+.pn-resume b.pn-rouge,.pn-tete span.pn-rouge,.pn-dur.pn-rouge,td.pn-rouge{color:#B8503A;font-weight:700}
+
 #modale{position:fixed;inset:0;z-index:80;background:rgba(20,23,26,.5);display:none;align-items:flex-end;justify-content:center}
 #modale.on{display:flex}
 #modale-in{background:var(--craie);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;
@@ -2818,40 +2847,52 @@ function vRapports(){
 
   h += `<div class="titre-sec">Où est passé l'argent</div>` + blocFlux(t);
 
+  /* Pannes qui ont touché chaque camion pendant la période : elles
+     expliquent une recette basse, d'où leur place juste à côté. */
+  const gp = pannesParCamion(b.d1,b.d2);
+  const pannesDe = new Map(gp.map(g=>[g.id,g]));
   if(per==="semaine"){
     h+=`<div class="titre-sec">Recettes par camion</div><div class="carte"><div class="scroll-x"><table><thead><tr>
-      <th>Camion</th><th>Chauffeur</th><th class="n">Recette</th><th class="n">Réparations</th><th class="n">Autres</th></tr></thead><tbody>`;
+      <th>Camion</th><th>Chauffeur</th><th class="n">Recette</th><th>Pannes</th><th class="n">Réparations</th><th class="n">Autres</th></tr></thead><tbody>`;
     let vide=true;
     for(const c of D.camions){
-      const bb=bilanCamion(c.id,b.d1,b.d2);
+      const bb=bilanCamion(c.id,b.d1,b.d2), g=pannesDe.get(c.id);
       /* « Autres » : carburant, pneus, TVM… saisies avec ce camion depuis
          le bouton Dépense. Un camion qui n'a que cela sur la semaine doit
-         apparaître aussi. */
-      if(!bb.recette&&!bb.reparations&&!bb.externes) continue;
+         apparaître aussi, de même qu'un camion immobilisé sans recette. */
+      if(!bb.recette&&!bb.reparations&&!bb.externes&&!g) continue;
       vide=false; const ch=chauffeurDe(c.id,b.d2);
       h+=`<tr><td><b>${esc(c.nom)}</b></td><td>${ch?esc(ch.nom):"—"}</td>
-        <td class="n">${fmt(bb.recette)}</td><td class="n">${fmt(bb.reparations)}</td><td class="n">${fmt(bb.externes)}</td></tr>`;
+        <td class="n">${fmt(bb.recette)}</td>
+        <td class="pn-col${g&&g.arret?" pn-rouge":""}">${g ? g.pannes.length+(g.arret?` · arrêt ${g.arret} j`:"") : "—"}</td>
+        <td class="n">${fmt(bb.reparations)}</td><td class="n">${fmt(bb.externes)}</td></tr>`;
     }
-    if(vide) h+=`<tr><td colspan="5" class="mt">Aucun mouvement cette semaine.</td></tr>`;
+    if(vide) h+=`<tr><td colspan="6" class="mt">Aucun mouvement cette semaine.</td></tr>`;
     h+=`</tbody></table></div></div>`;
+    h+=`<div class="titre-sec">Pannes de la semaine</div>`+sectionPannes(gp,"semaine");
     h+=`<div class="titre-sec">Détail des interventions</div>`+tableauPannes(b.d1,b.d2);
     h+=`<div class="titre-sec">Dépenses externes</div>`+tableauExternes(b.d1,b.d2);
   } else {
     h+=`<div class="titre-sec">Quels camions nourrissent, lesquels mangent</div>
       <div class="carte"><div class="scroll-x"><table><thead><tr>
       <th>Camion</th><th class="n">Recette</th><th class="n">Pièces</th><th class="n">MO</th>
-      <th class="n">Autres</th><th class="n">Arrêt</th><th class="n">Manque</th><th class="n">Net</th></tr></thead><tbody>`;
+      <th class="n">Autres</th><th class="n">Pannes</th><th class="n">Arrêt</th><th class="n">Manque</th><th class="n">Net</th></tr></thead><tbody>`;
     /* « Autres » : les dépenses externes rattachées au camion (carburant,
        pneus, TVM…). Elles étaient déjà dans le net ; sans la colonne, le
-       net ne s'additionnait pas sous les yeux du lecteur. */
-    const l=D.camions.map(c=>({c,b:bilanCamion(c.id,b.d1,b.d2)}))
-      .filter(x=>x.b.recette||x.b.reparations||x.b.externes).sort((a,z)=>a.b.net-z.b.net);
-    if(!l.length) h+=`<tr><td colspan="8" class="mt">Aucun mouvement sur la période.</td></tr>`;
+       net ne s'additionnait pas sous les yeux du lecteur.
+       « Pannes » : nombre de pannes qui ont touché le camion sur la
+       période. Arrêt, Manque et Net restent calculés à la date de paiement
+       (chiffres figés des périodes clôturées). */
+    const l=D.camions.map(c=>({c,b:bilanCamion(c.id,b.d1,b.d2),g:pannesDe.get(c.id)}))
+      .filter(x=>x.b.recette||x.b.reparations||x.b.externes||x.g).sort((a,z)=>a.b.net-z.b.net);
+    if(!l.length) h+=`<tr><td colspan="9" class="mt">Aucun mouvement sur la période.</td></tr>`;
     for(const x of l) h+=`<tr><td><b>${esc(x.c.nom)}</b></td><td class="n">${fmt(x.b.recette)}</td>
       <td class="n">${fmt(x.b.pieces)}</td><td class="n">${fmt(x.b.mo)}</td><td class="n">${fmt(x.b.externes)}</td>
+      <td class="n">${x.g?x.g.pannes.length:"—"}</td>
       <td class="n">${x.b.arret||"—"}</td><td class="n">${fmt(x.b.manque)}</td>
       <td class="n" style="font-weight:700;color:${x.b.net<0?"var(--minium)":"var(--vert)"}">${fmt(x.b.net)}</td></tr>`;
     h+=`</tbody></table></div><p class="mt" style="margin-top:10px">Du plus coûteux au plus rentable.</p></div>`;
+    h+=`<div class="titre-sec">${per==="mois"?"Pannes du mois":"Pannes de l'année"} · par camion</div>`+sectionPannes(gp,per);
     h+=`<div class="titre-sec">Dépenses externes</div>`+tableauExternes(b.d1,b.d2);
   }
 
@@ -2867,6 +2908,124 @@ function vRapports(){
   </div>`;
   return h;
 }
+/* ── Pannes d'une période, vues camion par camion ──
+   Une panne « touche » la période si elle a été signalée avant la fin de
+   la période et n'était pas encore close à son début. Close = payée (date
+   de paiement) ou terminée (fin des travaux) ; sinon elle est en cours.
+   Les jours d'arrêt sont les jours OUVRÉS d'immobilisation tombés DANS la
+   période (même règle que joursArret : 5 par semaine au plus).
+   Ils peuvent différer de la colonne « Arrêt » des tableaux mensuel et
+   annuel, qui compte une panne entière à sa date de paiement : celle-là
+   reste inchangée, pour que les chiffres des périodes clôturées restent
+   figés (décision du 12/10/2026). */
+const abrege = (s,n) => { s=String(s||"").trim(); return s.length>n ? s.slice(0,n-1)+"…" : s; };
+const ETAT_PANNE = { signalee:["t-rouge","signalée"], affectee:["t-ocre","au garage"],
+                     terminee:["t-vert","terminée"], payee:["t-gris","payée"] };
+function finPanne(p){
+  if(p.statut==="payee") return String(p.date_paiement||"").slice(0,10) || null;
+  if(p.statut==="terminee") return String(p.date_fin_travaux||p.immob_fin||"").slice(0,10) || null;
+  return null;
+}
+function arretDansPeriode(p,d1,d2){
+  if(!p.immobilise || !p.immob_debut) return 0;
+  const debut = p.immob_debut.slice(0,10) > d1 ? p.immob_debut.slice(0,10) : d1;
+  /* Sans date de reprise, une panne close s'arrête à sa clôture ; une
+     panne en cours, à aujourd'hui. Jamais de jours dans le futur. */
+  let fin = String(p.immob_fin || finPanne(p) || auj()).slice(0,10);
+  if(fin > d2) fin = d2;
+  if(fin > auj()) fin = auj();
+  return fin < debut ? 0 : joursOuvres(debut, fin);
+}
+function pannesParCamion(d1,d2){
+  const parCamion = {};
+  for(const p of D.pannes){
+    const debut = String(p.date_signalement||p.date_affectation||"").slice(0,10);
+    if(!debut || debut > d2) continue;
+    const fin = finPanne(p);
+    if(fin && fin < d1) continue;
+    (parCamion[p.camion_id] = parCamion[p.camion_id] || []).push(p);
+  }
+  /* Deux immobilisations du même camion qui se chevauchent ne doivent pas
+     compter double : plafond = jours ouvrés écoulés de la période. */
+  const plafond = joursOuvres(d1, d2 < auj() ? d2 : auj());
+  return Object.entries(parCamion).map(([id, ps]) => {
+    ps.sort((a,b)=>String(a.date_signalement).localeCompare(String(b.date_signalement)));
+    const arret = Math.min(plafond, ps.reduce((s,p)=>s+arretDansPeriode(p,d1,d2), 0));
+    return { id, nom: nomCamion(id), pannes: ps, arret };
+  }).sort((a,b)=>b.arret-a.arret || b.pannes.length-a.pannes.length || a.nom.localeCompare(b.nom));
+}
+/* Pièces changées au moins deux fois (« pneus ×4 ») : signe d'une pièce
+   de mauvaise qualité ou d'une réparation mal faite. */
+function recurrences(pannes){
+  const n = {};
+  for(const p of pannes){
+    const k = normPiece(p.piece); if(!k) continue;
+    (n[k] = n[k] || { lib:String(p.piece).trim().toLowerCase(), nb:0 }).nb++;
+  }
+  return Object.values(n).filter(x=>x.nb>=2).sort((a,b)=>b.nb-a.nb);
+}
+const texteRecurrences = r => r.map(x=>`${esc(x.lib)} ×${x.nb}`).join(" · ");
+const resumeArret = g => `${g.pannes.length} panne${g.pannes.length>1?"s":""} · ${
+  g.arret ? `${g.arret} j d'arrêt` : "sans arrêt"}`;
+
+/* Plus la période est longue, plus le détail se resserre :
+   semaine = chaque panne ; mois = une ligne par camion ; année = un tableau. */
+function sectionPannes(gs, per){
+  const motPeriode = {semaine:"cette semaine", mois:"ce mois-ci", annee:"cette année"}[per];
+  if(!gs.length) return `<div class="carte"><p class="mt" style="margin:0">Aucune panne ${motPeriode}.</p></div>`;
+  const nb = gs.reduce((s,g)=>s+g.pannes.length, 0);
+  const jours = gs.reduce((s,g)=>s+g.arret, 0);
+  const immo = gs.filter(g=>g.arret>0).length;
+  const top = per==="annee" ? recurrences(gs.flatMap(g=>g.pannes)).slice(0,3) : [];
+  let h = `<div class="carte"><div class="pn-resume">
+      <span><b>${nb}</b> panne${nb>1?"s":""}</span>
+      <span><b>${gs.length}</b> camion${gs.length>1?"s":""} concerné${gs.length>1?"s":""}</span>
+      <span><b>${immo}</b> immobilisé${immo>1?"s":""}</span>
+      <span><b class="${jours?"pn-rouge":""}">${jours}</b> jour${jours>1?"s":""} d'arrêt</span>
+    </div>${top.length ? `<p class="pn-revient">Ce qui revient le plus : <b>${texteRecurrences(top)}</b></p>` : ""}`;
+
+  if(per==="semaine"){
+    for(const g of gs){
+      h += `<div class="pn-camion"><div class="pn-tete"><b>${esc(g.nom)}</b>
+        <span class="${g.arret?"pn-rouge":""}">${resumeArret(g)}</span></div>`;
+      for(const p of g.pannes){
+        const [cls, lib] = ETAT_PANNE[p.statut] || ["t-gris", p.statut];
+        h += `<div class="pn-ligne"><span class="pn-quoi">« ${esc(abrege(p.description||p.piece||"Panne", 90))} »</span>
+          <span class="pn-etat"><span class="tag ${cls}">${esc(lib)}</span>
+          <small>${p.garage_id ? esc(nomGarage(p.garage_id))+" · " : ""}signalée le ${
+            dateCourte(String(p.date_signalement||"").slice(0,10))}</small></span></div>`;
+      }
+      h += `</div>`;
+    }
+    return h + `</div>`;
+  }
+
+  const note = `<p class="mt pn-note">Jours ouvrés d'immobilisation tombés dans la période. Le tableau
+    ci-dessus compte l'arrêt et le manque d'une panne à sa date de paiement.</p>`;
+  if(per==="mois"){
+    for(const g of gs){
+      /* « Pneus » et « pneu » ne font qu'un : même règle que normPiece. */
+      const uniques = new Map();
+      for(const p of g.pannes){ const lib = abrege(p.piece||p.description||"Panne", 40);
+        if(!uniques.has(normPiece(lib))) uniques.set(normPiece(lib), lib); }
+      const quoi = [...uniques.values()].join(" · ");
+      h += `<div class="pn-mois"><b>${esc(g.nom)}</b><span class="pn-quoi">${esc(quoi)}</span>
+        <span class="pn-dur ${g.arret?"pn-rouge":""}">${resumeArret(g)}</span></div>`;
+    }
+    return h + note + `</div>`;
+  }
+
+  h += `<div class="scroll-x pn-annee"><table><thead><tr><th>Camion</th><th class="n">Pannes</th>
+    <th class="n">Jours d'arrêt</th><th>Ce qui revient</th></tr></thead><tbody>`;
+  for(const g of gs){
+    const r = recurrences(g.pannes).slice(0,3);
+    h += `<tr><td><b>${esc(g.nom)}</b></td><td class="n">${g.pannes.length}</td>
+      <td class="n${g.arret?" pn-rouge":""}">${g.arret||"—"}</td>
+      <td>${r.length ? texteRecurrences(r) : "—"}</td></tr>`;
+  }
+  return h + `</tbody></table></div>` + note + `</div>`;
+}
+
 function tableauPannes(d1,d2){
   const ps=D.pannes.filter(p=>p.statut==="payee"&&p.date_paiement>=d1&&p.date_paiement<=d2)
     .sort((a,b)=>a.date_paiement.localeCompare(b.date_paiement));
