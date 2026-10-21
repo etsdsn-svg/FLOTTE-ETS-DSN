@@ -323,6 +323,9 @@ td.pn-col{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
   .num,.gros{ font-variant-numeric:tabular-nums; }
   .tag{ border:.5pt solid #999 !important; background:#fff !important;
     color:#333 !important; font-size:7.5pt; padding:1pt 4pt; }
+  /* le bandeau du résultat est blanc sur couleur : sans fond imprimé, il disparaîtrait */
+  .rt-verdict{ background:#fff !important; border:.5pt solid #999; }
+  .rt-verdict b,.rt-verdict small,.rt-verdict span{ color:#000 !important; }
 
   /* ── Blocs reserves a l'impression ── */
   .imprime-entete{display:block !important}
@@ -450,6 +453,14 @@ td.pn-col{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
 .dir-segments{display:flex;gap:3px;margin:4px 0 2px}
 .dir-segments i{flex:1;height:11px;border-radius:2px;background:var(--vert)}
 .dir-segments i.immo{background:var(--sable)}
+
+/* Rentabilité d'un camion : le résultat en tête, bleu s'il gagne, brique s'il perd */
+.rt-verdict{background:var(--vert);color:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;
+  display:flex;flex-direction:column;gap:6px}
+.rt-verdict.perte{background:#B8503A}
+.rt-verdict small{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#E4E7F4}
+.rt-verdict b{font-size:30px;line-height:1.1;color:#fff}
+.rt-verdict span{font-size:13px;line-height:1.45}
 .dir-duo{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
 .dir-bloc{background:var(--craie);border:1px solid var(--filet);border-radius:var(--r);
   padding:16px 15px;min-width:0}
@@ -666,7 +677,7 @@ async function tout(construire){
 }
 
 async function charger(){
-  const [cam,ch,ga,af,ty,pa,mv,pr,clo,me,ms] = await Promise.all([
+  const [cam,ch,ga,af,ty,pa,mv,pr,clo,me,ms,co] = await Promise.all([
     sb.from("sb2_camions").select("*").order("nom"),
     sb.from("sb2_chauffeurs").select("*").order("nom"),
     sb.from("sb2_garages").select("*").order("nom"),
@@ -677,8 +688,12 @@ async function charger(){
     sb.from("sb2_prefs").select("*").maybeSingle(),
     tout(o => sb.from("sb2_clotures").select("*", o).order("d1",{ascending:false})),
     tout(o => sb.from("sb2_medias").select("*", o)),
-    tout(o => sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage", o).order("cree_le"))
+    tout(o => sb.from("sb2_messages").select("id,panne_id,expediteur_role,lu_admin,lu_chauffeur,lu_garage", o).order("cree_le")),
+    sb.from("sb2_couts_camion").select("*")
   ]);
+  /* Les coûts des camions ne bloquent pas le chargement : si leur table
+     est illisible, le reste de l'appli marche et l'onglet Rentabilité
+     le signale (D.couts vaut alors null). */
   const err = [cam,ch,ga,af,ty,pa,mv,pr,clo,me,ms].find(r=>r.error);
   if(err) throw new Error(err.error.message);
   D = {
@@ -686,6 +701,7 @@ async function charger(){
     affectations:af.data||[], types:(ty.data||[]).map(t=>t.libelle),
     pannes:pa.data||[], mouvements:mv.data||[], medias:me.data||[],
     clotures: clo.data||[], messages: ms.data||[],
+    couts: co.error ? null : (co.data||[]),
     prefs: pr.data || {seuil:10000, fenetre_retour:30, delai_alerte_h:2, entreprise:"ETS DSN"}
   };
   try{ localStorage.setItem(CACHE, JSON.stringify(D)); }catch(e){}
@@ -753,6 +769,59 @@ function bilanCamion(id, d1, d2){
   const rj=recetteJour(id), manque=arret*rj;
   return { recette,pieces,mo,reparations:pieces+mo,nbPannes:nbP,arret,recetteJour:rj,manque,externes,
     coutReel:pieces+mo+manque+externes, net:recette-(pieces+mo+manque+externes) };
+}
+
+/* --- coût de revient (guide CNUCED) ---
+   Deux compteurs par camion : l'un tourne chaque jour, même à l'arrêt
+   (usure, assurance, TVM…), l'autre à chaque kilomètre (carburant,
+   réparations). Les recettes voyage sont saisies NETTES : le chauffeur a
+   déjà payé le carburant et sa prime sur l'argent du voyage, on ne les
+   retire donc pas une seconde fois. Les jours d'arrêt ne s'ajoutent pas
+   aux coûts : ils se voient déjà dans des recettes plus basses.
+   Rien ici n'écrit en caisse ni ne touche aux rapports clôturés. */
+const coutsCamion = id => (D.couts||[]).find(k=>k.camion_id===id) || null;
+const periodeRentabilite = () => ({ d1:ajoutJours(ajoutMois(auj(),-12),1), d2:auj() });
+
+function rentabiliteCamion(id, d1, d2){
+  const b = bilanCamion(id, d1, d2), k = coutsCamion(id), c = camion(id);
+  const jours = jrs(d1, d2) + 1;
+  /* L'usure court jour après jour, mais plus après le retrait du camion. */
+  const sortie = c && !c.actif && c.date_sortie ? String(c.date_sortie).slice(0,10) : null;
+  const finUsure = sortie && sortie < d2 ? sortie : d2;
+  const joursUsure = finUsure < d1 ? 0 : jrs(d1, finUsure) + 1;
+  const usureAn = k && Number(k.prix_achat) > 0 && Number(k.duree_ans) > 0
+    ? Number(k.prix_achat) / Number(k.duree_ans) : null;
+  const usure = usureAn === null ? 0 : usureAn * joursUsure / 365;
+
+  const modes = { versement:{montant:0, semaines:new Set()}, voyage:{montant:0, semaines:new Set()},
+                  aucun:{montant:0, semaines:new Set()} };
+  let assurance = 0, tvmVisite = 0;
+  for(const m of D.mouvements){
+    if(m.camion_id!==id || m.date<d1 || m.date>d2) continue;
+    const v = Number(m.montant)||0;
+    if(m.sens==="entree" && m.source==="recette"){
+      const g = m.mode==="versement" ? modes.versement : m.mode==="voyage" ? modes.voyage : modes.aucun;
+      g.montant += v; g.semaines.add(lundiDe(String(m.date).slice(0,10)));
+    } else if(m.sens==="sortie" && m.nature==="externe"){
+      if(m.categorie==="Assurance") assurance += v;
+      else if(m.categorie==="TVM" || m.categorie==="Visite technique") tvmVisite += v;
+    }
+  }
+
+  const couts = b.reparations + b.externes + usure;
+  const kmAn = k && Number(k.km_an) > 0 ? Number(k.km_an) : null;
+  const prixGasoil = Number(D.prefs.prix_gasoil) || 0;
+  const carburantKm = k && Number(k.conso_l100) > 0 && prixGasoil > 0
+    ? Number(k.conso_l100) * prixGasoil / 100 : null;
+  const reparationsKm = kmAn ? b.reparations / (kmAn * jours / 365) : null;
+  return {
+    recette:b.recette, modes, reparations:b.reparations, nbPannes:b.nbPannes,
+    assurance, tvmVisite, autres:b.externes-assurance-tvmVisite, externes:b.externes,
+    usureAn, usure, complete:usureAn!==null, couts, resultat:b.recette-couts,
+    parJour:(usure + b.externes) / jours,
+    kmAn, carburantKm, reparationsKm,
+    parKm: carburantKm!==null && reparationsKm!==null ? carburantKm + reparationsKm : null
+  };
 }
 function aLache(p){
   if(!p.piece||p.statut!=="payee") return null;
@@ -1888,6 +1957,21 @@ function recetteSemaine(camionId, lundi){
   // on prend la plus récente et on avertit dans le libellé au moment d'agir dessus.
   return trouvees.sort((a,b) => (b.created_at||"").localeCompare(a.created_at||""))[0];
 }
+/* Versement ou voyage : on reprend le dernier mode connu du camion avant
+   cette semaine (à défaut, le plus récent tout court). null si le camion
+   n'a encore aucune recette marquée : l'admin doit alors choisir. */
+function dernierMode(camionId, lundi){
+  const marquees = D.mouvements.filter(m =>
+    m.sens === "entree" && m.source === "recette" && m.camion_id === camionId && m.mode)
+    .sort((a,b) => b.date.localeCompare(a.date));
+  const avant = marquees.find(m => m.date < lundi);
+  return (avant || marquees[0] || {}).mode || null;
+}
+const tagMode = mode => mode==="voyage" ? `<span class="tag t-ocre">voyage</span>`
+  : mode==="versement" ? `<span class="tag t-vert">versement</span>` : "";
+const segmMode = (id, mode, style="") => `<div class="segm" id="${id}" style="${style}">
+  <button data-v="versement" class="${mode==="versement"?"on":""}">Versement</button>
+  <button data-v="voyage" class="${mode==="voyage"?"on":""}">Voyage</button></div>`;
 
 function vVendredi(){
   if(!admin()) return `<div class="carte"><div class="vide"><b>Réservé à l'administrateur</b>La collecte est saisie par SARANA.</div></div>`;
@@ -1938,14 +2022,15 @@ function vVendredi(){
           <small>${ch?esc(ch.nom):"sans chauffeur"} · saisi ${r.date===auj()?"aujourd'hui":dateCourte(r.date)}</small></div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="num" style="font-weight:700">${fmt(r.montant)}</span>
-          <span class="tag t-vert">encaissé</span></div></div>`;
+          ${tagMode(r.mode)}<span class="tag t-vert">encaissé</span></div></div>`;
     }
-    return `<div class="ligne" style="align-items:center">
+    return `<div class="ligne" style="align-items:center;flex-wrap:wrap">
       <div class="lib"><b class="im">${esc(c.nom)}</b><small>${ch?esc(ch.nom):"sans chauffeur"}</small></div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;flex:none">
         <input type="number" inputmode="numeric" class="c-montant" data-c="${c.id}"
           placeholder="Recette" min="0" style="width:118px;text-align:right">
-        <span class="tag t-gris">en attente</span></div></div>`;
+        <span class="tag t-gris">en attente</span></div>
+      ${segmMode("c-mode-"+c.id, dernierMode(c.id, lundi), "flex:1 0 100%")}</div>`;
   };
 
   h += `<div class="carte" style="padding-top:6px">`;
@@ -1976,6 +2061,7 @@ window.apres_vendredi = () => {
     const z=document.getElementById("c-total"); if(z) z.textContent=fmtF(t);
   };
   document.querySelectorAll(".c-montant").forEach(i=>i.addEventListener("input",maj));
+  document.querySelectorAll('[id^="c-mode-"]').forEach(el=>segm(el.id));
   maj();
 };
 
@@ -1992,19 +2078,22 @@ function dateDansSemaine(lundi){
 window.validerCollecte = async (lundi) => {
   lundi = lundi || lundiDe(auj());
   const dateRecette = dateDansSemaine(lundi);
-  const nouvelles = [], corrections = [];
+  const nouvelles = [], corrections = [], sansMode = [];
 
   document.querySelectorAll(".c-montant").forEach(i=>{
     const v = Number(i.value) || 0;
     if(v <= 0) return;
     const camionId = i.dataset.c;
+    const mode = valSegm("c-mode-"+camionId);
+    if(!mode){ sansMode.push(nomCamion(camionId)); return; }
     // garde-fou : si une recette existe deja pour cette semaine, on corrige
     const existante = recetteSemaine(camionId, lundi);
-    if(existante) corrections.push({ id:existante.id, montant:v });
-    else nouvelles.push({ date:dateRecette, sens:"entree", source:"recette", montant:v,
+    if(existante) corrections.push({ id:existante.id, montant:v, mode });
+    else nouvelles.push({ date:dateRecette, sens:"entree", source:"recette", montant:v, mode,
       camion_id:camionId, libelle:"Recette "+nomCamion(camionId) });
   });
 
+  if(sansMode.length) return toast(`Choisis Versement ou Voyage pour ${sansMode.join(", ")}.`);
   if(!nouvelles.length && !corrections.length) return toast("Aucun montant saisi.");
 
   if(nouvelles.length){
@@ -2012,7 +2101,7 @@ window.validerCollecte = async (lundi) => {
     if(error) return toast("Échec : "+error.message);
   }
   for(const c of corrections){
-    const {error} = await sb.from("sb2_mouvements").update({montant:c.montant}).eq("id", c.id);
+    const {error} = await sb.from("sb2_mouvements").update({montant:c.montant, mode:c.mode}).eq("id", c.id);
     if(error) return toast("Échec : "+error.message);
   }
 
@@ -2036,17 +2125,21 @@ window.corrigerRecette = (mouvementId, camionId, lundi) => {
        Une seule sera gardée ; les autres seront supprimées pour éviter un double compte.</div></div>` : ""}
      <label class="ch"><span>Montant encaissé</span>
        <input type="number" inputmode="numeric" id="cr-montant" value="${Math.round(m.montant)}"></label>
+     ${segmMode("cr-mode", m.mode, "margin-bottom:11px")}
      <label class="ch"><span>Date de la saisie</span><input type="date" id="cr-date" value="${m.date}"></label>
      <div id="cr-msg"></div>
      <div class="duo" style="margin-bottom:9px"><button class="btn sec" onclick="fermer()">Annuler</button>
      <button class="btn" onclick="validerCorrectionRecette('${mouvementId}','${camionId}')">Enregistrer</button></div>
      <button class="btn danger" onclick="supprimerRecette('${mouvementId}','${camionId}')">Ce camion n'a rien rendu — supprimer</button>`,
-    () => document.getElementById("cr-montant").addEventListener("input", function(){
-      const v = Number(this.value)||0;
-      const z = document.getElementById("cr-msg");
-      z.innerHTML = v>=1000000
-        ? `<div class="alerte a-ocre"><div><b>Montant élevé</b>${fmtF(v)} — vérifie qu'il n'y a pas un zéro de trop.</div></div>` : "";
-    }));
+    () => {
+      segm("cr-mode");
+      document.getElementById("cr-montant").addEventListener("input", function(){
+        const v = Number(this.value)||0;
+        const z = document.getElementById("cr-msg");
+        z.innerHTML = v>=1000000
+          ? `<div class="alerte a-ocre"><div><b>Montant élevé</b>${fmtF(v)} — vérifie qu'il n'y a pas un zéro de trop.</div></div>` : "";
+      });
+    });
 };
 window.validerCorrectionRecette = async (mouvementId, camionId) => {
   const v = Number(val("cr-montant"))||0;
@@ -2063,7 +2156,7 @@ window.validerCorrectionRecette = async (mouvementId, camionId) => {
     if(error) return toast("Échec : "+error.message);
   }
   const {error} = await sb.from("sb2_mouvements")
-    .update({ montant:v, date:d, libelle:"Recette "+nomCamion(camionId) }).eq("id", mouvementId);
+    .update({ montant:v, date:d, mode:valSegm("cr-mode"), libelle:"Recette "+nomCamion(camionId) }).eq("id", mouvementId);
   if(error) return toast("Échec : "+error.message);
   fermer(); toast("Recette corrigée."); await recharger();
 };
@@ -2377,6 +2470,64 @@ window.validerFiche = async (camionId) => {
   fermer(); toast("Fiche technique mise à jour."); await recharger();
 };
 
+/* Coûts du camion (admin) : une ligne par camion dans sb2_couts_camion,
+   créée au premier enregistrement puis mise à jour. Une case vide reste
+   vide (null) : le calcul dira ce qu'il manque plutôt que d'inventer. */
+window.formCoutsCamion = (camionId) => {
+  const c = camion(camionId); if(!c) return;
+  const k = coutsCamion(camionId) || {};
+  const v = x => x==null ? "" : x;
+  ouvrir("Coûts — " + c.nom,
+    `<p class="mt" style="margin-bottom:12px">Ce que GestFlot ne peut pas deviner. Réparations, assurance,
+     TVM et autres dépenses du camion sont déjà comptées toutes seules.</p>
+     <label class="ch"><span>Prix d'achat (F)</span>
+       <input type="number" inputmode="numeric" min="0" id="cc-prix" value="${v(k.prix_achat)}" placeholder="Neuf ou d'occasion"></label>
+     <label class="ch"><span>Durée d'utilisation prévue (ans)</span>
+       <input type="number" inputmode="numeric" min="1" max="50" id="cc-duree" value="${v(k.duree_ans)}"></label>
+     <label class="ch"><span>Consommation (L aux 100 km)</span>
+       <input type="number" inputmode="decimal" min="0" step="0.1" id="cc-conso" value="${v(k.conso_l100)}"></label>
+     <label class="ch"><span>Km par an (estimés)</span>
+       <input type="number" inputmode="numeric" min="0" id="cc-km" value="${v(k.km_an)}" placeholder="Remplacé par le GPS plus tard"></label>
+     <p class="mt" id="cc-calcul" style="margin-bottom:11px"></p>
+     <div id="cc-msg"></div>
+     <div class="duo"><button class="btn sec" onclick="fermer()">Annuler</button>
+     <button class="btn" id="cc-ok" onclick="validerCoutsCamion('${camionId}')">Enregistrer</button></div>`,
+    () => {
+      const calcul = () => {
+        const prix = nb("cc-prix"), duree = nb("cc-duree"), conso = nb("cc-conso");
+        const gasoil = Number(D.prefs.prix_gasoil) || 0;
+        const morceaux = [];
+        if(prix > 0 && duree > 0) morceaux.push(`Usure : ${fmtF(prix/duree)} par an`);
+        if(conso > 0) morceaux.push(gasoil ? `Carburant : ${fmtF(conso*gasoil/100)} par km`
+                                           : "Carburant : saisis le prix du gasoil dans Réglages");
+        document.getElementById("cc-calcul").textContent = morceaux.join(" · ");
+      };
+      ["cc-prix","cc-duree","cc-conso"].forEach(i=>document.getElementById(i).addEventListener("input", calcul));
+      calcul();
+    });
+};
+window.validerCoutsCamion = async (camionId) => {
+  const lire = id => { const t = val(id).trim(); return t==="" ? null : Number(t); };
+  const prix = lire("cc-prix"), duree = lire("cc-duree"), conso = lire("cc-conso"), km = lire("cc-km");
+  const refus = m => document.getElementById("cc-msg").innerHTML = `<div class="alerte a-rouge"><div>${m}</div></div>`;
+  if(prix!==null && !(prix >= 0)) return refus("Le prix d'achat ne peut pas être négatif.");
+  if(duree!==null && !(Number.isInteger(duree) && duree >= 1 && duree <= 50)) return refus("La durée doit être un nombre entier d'années, entre 1 et 50.");
+  if(conso!==null && !(conso > 0 && conso < 200)) return refus("La consommation doit être comprise entre 0 et 200 L aux 100 km.");
+  if(km!==null && !(Number.isInteger(km) && km >= 0)) return refus("Les km par an doivent être un nombre entier positif.");
+  const b = document.getElementById("cc-ok");
+  b.disabled = true; b.textContent = "Enregistrement…";
+  const { error } = await sb.from("sb2_couts_camion").upsert({
+    camion_id:camionId, prix_achat:prix, duree_ans:duree, conso_l100:conso, km_an:km,
+    maj_le:new Date().toISOString()
+  }, { onConflict:"camion_id" });
+  if(error){
+    refus("Échec : " + esc(error.message));
+    b.disabled = false; b.textContent = "Enregistrer";
+    return;
+  }
+  fermer(); toast("Coûts du camion enregistrés."); await recharger();
+};
+
 /* Retrait doux : le camion passe inactif mais rien n'est supprimé.
    Historique, recettes et pannes restent consultables ; l'opération
    est réversible depuis la même fiche. */
@@ -2417,7 +2568,13 @@ window.reintegrerCamion = async (id) => {
 /* ================= 11. CAMIONS ================= */
 function vCamions(){
   if(etatVue.detail) return detailCamion(etatVue.detail);
-  let h=`<div class="titre-sec">Ce que chaque camion rapporte, ce qu'il coûte</div>
+  const onglet = etatVue.onglet || "bilan";
+  if(onglet==="rentabilite" && etatVue.renta) return detailRentabilite(etatVue.renta);
+  let h=`<div class="onglets no-print">${
+    [["bilan","Bilan"],["rentabilite","Rentabilité"]].map(x=>
+      `<button class="${onglet===x[0]?"on":""}" onclick="ongletCamions('${x[0]}')">${x[1]}</button>`).join("")}</div>`;
+  if(onglet==="rentabilite") return h + vRentabilite();
+  h+=`<div class="titre-sec">Ce que chaque camion rapporte, ce qu'il coûte</div>
     <div class="carte"><div class="scroll-x"><table><thead><tr>
     <th>Camion</th><th class="n">Recette</th><th class="n">Réparations</th><th class="n">Externes</th>
     <th class="n">Arrêt</th><th class="n">Manque</th><th class="n">Net</th></tr></thead><tbody>`;
@@ -2438,7 +2595,121 @@ function vCamions(){
     <td class="n"><b>${fmt(tot.e)}</b></td>
     <td class="n"><b>${tot.a||"—"}</b></td><td class="n"><b>${fmt(tot.m)}</b></td><td class="n"><b>${fmt(tot.n)}</b></td></tr>
     </tbody></table></div><p class="mt" style="margin-top:11px"><b>Manque</b> = jours ouvrés d'arrêt × recette journalière moyenne.
-    <b>Net</b> = recette − réparations − manque.</p></div>`;
+    <b>Net</b> = recette − réparations − dépenses externes − manque.</p></div>`;
+  return h;
+}
+window.ongletCamions = o => { etatVue.onglet = o; etatVue.renta = null; rendu(); };
+window.voirRentabilite = id => { etatVue = { onglet:"rentabilite", renta:id }; rendu(); window.scrollTo(0,0); };
+
+/* Onglet Rentabilité : recettes et coûts de chaque camion sur 12 mois
+   glissants, du plus rentable au moins rentable. Un camion dont la fiche
+   Coûts n'a pas de prix d'achat est calculé sans usure et marqué « * ». */
+function vRentabilite(){
+  const {d1, d2} = periodeRentabilite();
+  let h = `<div class="carte"><div class="ligne"><div class="lib"><b>12 derniers mois</b></div>
+    <span class="mt">${dateCourte(d1)} ${d1.slice(0,4)} → ${dateCourte(d2)} ${d2.slice(0,4)}</span></div></div>`;
+  if(D.couts===null) h += `<div class="alerte a-ocre"><div><b>Coûts des camions illisibles</b>
+    Les résultats ci-dessous sont calculés sans l'usure. Recharge la page ; si le message reste, préviens l'admin.</div></div>`;
+
+  const lignes = D.camions
+    .map(c => ({ c, r:rentabiliteCamion(c.id, d1, d2) }))
+    .filter(x => x.c.actif || x.r.recette > 0 || x.r.couts > 0)
+    .sort((a,b) => (b.r.complete - a.r.complete) || (b.r.resultat - a.r.resultat));
+  const gagnent = lignes.filter(x=>x.r.complete && x.r.resultat>=0).length;
+  const perdent = lignes.filter(x=>x.r.complete && x.r.resultat<0).length;
+  const incompletes = lignes.length - gagnent - perdent;
+  const total = lignes.reduce((s,x)=>s+x.r.resultat, 0);
+  const couleur = (r, complete) => !complete ? "#8A6720" : r<0 ? "var(--minium)" : "var(--vert)";
+  const signe = n => Math.round(n)===0 ? "0" : (n<0 ? "−" : "+") + fmt(Math.abs(n));
+
+  h += `<div class="carte">
+    <div class="mt" style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:8px">
+      <span><b style="color:var(--vert)">${gagnent}</b> gagne${gagnent>1?"nt":""}</span>
+      <span><b style="color:var(--minium)">${perdent}</b> ${perdent>1?"perdent":"perd"}</span>
+      ${incompletes ? `<span><b style="color:#8A6720">${incompletes}</b> fiche${incompletes>1?"s":""} à compléter</span>` : ""}</div>
+    <div class="ligne"><div class="lib"><b>Résultat de la flotte</b></div>
+      <span class="num" style="font-size:20px;color:${total<0?"var(--minium)":"var(--vert)"}">${signe(total)} F${incompletes?"*":""}</span></div></div>`;
+
+  h += `<div class="carte"><div class="scroll-x"><table><thead><tr>
+    <th>Camion</th><th class="n">Recettes</th><th class="n">Coûts</th><th class="n">Résultat</th></tr></thead><tbody>`;
+  for(const {c, r} of lignes){
+    const etoile = r.complete ? "" : "*";
+    h += `<tr onclick="setVue('renta','${c.id}')" style="cursor:pointer">
+      <td><b class="im">${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">retiré</span>'}</td>
+      <td class="n">${fmt(r.recette)}</td><td class="n">${fmt(r.couts)}${etoile}</td>
+      <td class="n" style="font-weight:700;color:${couleur(r.resultat, r.complete)}">${signe(r.resultat)}${etoile}</td></tr>`;
+  }
+  h += `</tbody></table></div>
+    ${incompletes ? `<p class="mt" style="margin-top:9px">* Sans l'usure : prix d'achat ou durée pas encore saisis dans les coûts du camion.</p>` : ""}
+    <p class="mt" style="margin-top:9px"><b>Coûts</b> = réparations + dépenses du camion + usure.
+    Les recettes voyage sont nettes : carburant et prime du chauffeur déjà payés. Touche un camion pour le détail.</p></div>`;
+  return h;
+}
+
+/* Le détail d'un camion : ce qu'il a rapporté, ce qu'il a coûté, et ses
+   deux compteurs (par jour, par km) qui serviront au calculateur de prix. */
+function detailRentabilite(id){
+  const c = camion(id); if(!c){ etatVue.renta = null; return vCamions(); }
+  const {d1, d2} = periodeRentabilite();
+  const r = rentabiliteCamion(id, d1, d2), k = coutsCamion(id);
+  const arret = (pannesParCamion(d1, d2).find(g=>g.id===id) || {}).arret || 0;
+  const semaines = n => `${n} semaine${n>1?"s":""}`;
+  const ligne = (lib, sous, montant) => `<div class="ligne"><div class="lib"><b>${lib}</b>${
+    sous ? `<small>${sous}</small>` : ""}</div><span class="num">${montant}</span></div>`;
+
+  let h = `<button class="btn sec mini no-print" style="margin-bottom:13px" onclick="setVue('renta',null)">← Rentabilité</button>
+    <div class="titre-sec">${esc(c.nom)} · 12 derniers mois</div>
+    <div class="rt-verdict${r.resultat<0?" perte":""}">
+      <small>Résultat</small>
+      <b class="num">${r.resultat<0?"−":"+"}${fmtF(Math.abs(r.resultat))}</b>
+      <span>${r.resultat<0
+        ? `Ce camion a coûté ${fmtF(-r.resultat)} de plus qu'il n'a rapporté.`
+        : `Ce camion a rapporté ${fmtF(r.resultat)} de plus qu'il n'a coûté.`}
+      ${r.complete ? "" : " Calcul sans l'usure : complète ses coûts."}</span></div>`;
+
+  h += `<div class="titre-sec">Ce qu'il a rapporté</div><div class="carte">`;
+  if(r.modes.versement.montant) h += ligne(`<span class="tag t-vert">versement</span>`,
+    semaines(r.modes.versement.semaines.size), fmtF(r.modes.versement.montant));
+  if(r.modes.voyage.montant) h += ligne(`<span class="tag t-ocre">voyage</span>`,
+    semaines(r.modes.voyage.semaines.size), fmtF(r.modes.voyage.montant));
+  if(r.modes.aucun.montant) h += ligne(`<span class="tag t-gris">non précisé</span>`,
+    semaines(r.modes.aucun.semaines.size), fmtF(r.modes.aucun.montant));
+  h += `<div class="ligne"><div class="lib"><b>Total</b></div>
+    <span class="num" style="font-size:17px;color:var(--nuit)">${fmtF(r.recette)}</span></div>
+    <p class="mt" style="margin-top:6px">Voyages : montants nets, carburant et prime du chauffeur déjà payés.</p></div>`;
+
+  h += `<div class="titre-sec">Ce qu'il a coûté</div><div class="carte">
+    <div class="grp"><span>Compté par GestFlot</span></div>
+    ${ligne("Réparations et pneus", `${r.nbPannes} panne${r.nbPannes>1?"s":""} payée${r.nbPannes>1?"s":""}`, fmtF(r.reparations))}
+    ${ligne("Assurance", "dépenses externes", fmtF(r.assurance))}
+    ${ligne("TVM + visite technique", "dépenses externes", fmtF(r.tvmVisite))}
+    ${ligne("Autres dépenses du camion", "dépenses externes", fmtF(r.autres))}
+    <div class="grp"><span>Venant de ses coûts</span></div>
+    ${r.complete
+      ? ligne("Usure du camion", `${fmtF(k.prix_achat)} ÷ ${k.duree_ans} an${k.duree_ans>1?"s":""}`, fmtF(r.usure))
+      : ligne("Usure du camion", "prix d'achat ou durée à saisir", "—")}
+    <div class="ligne"><div class="lib"><b>Total</b></div>
+      <span class="num" style="font-size:17px;color:var(--minium)">${fmtF(r.couts)}</span></div></div>
+    ${arret ? `<p class="mt" style="margin:-4px 2px 12px">${arret} jour${arret>1?"s":""} ouvré${arret>1?"s":""} d'arrêt sur la période :
+      non ajoutés aux coûts, ils se voient déjà dans des recettes plus basses.</p>` : ""}`;
+
+  const manque = [];
+  if(!(k && Number(k.conso_l100) > 0)) manque.push("la consommation");
+  if(!(Number(D.prefs.prix_gasoil) > 0)) manque.push("le prix du gasoil (Réglages)");
+  if(!r.kmAn) manque.push("les km par an");
+  h += `<div class="titre-sec">Ses deux compteurs</div>
+    <div class="rang" style="margin-bottom:12px">
+      <div class="carte" style="margin:0"><small class="grp" style="display:block;padding:0">Par jour</small>
+        <b class="num" style="display:block;font-size:22px;color:var(--nuit);margin:4px 0">${fmtF(r.parJour)}</b>
+        <small class="mt">Tourne même à l'arrêt : usure, assurance, TVM, visite, autres.</small></div>
+      <div class="carte" style="margin:0"><small class="grp" style="display:block;padding:0">Par km</small>
+        <b class="num" style="display:block;font-size:22px;color:var(--nuit);margin:4px 0">${r.parKm!==null ? fmtF(r.parKm) : "—"}</b>
+        <small class="mt">${r.parKm!==null
+          ? `Quand il roule : carburant ${fmtF(r.carburantKm)} + réparations ${fmtF(r.reparationsKm)}.`
+          : `À compléter : ${manque.join(", ")}.`}</small></div></div>
+    <p class="mt" style="margin:0 2px 12px">Ces deux compteurs serviront au calculateur de prix d'un voyage.${
+      r.kmAn ? ` Km : ${fmtKm(r.kmAn)} par an, estimés en attendant le GPS.` : ""}</p>
+    ${admin() ? `<button class="btn sec no-print" style="width:100%" onclick="formCoutsCamion('${id}')">Modifier les coûts du camion</button>` : ""}`;
   return h;
 }
 function detailCamion(id){
@@ -2474,6 +2745,28 @@ function detailCamion(id){
       ${c.actif
         ? `<button class="btn danger mini no-print" style="width:100%;margin-top:9px" onclick="formRetirerCamion('${id}')">Retirer de la flotte</button>`
         : `<button class="btn sec mini no-print" style="width:100%;margin-top:9px" onclick="reintegrerCamion('${id}')">Remettre en service</button>`}` : ""}
+    </div>`;
+
+  /* Coûts du camion : ce que GestFlot ne peut pas deviner. Table à part
+     (sb2_couts_camion) : chauffeurs et garages lisent sb2_camions, ils
+     ne doivent pas voir le prix d'achat. Lecture admin + DG, écriture admin. */
+  const k = coutsCamion(id), prixGasoil = Number(D.prefs.prix_gasoil) || 0;
+  const usureAn = k && Number(k.prix_achat) > 0 && Number(k.duree_ans) > 0 ? k.prix_achat / k.duree_ans : null;
+  h += `<div class="titre-sec">Coûts du camion</div><div class="carte">
+    <div class="ligne"><div class="lib"><b>Prix d'achat</b></div>
+      <span class="num">${k && k.prix_achat!=null ? fmtF(k.prix_achat) : "—"}</span></div>
+    <div class="ligne"><div class="lib"><b>Durée d'utilisation prévue</b>${
+      usureAn!==null ? `<small>Usure : ${fmtF(usureAn)} par an · ${fmtF(usureAn/365)} par jour</small>` : ""}</div>
+      <span>${k && k.duree_ans ? k.duree_ans + " an" + (k.duree_ans>1?"s":"") : "—"}</span></div>
+    <div class="ligne"><div class="lib"><b>Consommation</b>${
+      k && k.conso_l100 && prixGasoil ? `<small>Carburant : ${fmtF(k.conso_l100*prixGasoil/100)} par km · gasoil à ${fmtF(prixGasoil)}</small>` : ""}</div>
+      <span style="white-space:nowrap">${k && k.conso_l100 ? String(Number(k.conso_l100)).replace(".",",") + " L / 100 km" : "—"}</span></div>
+    <div class="ligne"><div class="lib"><b>Km par an</b><small>Estimés, en attendant le GPS</small></div>
+      <span>${k && k.km_an ? fmtKm(k.km_an) : "—"}</span></div>
+    <p class="mt" style="margin-top:9px">Ces chiffres ne touchent ni la caisse ni les rapports clôturés.</p>
+    <div class="duo no-print" style="margin-top:9px">
+      ${admin() ? `<button class="btn sec mini" onclick="formCoutsCamion('${id}')">Modifier les coûts</button>` : ""}
+      <button class="btn sec mini" onclick="voirRentabilite('${id}')">Voir sa rentabilité</button></div>
     </div>`;
 
   const docs = documentsCamion(c);
@@ -3115,7 +3408,9 @@ function vReglages(){
     <div class="rang">
       <label class="ch"><span>Alerte visite technique (j avant)</span><input type="number" id="p-visite" value="${D.prefs.delai_visite_j ?? 45}"></label>
       <label class="ch"><span>Alerte assurance (j avant)</span><input type="number" id="p-assurance" value="${D.prefs.delai_assurance_j ?? 30}"></label></div>
-    <label class="ch"><span>Alerte TVM (j avant le 1er janvier)</span><input type="number" id="p-tvm" value="${D.prefs.delai_tvm_j ?? 30}"></label>
+    <div class="rang">
+      <label class="ch"><span>Alerte TVM (j avant le 1er janvier)</span><input type="number" id="p-tvm" value="${D.prefs.delai_tvm_j ?? 30}"></label>
+      <label class="ch"><span>Prix du gasoil (F le litre)</span><input type="number" inputmode="numeric" min="1" id="p-gasoil" value="${D.prefs.prix_gasoil ?? ""}"></label></div>
     <button class="btn" onclick="majPrefs()">Enregistrer</button></div>`;
 
   h+=`<div class="titre-sec">Sauvegarde</div><div class="carte">
@@ -3192,11 +3487,14 @@ window.creerInvitation = async () => {
      Le DG crée un compte sur ce même lien, puis saisit ce code.</div></div>`;
 };
 window.majPrefs = async () => {
+  const gasoil = nb("p-gasoil");
+  if(gasoil >= 5000) return toast("Prix du gasoil : il doit rester sous 5 000 F le litre.");
   const {error}=await sb.from("sb2_prefs").update({
     seuil:nb("p-seuil"), fenetre_retour:nb("p-fen")||30,
     delai_alerte_h:nb("p-del")||2, entreprise:val("p-ent").trim()||"ETS DSN",
     delai_visite_j:nb("p-visite")||45, delai_assurance_j:nb("p-assurance")||30,
-    delai_tvm_j:nb("p-tvm")||30
+    delai_tvm_j:nb("p-tvm")||30,
+    prix_gasoil:gasoil > 0 ? gasoil : null
   }).eq("id",1);
   if(error) return toast("Échec : "+error.message);
   toast("Paramètres enregistrés."); await recharger();
@@ -3218,7 +3516,7 @@ window.majPrefs = async () => {
 const TABLES_SAUVEGARDE = [
   "sb2_camions","sb2_chauffeurs","sb2_garages","sb2_affectations","sb2_types",
   "sb2_pannes","sb2_mouvements","sb2_clotures","sb2_prefs","sb2_medias",
-  "sb2_messages","sb2_notifications","sb2_membres","sb2_liaisons"
+  "sb2_messages","sb2_notifications","sb2_membres","sb2_liaisons","sb2_couts_camion"
 ];
 const SANS_JETON = { sb2_chauffeurs:true, sb2_garages:true };
 
