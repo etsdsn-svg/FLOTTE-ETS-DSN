@@ -2640,9 +2640,10 @@ function vCamions(){
   const onglet = etatVue.onglet || "bilan";
   if(onglet==="rentabilite" && etatVue.renta) return detailRentabilite(etatVue.renta);
   let h=`<div class="onglets no-print">${
-    [["bilan","Bilan"],["rentabilite","Rentabilité"]].map(x=>
+    [["bilan","Bilan"],["rentabilite","Rentabilité"],["prix","Prix voyage"]].map(x=>
       `<button class="${onglet===x[0]?"on":""}" onclick="ongletCamions('${x[0]}')">${x[1]}</button>`).join("")}</div>`;
   if(onglet==="rentabilite") return h + vRentabilite();
+  if(onglet==="prix") return h + vPrixVoyage();
   h+=`<div class="titre-sec">Ce que chaque camion rapporte, ce qu'il coûte</div>
     <div class="carte"><div class="scroll-x"><table><thead><tr>
     <th>Camion</th><th class="n">Recette</th><th class="n">Réparations</th><th class="n">Externes</th>
@@ -2826,6 +2827,133 @@ function detailRentabilite(id){
     ${admin() ? `<button class="btn sec no-print" style="width:100%" onclick="formCoutsCamion('${id}')">Modifier les coûts du camion</button>` : ""}`;
   return h;
 }
+
+/* --- prix d'un voyage ---
+   Un taximètre à l'envers : avant de partir, on estime la course avec les
+   deux compteurs du camion — km × (carburant + réparations) + jours ×
+   compteur par jour — plus la prime et les frais, puis la marge (un % ajouté
+   au coût), arrondi au millier supérieur. Rien n'est enregistré, sauf la
+   dernière marge, sur l'appareil. S'il manque une donnée du calcul, pas de
+   prix : on dit quoi compléter plutôt que d'inventer. */
+const CLE_MARGE = "sablier2_marge_voyage";
+function calculPrixVoyage(camionId, s){
+  const {d1, d2} = periodeRentabilite();
+  const r = rentabiliteCamion(camionId, d1, d2), k = coutsCamion(camionId);
+  const manque = [];
+  if(!r.complete) manque.push("le prix d'achat et la durée");
+  if(!(k && Number(k.conso_l100) > 0)) manque.push("la consommation");
+  if(!(Number(D.prefs.prix_gasoil) > 0)) manque.push("le prix du gasoil (Réglages)");
+  if(!r.kmAn) manque.push("les km par an");
+  if(manque.length) return { ok:false, manque, r };
+  /* Compteurs arrondis au franc AVANT le calcul : l'écran affiche
+     « 2 100 km × 26 F », le montant doit donner exactement ce produit. */
+  const kmCarburant = Math.round(r.carburantKm), kmReparations = Math.round(r.reparationsKm);
+  const jour = Math.round(r.parJour);
+  const carburant = s.distance * kmCarburant, reparations = s.distance * kmReparations, fixes = s.jours * jour;
+  const total = carburant + reparations + fixes + s.prime + s.frais;
+  return { ok:true, r, kmCarburant, kmReparations, jour, carburant, reparations, fixes, total,
+    prix: Math.ceil(total * (1 + s.marge / 100) / 1000) * 1000,
+    minimum: Math.ceil(total / 1000) * 1000 };
+}
+function saisiePrixVoyage(){
+  const actifs = D.camions.filter(c=>c.actif).sort((a,b)=>a.nom.localeCompare(b.nom));
+  let marge = 0;
+  try{ marge = Number(localStorage.getItem(CLE_MARGE)) || 0; }catch(e){}
+  const s = Object.assign({ camion:actifs[0]?.id || null, distance:0, jours:0, prime:0, frais:0, marge, propose:0 },
+    etatVue.pv || {});
+  if(!actifs.some(c=>c.id===s.camion)) s.camion = actifs[0]?.id || null;
+  return { actifs, s };
+}
+/* Les champs ne sont dessinés qu'une fois ; seuls les résultats se
+   redessinent à la frappe. Les valeurs vivent aussi dans etatVue.pv : le
+   rafraîchissement automatique (toutes les 5 min) les retrouve. */
+function vPrixVoyage(){
+  const { actifs, s } = saisiePrixVoyage();
+  if(!actifs.length) return `<div class="carte"><div class="vide"><b>Aucun camion actif</b></div></div>`;
+  const champ = (id, lib, val, decimal=false) => `<label class="ch"><span>${lib}</span>
+    <input type="number" inputmode="${decimal ? "decimal" : "numeric"}" min="0"${decimal ? ' step="any"' : ""}
+      id="${id}" value="${val || ""}"></label>`;
+  return `<div class="titre-sec">Calculer le prix d'un voyage</div><div class="carte">
+    <label class="ch"><span>Camion</span><select id="pv-camion">${actifs.map(c=>
+      `<option value="${c.id}"${c.id===s.camion?" selected":""}>${esc(c.nom)}</option>`).join("")}</select></label>
+    <p class="mt" id="pv-compteurs" style="margin:-4px 0 11px"></p>
+    <div class="rang">${champ("pv-distance", "Km aller-retour", s.distance)}${champ("pv-jours", "Jours d'immobilisation", s.jours)}</div>
+    <div class="rang">${champ("pv-prime", "Prime du chauffeur (F)", s.prime)}${champ("pv-frais", "Autres frais (F)", s.frais)}</div>
+    <p class="mt" style="margin:-4px 0 11px">Autres frais : péages, repas, frais de route.</p>
+    ${champ("pv-marge", "Marge (% ajouté au coût)", s.marge, true)}
+    </div>
+    <div id="pv-resultat"></div>
+    <div class="titre-sec">Le client propose un prix ?</div><div class="carte">
+      ${champ("pv-propose", "Prix proposé (F)", s.propose)}
+      <div id="pv-verdict"></div></div>
+    <p class="mt" style="margin:0 2px 12px">Une estimation : rien n'est enregistré.</p>`;
+}
+function resultatPrixVoyage(s){
+  const cam = camion(s.camion);
+  if(!cam) return { compteurs:"", resultat:"", verdict:"" };
+  const c = calculPrixVoyage(cam.id, s);
+  /* espace insécable : « 20 % » ne se coupe jamais en fin de ligne */
+  const pctTexte = String(s.marge).replace(".", ",") + "&nbsp;%";
+  if(!c.ok) return {
+    compteurs: "Compteurs incomplets",
+    resultat: `<div class="alerte a-ocre"><div><b>Pas de prix pour ${esc(cam.nom)}</b>Il manque ${c.manque.join(", ")}.${
+      admin() ? "" : " Demande à l'admin de les compléter."}</div></div>${
+      admin() ? `<button class="btn sec no-print" style="margin-bottom:12px" onclick="formCoutsCamion('${cam.id}')">Compléter ses coûts</button>` : ""}`,
+    verdict: `<p class="mt" style="margin:0">Le calcul apparaîtra quand les coûts du camion seront complets.</p>` };
+  const compteurs = `Compteurs : ${fmtF(c.jour)}/jour · ${fmtF(c.kmCarburant + c.kmReparations)}/km${
+    c.r.fiable ? "" : ` <span class="tag t-ocre">provisoires</span>`}`;
+  if(!(s.distance > 0 || s.jours > 0)) return { compteurs,
+    resultat: `<div class="carte"><p class="mt" style="margin:0">Saisis la distance et les jours du voyage.</p></div>`,
+    verdict: `<p class="mt" style="margin:0">Saisis d'abord le voyage.</p>` };
+  const ligne = (lib, sous, montant) => `<div class="ligne"><div class="lib"><b>${lib}</b>${
+    sous ? `<small>${sous}</small>` : ""}</div><span class="num">${montant}</span></div>`;
+  /* La quantité s'affiche telle que saisie (1,5 j reste 1,5 j) : le
+     montant doit se lire comme le produit exact de la ligne. */
+  const qte = v => Number.isInteger(v) ? fmt(v) : String(v).replace(".", ",");
+  const resultat = `<div class="titre-sec">Ce que le voyage coûte</div><div class="carte">
+    ${ligne("Carburant", `${qte(s.distance)} km × ${fmtF(c.kmCarburant)}`, fmtF(c.carburant))}
+    ${ligne("Réparations et pneus", `${qte(s.distance)} km × ${fmtF(c.kmReparations)}`, fmtF(c.reparations))}
+    ${ligne("Usure, assurance, TVM…", `${qte(s.jours)} j × ${fmtF(c.jour)}`, fmtF(c.fixes))}
+    ${ligne("Prime du chauffeur", "", fmtF(s.prime))}
+    ${ligne("Autres frais", "péages, repas…", fmtF(s.frais))}
+    <div class="ligne"><div class="lib"><b>Coût de revient</b></div>
+      <span class="num" style="font-size:17px;color:var(--minium)">${fmtF(c.total)}</span></div></div>
+    <div class="rt-verdict"><small>Prix conseillé</small><b class="num">${fmtF(c.prix)}</b>
+      <span>Coût ${fmtF(c.total)} + marge de ${pctTexte}, arrondi au millier supérieur.</span>
+      <span style="font-family:var(--mono);font-size:10.5px;padding-top:6px;border-top:1px solid rgba(255,255,255,.25)">Prix minimum, sans marge : ${fmtF(c.minimum)}</span></div>
+    ${c.r.fiable ? "" : `<p class="mt" style="margin:-4px 2px 12px">Compteurs provisoires : GestFlot n'a pas encore un an de données sur ce camion.</p>`}`;
+  let verdict;
+  if(!s.propose) verdict = `<p class="mt" style="margin:0">Saisis le prix du client : GestFlot te dira ce que tu gagnes ou perds.</p>`;
+  else {
+    const gain = s.propose - c.total, pct = Math.round(gain / c.total * 100);
+    verdict = gain < 0
+      ? `<div class="alerte a-rouge" style="margin:0"><div><b>Tu perds ${fmtF(-gain)}</b>Ce prix ne couvre pas le coût du voyage. Minimum : ${fmtF(c.minimum)}.</div></div>`
+      : s.propose < c.prix
+        ? `<div class="alerte a-ocre" style="margin:0"><div><b>Tu gagnes ${fmtF(gain)}</b>Soit ${pct}&nbsp;% du coût, moins que ta marge de ${pctTexte}.</div></div>`
+        : `<div class="alerte a-verte" style="margin:0"><div><b>Tu gagnes ${fmtF(gain)}</b>Soit ${pct}&nbsp;% du coût : ta marge de ${pctTexte} est couverte.</div></div>`;
+  }
+  return { compteurs, resultat, verdict };
+}
+function brancherPrixVoyage(){
+  const n = id => Number(document.getElementById(id)?.value) || 0;
+  const maj = () => {
+    const s = { camion:document.getElementById("pv-camion").value, distance:n("pv-distance"), jours:n("pv-jours"),
+      prime:n("pv-prime"), frais:n("pv-frais"), marge:n("pv-marge"), propose:n("pv-propose") };
+    etatVue.pv = s;
+    if(s.marge > 0) try{ localStorage.setItem(CLE_MARGE, String(s.marge)); }catch(e){}
+    const x = resultatPrixVoyage(s);
+    document.getElementById("pv-compteurs").innerHTML = x.compteurs;
+    document.getElementById("pv-resultat").innerHTML = x.resultat;
+    document.getElementById("pv-verdict").innerHTML = x.verdict;
+  };
+  ["pv-camion","pv-distance","pv-jours","pv-prime","pv-frais","pv-marge","pv-propose"].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener("input", maj); el.addEventListener("change", maj);
+  });
+  maj();
+}
+window.apres_camions = () => { if(document.getElementById("pv-camion")) brancherPrixVoyage(); };
+
 function detailCamion(id){
   const c=camion(id); if(!c){ etatVue.detail=null; return vCamions(); }
   const b=bilanCamion(id), ch=chauffeurDe(id);
