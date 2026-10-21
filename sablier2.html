@@ -458,6 +458,8 @@ td.pn-col{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
 .rt-verdict{background:var(--vert);color:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;
   display:flex;flex-direction:column;gap:6px}
 .rt-verdict.perte{background:#B8503A}
+.rt-verdict.attente{background:#5F6579}
+.rt-verdict.attente b{font-size:22px}
 .rt-verdict small{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#E4E7F4}
 .rt-verdict b{font-size:30px;line-height:1.1;color:#fff}
 .rt-verdict span{font-size:13px;line-height:1.45}
@@ -808,6 +810,20 @@ function rentabiliteCamion(id, d1, d2){
     }
   }
 
+  /* Premier jour où GestFlot a une recette de ce camion, toutes périodes
+     confondues. Tant qu'il est plus récent que le début des 12 mois, les
+     recettes et l'usure ne couvrent pas la même durée : le résultat serait
+     faux, on ne l'affiche pas encore (fiable = false). Il devient
+     disponible un an moins un jour après ce premier jour. */
+  let debutSuivi = null;
+  for(const m of D.mouvements){
+    if(m.camion_id!==id || m.sens!=="entree" || m.source!=="recette") continue;
+    const d = String(m.date).slice(0,10);
+    if(debutSuivi===null || d<debutSuivi) debutSuivi = d;
+  }
+  const fiable = debutSuivi!==null && debutSuivi<=d1;
+  const dispoLe = debutSuivi ? ajoutJours(ajoutMois(debutSuivi,12),-1) : null;
+
   const couts = b.reparations + b.externes + usure;
   const kmAn = k && Number(k.km_an) > 0 ? Number(k.km_an) : null;
   const prixGasoil = Number(D.prefs.prix_gasoil) || 0;
@@ -818,6 +834,7 @@ function rentabiliteCamion(id, d1, d2){
     recette:b.recette, modes, reparations:b.reparations, nbPannes:b.nbPannes,
     assurance, tvmVisite, autres:b.externes-assurance-tvmVisite, externes:b.externes,
     usureAn, usure, complete:usureAn!==null, couts, resultat:b.recette-couts,
+    debutSuivi, fiable, dispoLe,
     parJour:(usure + b.externes) / jours,
     kmAn, carburantKm, reparationsKm,
     parKm: carburantKm!==null && reparationsKm!==null ? carburantKm + reparationsKm : null
@@ -2611,31 +2628,57 @@ function vRentabilite(){
   if(D.couts===null) h += `<div class="alerte a-ocre"><div><b>Coûts des camions illisibles</b>
     Les résultats ci-dessous sont calculés sans l'usure. Recharge la page ; si le message reste, préviens l'admin.</div></div>`;
 
+  /* 0 = résultat fiable et fiche complète · 1 = fiable, fiche à compléter ·
+     2 = suivi depuis moins d'un an (pas de résultat). */
+  const rang = x => x.r.fiable ? (x.r.complete ? 0 : 1) : 2;
   const lignes = D.camions
     .map(c => ({ c, r:rentabiliteCamion(c.id, d1, d2) }))
     .filter(x => x.c.actif || x.r.recette > 0 || x.r.couts > 0)
-    .sort((a,b) => (b.r.complete - a.r.complete) || (b.r.resultat - a.r.resultat));
-  const gagnent = lignes.filter(x=>x.r.complete && x.r.resultat>=0).length;
-  const perdent = lignes.filter(x=>x.r.complete && x.r.resultat<0).length;
-  const incompletes = lignes.length - gagnent - perdent;
-  const total = lignes.reduce((s,x)=>s+x.r.resultat, 0);
+    .sort((a,b) => (rang(a) - rang(b)) ||
+      (rang(a) < 2 ? b.r.resultat - a.r.resultat : a.c.nom.localeCompare(b.c.nom)));
+  /* Seuls les camions suivis depuis un an comptent dans les totaux : les
+     autres n'ont pas encore de résultat (voir rentabiliteCamion). */
+  const fiables = lignes.filter(x=>x.r.fiable);
+  const recents = lignes.length - fiables.length;
+  const gagnent = fiables.filter(x=>x.r.complete && x.r.resultat>=0).length;
+  const perdent = fiables.filter(x=>x.r.complete && x.r.resultat<0).length;
+  const incompletes = fiables.length - gagnent - perdent;
+  const total = fiables.reduce((s,x)=>s+x.r.resultat, 0);
   const couleur = (r, complete) => !complete ? "#8A6720" : r<0 ? "var(--minium)" : "var(--vert)";
   const signe = n => Math.round(n)===0 ? "0" : (n<0 ? "−" : "+") + fmt(Math.abs(n));
+  const pluriel = (n, mot) => `${n} ${mot}${n>1?"s":""}`;
 
-  h += `<div class="carte">
-    <div class="mt" style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:8px">
-      <span><b style="color:var(--vert)">${gagnent}</b> gagne${gagnent>1?"nt":""}</span>
-      <span><b style="color:var(--minium)">${perdent}</b> ${perdent>1?"perdent":"perd"}</span>
-      ${incompletes ? `<span><b style="color:#8A6720">${incompletes}</b> fiche${incompletes>1?"s":""} à compléter</span>` : ""}</div>
-    <div class="ligne"><div class="lib"><b>Résultat de la flotte</b></div>
-      <span class="num" style="font-size:20px;color:${total<0?"var(--minium)":"var(--vert)"}">${signe(total)} F${incompletes?"*":""}</span></div></div>`;
+  if(!fiables.length){
+    const dispos = lignes.filter(x=>x.r.dispoLe).map(x=>x.r.dispoLe).sort();
+    h += `<div class="carte"><div class="vide"><b>Pas encore de résultat</b>${dispos.length
+      ? `Aucun camion n'a encore un an de recettes enregistrées. Le premier résultat s'affichera le ${dateLongue(dispos[0])}.`
+      : "Aucune recette enregistrée pour le moment."}</div></div>`;
+  } else {
+    h += `<div class="carte">
+      <div class="mt" style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:8px">
+        <span><b style="color:var(--vert)">${gagnent}</b> gagne${gagnent>1?"nt":""}</span>
+        <span><b style="color:var(--minium)">${perdent}</b> ${perdent>1?"perdent":"perd"}</span>
+        ${incompletes ? `<span><b style="color:#8A6720">${incompletes}</b> fiche${incompletes>1?"s":""} à compléter</span>` : ""}</div>
+      <div class="ligne"><div class="lib"><b>Résultat de la flotte</b>${
+        recents ? `<small>${fiables.length} camion${fiables.length>1?"s":""} sur ${lignes.length}</small>` : ""}</div>
+        <span class="num" style="font-size:20px;color:${total<0?"var(--minium)":"var(--vert)"}">${signe(total)} F${incompletes?"*":""}</span></div></div>`;
+    if(recents) h += `<div class="alerte a-ocre"><div><b>${pluriel(recents,"camion")} suivi${recents>1?"s":""} depuis moins d'un an</b>
+      Leur résultat s'affichera dès qu'un an de recettes sera enregistré : les recettes et l'usure ne couvrent pas encore la même durée.</div></div>`;
+  }
 
   h += `<div class="carte"><div class="scroll-x"><table><thead><tr>
     <th>Camion</th><th class="n">Recettes</th><th class="n">Coûts</th><th class="n">Résultat</th></tr></thead><tbody>`;
   for(const {c, r} of lignes){
     const etoile = r.complete ? "" : "*";
+    const nom = `<b class="im">${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">retiré</span>'}`;
+    if(!r.fiable){
+      h += `<tr onclick="setVue('renta','${c.id}')" style="cursor:pointer">
+        <td>${nom}<br><small class="mt">${r.debutSuivi ? "suivi depuis le "+dateCourte(r.debutSuivi)+" "+r.debutSuivi.slice(0,4) : "aucune recette"}</small></td>
+        <td class="n">${fmt(r.recette)}</td><td class="n">—</td><td class="n">—</td></tr>`;
+      continue;
+    }
     h += `<tr onclick="setVue('renta','${c.id}')" style="cursor:pointer">
-      <td><b class="im">${esc(c.nom)}</b>${c.actif?"":' <span class="tag t-gris">retiré</span>'}</td>
+      <td>${nom}</td>
       <td class="n">${fmt(r.recette)}</td><td class="n">${fmt(r.couts)}${etoile}</td>
       <td class="n" style="font-weight:700;color:${couleur(r.resultat, r.complete)}">${signe(r.resultat)}${etoile}</td></tr>`;
   }
@@ -2658,8 +2701,16 @@ function detailRentabilite(id){
     sous ? `<small>${sous}</small>` : ""}</div><span class="num">${montant}</span></div>`;
 
   let h = `<button class="btn sec mini no-print" style="margin-bottom:13px" onclick="setVue('renta',null)">← Rentabilité</button>
-    <div class="titre-sec">${esc(c.nom)} · 12 derniers mois</div>
-    <div class="rt-verdict${r.resultat<0?" perte":""}">
+    <div class="titre-sec">${esc(c.nom)} · 12 derniers mois</div>`;
+  /* Suivi depuis moins d'un an : pas de verdict, on dit pourquoi et quand. */
+  if(!r.fiable) h += `<div class="rt-verdict attente">
+      <small>Résultat</small>
+      <b class="num">Pas encore calculable</b>
+      <span>${r.debutSuivi
+        ? `GestFlot ne suit les recettes de ce camion que depuis le ${dateLongue(r.debutSuivi)}, alors que l'usure se compte sur 12 mois.
+           Le résultat s'affichera le ${dateLongue(r.dispoLe)}, quand un an de recettes sera enregistré.`
+        : "Aucune recette n'est enregistrée pour ce camion."}</span></div>`;
+  else h += `<div class="rt-verdict${r.resultat<0?" perte":""}">
       <small>Résultat</small>
       <b class="num">${r.resultat<0?"−":"+"}${fmtF(Math.abs(r.resultat))}</b>
       <span>${r.resultat<0
@@ -2674,9 +2725,12 @@ function detailRentabilite(id){
     semaines(r.modes.voyage.semaines.size), fmtF(r.modes.voyage.montant));
   if(r.modes.aucun.montant) h += ligne(`<span class="tag t-gris">non précisé</span>`,
     semaines(r.modes.aucun.semaines.size), fmtF(r.modes.aucun.montant));
+  const notes = [];
+  if(r.modes.voyage.montant) notes.push("Voyages : montants nets, carburant et prime du chauffeur déjà payés.");
+  if(!r.fiable && r.debutSuivi) notes.push(`Recettes suivies depuis le ${dateLongue(r.debutSuivi)}.`);
   h += `<div class="ligne"><div class="lib"><b>Total</b></div>
     <span class="num" style="font-size:17px;color:var(--nuit)">${fmtF(r.recette)}</span></div>
-    <p class="mt" style="margin-top:6px">Voyages : montants nets, carburant et prime du chauffeur déjà payés.</p></div>`;
+    ${notes.length ? `<p class="mt" style="margin-top:6px">${notes.join(" ")}</p>` : ""}</div>`;
 
   h += `<div class="titre-sec">Ce qu'il a coûté</div><div class="carte">
     <div class="grp"><span>Compté par GestFlot</span></div>
@@ -2708,7 +2762,8 @@ function detailRentabilite(id){
           ? `Quand il roule : carburant ${fmtF(r.carburantKm)} + réparations ${fmtF(r.reparationsKm)}.`
           : `À compléter : ${manque.join(", ")}.`}</small></div></div>
     <p class="mt" style="margin:0 2px 12px">Ces deux compteurs serviront au calculateur de prix d'un voyage.${
-      r.kmAn ? ` Km : ${fmtKm(r.kmAn)} par an, estimés en attendant le GPS.` : ""}</p>
+      r.kmAn ? ` Km : ${fmtKm(r.kmAn)} par an, estimés en attendant le GPS.` : ""}${
+      !r.fiable && r.debutSuivi ? ` Provisoires : GestFlot ne suit ce camion que depuis le ${dateLongue(r.debutSuivi)}.` : ""}</p>
     ${admin() ? `<button class="btn sec no-print" style="width:100%" onclick="formCoutsCamion('${id}')">Modifier les coûts du camion</button>` : ""}`;
   return h;
 }
