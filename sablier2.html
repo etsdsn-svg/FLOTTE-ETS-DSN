@@ -453,6 +453,9 @@ td.pn-col{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
 .dir-segments{display:flex;gap:3px;margin:4px 0 2px}
 .dir-segments i{flex:1;height:11px;border-radius:2px;background:var(--vert)}
 .dir-segments i.immo{background:var(--sable)}
+.dir-segments i.perd{background:#B8503A}
+.dir-segments i.attente{background:var(--filet-fonce)}
+.dir-modes{display:flex;flex-wrap:wrap;gap:8px;margin-top:3px;padding-top:8px;border-top:1px solid var(--ciment)}
 
 /* Rentabilité d'un camion : le résultat en tête, bleu s'il gagne, brique s'il perd */
 .rt-verdict{background:var(--vert);color:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;
@@ -1305,6 +1308,22 @@ function tachesDuJour(){
     action: () => aller("camions")
   });
 
+  /* 8. Coûts des camions à compléter (admin) : sans prix d'achat ni durée,
+        la rentabilité se calcule sans l'usure. Jamais urgent, d'où le
+        dernier rang ; rien si la table des coûts est illisible. */
+  if(admin() && D.couts){
+    const sansCouts = actifs.filter(c => { const k = coutsCamion(c.id);
+      return !(k && Number(k.prix_achat) > 0 && Number(k.duree_ans) > 0); });
+    if(sansCouts.length) t.push({
+      rang: 8, ton: "o",
+      titre: sansCouts.length===1 ? `${sansCouts[0].nom} — coûts à compléter`
+                                  : `${sansCouts.length} camions — coûts à compléter`,
+      detail: "Prix d'achat ou durée à saisir · " + sansCouts.slice(0,4).map(c=>c.nom).join(" · ")
+            + (sansCouts.length>4 ? ` +${sansCouts.length-4}` : ""),
+      action: () => { aller("camions"); setVue("onglet", "rentabilite"); }
+    });
+  }
+
   t.sort((a,b)=>a.rang-b.rang);
   return t;
 }
@@ -1468,6 +1487,37 @@ function vBord(){
     ? `${fmtF(totalRec)} encaissés${restants ? ` · ${restants} en attente` : ""}`
     : `${attendus.length} camion${attendus.length>1?"s":""} attendu${attendus.length>1?"s":""}`;
 
+  /* Versement / voyage : les recettes de la semaine qui portent un mode.
+     Les anciennes, saisies avant le choix, ne comptent pas. */
+  const recModes = D.mouvements.filter(m=>m.sens==="entree"&&m.source==="recette"&&dansSemaine(m)&&m.mode);
+  const nbVersements = recModes.filter(m=>m.mode==="versement").length;
+  const nbVoyages = recModes.length - nbVersements;
+  const modesSemaine = recModes.length ? `<div class="dir-modes">${
+      nbVersements ? `<span class="tag t-vert">${nbVersements} versement${nbVersements>1?"s":""}</span>` : ""}${
+      nbVoyages ? `<span class="tag t-ocre">${nbVoyages} voyage${nbVoyages>1?"s":""}</span>` : ""}</div>` : "";
+
+  /* ── Rentabilité sur 12 mois (admin et DG) ──
+     Cachée tant qu'aucun camion n'a un an de recettes : un résultat sur
+     quelques semaines serait faux (voir rentabiliteCamion). Une barre par
+     camion : bleu s'il gagne, brique s'il perd, gris sans résultat exploitable. */
+  const sr = D.couts ? syntheseRentabilite() : null;
+  let carteRentabilite = "";
+  if(sr && sr.fiables.length){
+    const ORDRE = ["gagne","perd","attente"];
+    const barres = sr.lignes
+      .map(x => !x.r.fiable || !x.r.complete ? "attente" : x.r.resultat<0 ? "perd" : "gagne")
+      .sort((a,b) => ORDRE.indexOf(a) - ORDRE.indexOf(b))
+      .map(t => `<i class="${t==="gagne"?"":t}"></i>`).join("");
+    carteRentabilite = `<div class="dir-carte clic" onclick="aller('camions');setVue('onglet','rentabilite')">
+      <div class="dir-lbl">Rentabilité · 12 mois</div>
+      <div class="dir-val" style="color:${sr.total<0?"#B8503A":"var(--vert)"}">${fmtSigne(sr.total)} F${sr.incompletes?"*":""}</div>
+      <div class="dir-segments">${barres}</div>
+      <div class="dir-sub" style="color:var(--encre)">${sr.gagnent} gagne${sr.gagnent>1?"nt":""} · ${sr.perdent} ${sr.perdent>1?"perdent":"perd"}${
+        sr.incompletes ? ` · ${sr.incompletes} fiche${sr.incompletes>1?"s":""} à compléter` : ""}</div>
+      ${sr.recents ? `<div class="dir-sub" style="color:#8A6720">${sr.recents} suivi${sr.recents>1?"s":""} depuis moins d'un an</div>` : ""}
+    </div>`;
+  }
+
   /* ── Actions, pour l'admin seul : la direction consulte ── */
   const actions = admin() ? `<div class="dir-actions">
     <button class="bord-btn primary" onclick="formPanneAdmin()">＋ Panne</button>
@@ -1524,7 +1574,9 @@ function vBord(){
       <div class="dir-val">${valCollecte}</div>
       <div class="dir-sub">${subCollecte}</div>
       ${totalPrec ? `<div class="dir-sub">Semaine dernière : ${fmtF(totalPrec)}${tendance}</div>` : ""}
+      ${modesSemaine}
     </div>
+    ${carteRentabilite}
   </div>
 
   <div class="dir-duo">
@@ -2621,13 +2673,10 @@ window.voirRentabilite = id => { etatVue = { onglet:"rentabilite", renta:id }; r
 /* Onglet Rentabilité : recettes et coûts de chaque camion sur 12 mois
    glissants, du plus rentable au moins rentable. Un camion dont la fiche
    Coûts n'a pas de prix d'achat est calculé sans usure et marqué « * ». */
-function vRentabilite(){
+/* Les chiffres de l'onglet Rentabilité, partagés avec la carte du tableau
+   de bord : un seul calcul, donc jamais deux résultats différents. */
+function syntheseRentabilite(){
   const {d1, d2} = periodeRentabilite();
-  let h = `<div class="carte"><div class="ligne"><div class="lib"><b>12 derniers mois</b></div>
-    <span class="mt">${dateCourte(d1)} ${d1.slice(0,4)} → ${dateCourte(d2)} ${d2.slice(0,4)}</span></div></div>`;
-  if(D.couts===null) h += `<div class="alerte a-ocre"><div><b>Coûts des camions illisibles</b>
-    Les résultats ci-dessous sont calculés sans l'usure. Recharge la page ; si le message reste, préviens l'admin.</div></div>`;
-
   /* 0 = résultat fiable et fiche complète · 1 = fiable, fiche à compléter ·
      2 = suivi depuis moins d'un an (pas de résultat). */
   const rang = x => x.r.fiable ? (x.r.complete ? 0 : 1) : 2;
@@ -2639,13 +2688,23 @@ function vRentabilite(){
   /* Seuls les camions suivis depuis un an comptent dans les totaux : les
      autres n'ont pas encore de résultat (voir rentabiliteCamion). */
   const fiables = lignes.filter(x=>x.r.fiable);
-  const recents = lignes.length - fiables.length;
   const gagnent = fiables.filter(x=>x.r.complete && x.r.resultat>=0).length;
   const perdent = fiables.filter(x=>x.r.complete && x.r.resultat<0).length;
-  const incompletes = fiables.length - gagnent - perdent;
-  const total = fiables.reduce((s,x)=>s+x.r.resultat, 0);
+  return { d1, d2, lignes, fiables, gagnent, perdent,
+    recents: lignes.length - fiables.length,
+    incompletes: fiables.length - gagnent - perdent,
+    total: fiables.reduce((s,x)=>s+x.r.resultat, 0) };
+}
+const fmtSigne = n => Math.round(n)===0 ? "0" : (n<0 ? "−" : "+") + fmt(Math.abs(n));
+
+function vRentabilite(){
+  const { d1, d2, lignes, fiables, gagnent, perdent, recents, incompletes, total } = syntheseRentabilite();
+  let h = `<div class="carte"><div class="ligne"><div class="lib"><b>12 derniers mois</b></div>
+    <span class="mt">${dateCourte(d1)} ${d1.slice(0,4)} → ${dateCourte(d2)} ${d2.slice(0,4)}</span></div></div>`;
+  if(D.couts===null) h += `<div class="alerte a-ocre"><div><b>Coûts des camions illisibles</b>
+    Les résultats ci-dessous sont calculés sans l'usure. Recharge la page ; si le message reste, préviens l'admin.</div></div>`;
+
   const couleur = (r, complete) => !complete ? "#8A6720" : r<0 ? "var(--minium)" : "var(--vert)";
-  const signe = n => Math.round(n)===0 ? "0" : (n<0 ? "−" : "+") + fmt(Math.abs(n));
   const pluriel = (n, mot) => `${n} ${mot}${n>1?"s":""}`;
 
   if(!fiables.length){
@@ -2661,7 +2720,7 @@ function vRentabilite(){
         ${incompletes ? `<span><b style="color:#8A6720">${incompletes}</b> fiche${incompletes>1?"s":""} à compléter</span>` : ""}</div>
       <div class="ligne"><div class="lib"><b>Résultat de la flotte</b>${
         recents ? `<small>${fiables.length} camion${fiables.length>1?"s":""} sur ${lignes.length}</small>` : ""}</div>
-        <span class="num" style="font-size:20px;color:${total<0?"var(--minium)":"var(--vert)"}">${signe(total)} F${incompletes?"*":""}</span></div></div>`;
+        <span class="num" style="font-size:20px;color:${total<0?"var(--minium)":"var(--vert)"}">${fmtSigne(total)} F${incompletes?"*":""}</span></div></div>`;
     if(recents) h += `<div class="alerte a-ocre"><div><b>${pluriel(recents,"camion")} suivi${recents>1?"s":""} depuis moins d'un an</b>
       Leur résultat s'affichera dès qu'un an de recettes sera enregistré : les recettes et l'usure ne couvrent pas encore la même durée.</div></div>`;
   }
@@ -2680,7 +2739,7 @@ function vRentabilite(){
     h += `<tr onclick="setVue('renta','${c.id}')" style="cursor:pointer">
       <td>${nom}</td>
       <td class="n">${fmt(r.recette)}</td><td class="n">${fmt(r.couts)}${etoile}</td>
-      <td class="n" style="font-weight:700;color:${couleur(r.resultat, r.complete)}">${signe(r.resultat)}${etoile}</td></tr>`;
+      <td class="n" style="font-weight:700;color:${couleur(r.resultat, r.complete)}">${fmtSigne(r.resultat)}${etoile}</td></tr>`;
   }
   h += `</tbody></table></div>
     ${incompletes ? `<p class="mt" style="margin-top:9px">* Sans l'usure : prix d'achat ou durée pas encore saisis dans les coûts du camion.</p>` : ""}
