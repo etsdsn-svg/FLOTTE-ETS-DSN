@@ -490,6 +490,8 @@ td.pn-col{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
 .dir-ligne-val{font-family:"Archivo";font-size:13.5px;font-weight:700;color:var(--encre);
   white-space:nowrap;font-variant-numeric:tabular-nums}
 .dir-ligne-val.plus{color:var(--vert)}
+.dir-ligne.clic{cursor:pointer}
+.dir-sub.clic{cursor:pointer;color:var(--vert)}
 @container (min-width:760px){
   .dir-titre{font-size:30px}
   .dir-actions .bord-btn{flex:0 1 auto;padding:12px 16px}
@@ -1193,6 +1195,7 @@ const admin = () => moi.role==="admin";
    plutot que par categorie. Chaque tache porte un rang : plus il est bas,
    plus c'est urgent. On s'arrete a MAX_TACHES pour garder l'ecran lisible. */
 const MAX_TACHES = 6;
+const NB_DERNIERES_DEPENSES = 10;
 function tachesDuJour(){
   const t = [];
   const actifs = D.camions.filter(c=>c.actif);
@@ -1381,22 +1384,32 @@ function vBord(){
   const apportsSem=D.mouvements.filter(m=>m.sens==="entree"&&m.source==="dg"&&dansSemaine(m));
   const pFlotte = depSem ? Math.round(depFlotte/depSem*100) : 0;
 
-  /* Les plus grosses sorties d'abord : c'est ce que la direction veut
-     voir. Le reste est dans Rapports. */
-  const grosses=[...sortiesSem].sort((a,b)=>(Number(b.montant)||0)-(Number(a.montant)||0)).slice(0,5);
-  let lignesArgent="";
-  for(const m of grosses)
-    lignesArgent+=`<div class="dir-ligne">
-      <div class="dir-ligne-lib">${esc(m.libelle)}<small>${dateCourte(m.date)} · ${m.nature==="flotte"?"réparation":"externe"}</small></div>
+  /* Les dernières sorties de caisse, toutes semaines confondues, la plus
+     récente en tête : dépenses externes ET paiements de réparations. Le
+     camion — ou « général » — se lit sur chaque ligne : une dépense
+     oubliée sans camion saute aux yeux. Une date dans le futur (saisie
+     par erreur) ne compte pas, comme pour la semaine. L'admin touche une
+     ligne pour la corriger ; un paiement de réparation se corrige depuis
+     sa panne. La direction consulte, sans action. */
+  const dernieres = D.mouvements.filter(m=>m.sens!=="entree" && m.date<=auj())
+    .sort((a,b)=>b.date.localeCompare(a.date) || String(b.created_at||"").localeCompare(String(a.created_at||"")))
+    .slice(0, NB_DERNIERES_DEPENSES);
+  let lignesArgent = dernieres.length
+    ? `<div class="dir-sub" style="padding:10px 0 2px">${dernieres.length>1 ? `Les ${dernieres.length} dernières dépenses` : "La dernière dépense"}</div>` : "";
+  for(const m of dernieres){
+    const flotte = m.nature==="flotte";
+    const action = !admin() ? "" : flotte ? (m.panne_id ? `ouvrirPanne('${m.panne_id}')` : "") : `corrigerDepense('${m.id}')`;
+    lignesArgent+=`<div class="dir-ligne${action?" clic":""}"${action?` onclick="${action}"`:""}>
+      <div class="dir-ligne-lib">${esc(m.libelle)}<small>${dateCourte(m.date)} · ${
+        m.camion_id ? esc(nomCamion(m.camion_id)) : "général"} · ${flotte ? "réparation" : esc(m.categorie||"externe")}</small></div>
       <div class="dir-ligne-val">−${fmt(m.montant)}</div></div>`;
-  if(sortiesSem.length > grosses.length){
-    const n = sortiesSem.length-grosses.length;
-    lignesArgent+=`<div class="dir-sub" style="padding:8px 0 4px">+ ${n} autre${n>1?"s":""} dépense${n>1?"s":""}, détail dans Rapports</div>`;
   }
+  if(apportsSem.length) lignesArgent+=`<div class="dir-sub" style="padding:10px 0 2px">Apports de la semaine</div>`;
   for(const m of apportsSem)
     lignesArgent+=`<div class="dir-ligne">
       <div class="dir-ligne-lib">${esc(m.libelle)}<small>${dateCourte(m.date)} · entrée</small></div>
       <div class="dir-ligne-val plus">+${fmt(m.montant)}</div></div>`;
+  if(dernieres.length) lignesArgent+=`<div class="dir-sub clic" style="padding:8px 0 4px" onclick="aller('rapports')">Toutes les dépenses : Rapports →</div>`;
 
   const CIRC=2*Math.PI*25;
   const couleurAnneau = c.sousSeuil ? "var(--minium)" : pct<0.4 ? "var(--sable)" : "var(--vert)";
@@ -2272,6 +2285,10 @@ window.formSortie = (preremplir) => {
   const estTVM = preremplir==="tvm";
   ouvrir("Dépense externe",
     `<button type="button" class="btn sec mini no-print" style="margin-bottom:12px" onclick="basculerTVM()">🧾 TVM</button>
+     <p class="mt" style="margin:0 0 6px">Cette dépense concerne-t-elle un camion ?</p>
+     <div class="segm" id="s-pour" style="margin-bottom:12px">
+       <button type="button" data-v="non">Non, dépense générale</button>
+       <button type="button" data-v="oui" class="${estTVM?"on":""}">Oui, un camion</button></div>
      <label class="ch"><span>Objet</span><input id="s-lib" placeholder="Avance salaire Armand" value="${estTVM?"TVM "+new Date().getFullYear():""}"></label>
      <label class="ch"><span>Catégorie</span><select id="s-cat">${CATEGORIES.map(x=>`<option${estTVM&&x==="TVM"?" selected":""}>${esc(x)}</option>`).join("")}</select></label>
      <div id="s-autre-bloc" style="display:none">
@@ -2280,9 +2297,9 @@ window.formSortie = (preremplir) => {
          <datalist id="s-autre-liste">${
            categoriesLibres().map(x=>`<option value="${esc(x)}">`).join("")}</datalist></label>
      </div>
-     <div id="s-camion-bloc">
-       <label class="ch"><span>Camion concerné <small style="font-weight:400;opacity:.7">— si la dépense en concerne un</small></span><select id="s-camion">
-         <option value="">— Aucun camion en particulier —</option>
+     <div id="s-camion-bloc" style="display:${estTVM?"":"none"}">
+       <label class="ch"><span>Camion concerné</span><select id="s-camion">
+         <option value="">— Choisir le camion —</option>
          ${D.camions.filter(x=>x.actif).map(x=>`<option value="${x.id}">${esc(x.nom)}</option>`).join("")}
        </select></label>
      </div>
@@ -2309,22 +2326,42 @@ window.formSortie = (preremplir) => {
       };
       cat.addEventListener("change", bascule); bascule();
 
-      /* Le champ camion reste visible quelle que soit la catégorie :
-         carburant, pneus, lavage, amende… beaucoup de dépenses concernent
-         un camion précis sans être des pannes. Il reste facultatif, sauf
-         pour les CATEGORIES_CAMION (TVM, assurance…). */
+      /* « Pour un camion ? » se pose en tête et n'a pas de réponse par
+         défaut : carburant, pneus, pièces… beaucoup de dépenses concernent
+         un camion précis sans être des pannes, et un champ facultatif en
+         bas du formulaire s'oubliait. « Oui » fait apparaître le choix du
+         camion (alors obligatoire) et propose « Dépenses camions » si la
+         catégorie n'a pas encore été choisie. */
+      /* Revenir à « Non » annule la catégorie posée automatiquement, sinon
+         « Dépenses camions » resterait et l'enregistrement serait refusé.
+         Une catégorie choisie à la main, elle, n'est jamais touchée. */
+      let catAuto = false;
+      cat.addEventListener("change", () => { catAuto = false; });
+      segm("s-pour", v => {
+        document.getElementById("s-camion-bloc").style.display = v==="oui" ? "" : "none";
+        if(v==="non"){
+          document.getElementById("s-camion").value = "";
+          if(catAuto){ cat.value = CATEGORIES[0]; bascule(); catAuto = false; }
+        }
+        if(v==="oui" && cat.value===CATEGORIES[0]){ cat.value = "Dépenses camions"; bascule(); catAuto = true; }
+      });
       if(estTVM){ document.getElementById("s-camion").focus(); }
     });
 };
 window.basculerTVM = () => {
   document.getElementById("s-lib").value = "TVM " + new Date().getFullYear();
   document.getElementById("s-cat").value = "TVM";
+  document.querySelectorAll("#s-pour button").forEach(b=>b.classList.toggle("on", b.dataset.v==="oui"));
+  document.getElementById("s-camion-bloc").style.display = "";
   document.getElementById("s-camion").focus();
 };
 window.validerSortie = async () => {
   const lib=val("s-lib").trim(), v=nb("s-m");
   let cat=val("s-cat");
   const camionId = val("s-camion");
+  const pour = valSegm("s-pour");
+  if(!pour) return toast("Cette dépense concerne-t-elle un camion ? Réponds Oui ou Non.");
+  if(pour==="oui" && !camionId) return toast("Choisis le camion concerné.");
   if(!lib) return toast("Donne un objet.");
   if(v<=0) return toast("Renseigne un montant.");
   if(cat==="Autre"){
@@ -2332,7 +2369,7 @@ window.validerSortie = async () => {
     if(!precis) return toast("Précise la catégorie.");
     cat = precis;   /* la précision REMPLACE « Autre » */
   }
-  if(CATEGORIES_CAMION.includes(cat) && !camionId) return toast(`Choisis le camion concerné (${cat}).`);
+  if(CATEGORIES_CAMION.includes(cat) && !camionId) return toast(`« ${cat} » concerne toujours un camion : réponds Oui et choisis-le.`);
   const {error}=await sb.from("sb2_mouvements").insert({date:val("s-date")||auj(),sens:"sortie",
     nature:"externe",montant:v,libelle:lib,categorie:cat, camion_id: camionId || null});
   if(error) return toast("Échec : "+error.message);
