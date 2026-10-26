@@ -349,7 +349,7 @@ td.pn-col{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
 .bord-tache-txt b{display:block;font-family:"Archivo";font-size:14px;font-weight:600;
   line-height:1.32;letter-spacing:-.1px;color:var(--nuit)}
 .bord-tache-txt small{display:block;font-family:var(--mono);font-size:10px;
-  color:var(--encre-doux);margin-top:4px;line-height:1.5}
+  color:var(--encre-doux);margin-top:4px;line-height:1.5;white-space:pre-line}
 /* Une seule tâche porte la couleur : la plus urgente du jour, si vraiment bloquante */
 .bord-tache.premier{background:var(--ciment);margin:0 -15px 0;padding:12px 15px 11px;
   border-left:3px solid var(--minium);border-bottom:1px solid var(--ciment-fonce)}
@@ -1206,33 +1206,41 @@ function tachesDuJour(){
         Les camions qui ont le meme probleme (meme document, meme etat)
         sont regroupes en une seule ligne : dix lignes « TVM echue »
         identiques noieraient une vraie urgence plus bas dans la liste. */
+  /* Un seul groupe par document et par état : « 12 camions — TVM échue »
+     plutôt que deux lignes (en service / au garage) qui disaient la même
+     chose. Le détail sépare les deux, ceux en service d'abord : ce sont
+     eux qui risquent un blocage. */
   const groupes = new Map();
   for(const c of actifs){
     const immo = D.pannes.some(p=>p.camion_id===c.id && p.immobilise && !p.immob_fin);
     for(const d of documentsCamion(c)){
       if(d.etat!=="echue" && d.etat!=="proche") continue;
       if(d.type==="vidange" || d.type==="pneus") continue; /* traites plus bas */
-      const cle = `${d.libelle}|${d.etat}|${immo}`;
-      if(!groupes.has(cle)) groupes.set(cle, {d, immo, liste:[]});
-      groupes.get(cle).liste.push({c, jours:d.jours});
+      const cle = `${d.libelle}|${d.etat}`;
+      if(!groupes.has(cle)) groupes.set(cle, {d, liste:[]});
+      groupes.get(cle).liste.push({c, jours:d.jours, immo});
     }
   }
-  for(const {d, immo, liste} of groupes.values()){
-    const bloquant = !immo && d.etat==="echue";
+  const quelques = noms => noms.slice(0,4).join(" · ") + (noms.length>4 ? ` +${noms.length-4}` : "");
+  for(const {d, liste} of groupes.values()){
+    const enService = liste.filter(x=>!x.immo), auGarage = liste.filter(x=>x.immo);
+    const bloquant = enService.length>0 && d.etat==="echue";
     const base = { rang: bloquant ? 0 : 1, ton: d.etat==="echue" ? "" : "j" };
+    const nom = x => d.etat==="echue" ? x.c.nom : `${x.c.nom} (${x.jours} j)`;
     if(liste.length===1){
-      const {c, jours} = liste[0];
+      const {c, jours, immo} = liste[0];
       t.push({ ...base,
         titre: `${c.nom} — ${d.libelle} ${d.etat==="echue" ? "échue" : `dans ${jours} j`}`,
         detail: immo ? "Camion déjà immobilisé" : "Camion en service — blocage à prévoir",
         action: () => { aller("camions"); setVue("detail", c.id); }
       });
     } else {
-      const noms = liste.map(x => d.etat==="echue" ? x.c.nom : `${x.c.nom} (${x.jours} j)`);
+      const parties = [];
+      if(enService.length) parties.push(`${enService.length} en service — blocage à prévoir · ${quelques(enService.map(nom))}`);
+      if(auGarage.length) parties.push(`${auGarage.length} au garage · ${quelques(auGarage.map(nom))}`);
       t.push({ ...base,
         titre: `${liste.length} camions — ${d.libelle} ${d.etat==="echue" ? "échue" : "bientôt échue"}`,
-        detail: (immo ? "Déjà immobilisés · " : "En service — blocage à prévoir · ")
-              + noms.slice(0,4).join(" · ") + (noms.length>4 ? ` +${noms.length-4}` : ""),
+        detail: parties.join("\n"),
         action: () => aller("camions")
       });
     }
@@ -1307,7 +1315,8 @@ function tachesDuJour(){
   if(vieux.length) t.push({
     rang: 7, ton: "j",
     titre: `${vieux.length} compteur${vieux.length>1?"s":""} à relever`,
-    detail: "Sans relevé récent, les alertes vidange et pneus restent muettes",
+    detail: admin() ? "Relève-les pendant la collecte du vendredi"
+                    : "Sans relevé récent, les alertes vidange et pneus restent muettes",
     action: () => aller("camions")
   });
 
@@ -2049,6 +2058,18 @@ function dernierMode(camionId, lundi){
   const avant = marquees.find(m => m.date < lundi);
   return (avant || marquees[0] || {}).mode || null;
 }
+/* Compteur relevé pendant la collecte : facultatif, mais jamais plus petit
+   que le dernier relevé (un zéro oublié fausserait vidange et pneus).
+   Un camion jamais relevé part de 0. */
+const dernierKm = c => c.km_maj_le ? Number(c.km) || 0 : 0;
+/* espaces insécables : « 312 400 km » ne se coupe jamais en fin de ligne */
+const kmInsecable = km => fmtKm(km).replace(/ /g, " ");
+const aideReleve = c => c.km_maj_le
+  ? `Dernier relevé : ${kmInsecable(c.km || 0)} · ${dateCourte(c.km_maj_le)}` : "Dernier relevé : jamais";
+const releveCetteSemaine = (c, lundi) => {
+  const d = String(c.km_maj_le || "").slice(0,10);
+  return !!d && d >= lundi && d <= ajoutJours(lundi, 6);
+};
 const tagMode = mode => mode==="voyage" ? `<span class="tag t-ocre">voyage</span>`
   : mode==="versement" ? `<span class="tag t-vert">versement</span>` : "";
 const segmMode = (id, mode, style="") => `<div class="segm" id="${id}" style="${style}">
@@ -2101,7 +2122,8 @@ function vVendredi(){
     if(r){
       return `<div class="ligne" style="cursor:pointer;align-items:center" onclick="corrigerRecette('${r.id}','${c.id}','${lundi}')">
         <div class="lib"><b class="im">${esc(c.nom)}</b>
-          <small>${ch?esc(ch.nom):"sans chauffeur"} · saisi ${r.date===auj()?"aujourd'hui":dateCourte(r.date)}</small></div>
+          <small>${ch?esc(ch.nom):"sans chauffeur"} · saisi ${r.date===auj()?"aujourd'hui":dateCourte(r.date)}</small>${
+          releveCetteSemaine(c, lundi) ? `<small style="display:block;color:var(--vert)">compteur : ${kmInsecable(c.km)}</small>` : ""}</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="num" style="font-weight:700">${fmt(r.montant)}</span>
           ${tagMode(r.mode)}<span class="tag t-vert">encaissé</span></div></div>`;
@@ -2112,7 +2134,13 @@ function vVendredi(){
         <input type="number" inputmode="numeric" class="c-montant" data-c="${c.id}"
           placeholder="Recette" min="0" style="width:118px;text-align:right">
         <span class="tag t-gris">en attente</span></div>
-      ${segmMode("c-mode-"+c.id, dernierMode(c.id, lundi), "flex:1 0 100%")}</div>`;
+      ${segmMode("c-mode-"+c.id, dernierMode(c.id, lundi), "flex:1 0 100%")}
+      <label style="flex:1 0 100%;display:flex;align-items:center;gap:10px;margin-top:8px">
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--encre-doux)">Compteur (km)</span>
+          <small class="mt" id="c-km-aide-${c.id}">${esc(aideReleve(c))}</small></span>
+        <input type="number" inputmode="numeric" min="0" class="c-km" data-c="${c.id}" data-dernier="${dernierKm(c)}"
+          placeholder="facultatif" style="width:118px;text-align:right"></label></div>`;
   };
 
   h += `<div class="carte" style="padding-top:6px">`;
@@ -2144,6 +2172,18 @@ window.apres_vendredi = () => {
   };
   document.querySelectorAll(".c-montant").forEach(i=>i.addEventListener("input",maj));
   document.querySelectorAll('[id^="c-mode-"]').forEach(el=>segm(el.id));
+  /* Avertir dès la frappe d'un compteur plus petit que le dernier relevé. */
+  document.querySelectorAll(".c-km").forEach(i=>i.addEventListener("input", ()=>{
+    const v = Number(i.value)||0, dernier = Number(i.dataset.dernier)||0;
+    const aide = document.getElementById("c-km-aide-"+i.dataset.c), c = camion(i.dataset.c);
+    const tropPetit = v>0 && v<dernier;
+    if(aide && c){
+      aide.textContent = tropPetit ? `Plus petit que le dernier relevé (${kmInsecable(dernier)}) : vérifie le chiffre` : aideReleve(c);
+      aide.style.color = tropPetit ? "#B8503A" : "";
+      aide.style.fontWeight = tropPetit ? "700" : "";
+    }
+    i.style.borderColor = tropPetit ? "#B8503A" : "";
+  }));
   maj();
 };
 
@@ -2176,7 +2216,18 @@ window.validerCollecte = async (lundi) => {
   });
 
   if(sansMode.length) return toast(`Choisis Versement ou Voyage pour ${sansMode.join(", ")}.`);
-  if(!nouvelles.length && !corrections.length) return toast("Aucun montant saisi.");
+
+  /* Compteurs : un seul chiffre plus petit que le dernier relevé bloque
+     tout l'enregistrement (même règle que Versement / Voyage). */
+  const releves = [], tropPetits = [];
+  document.querySelectorAll(".c-km").forEach(i=>{
+    const km = Number(i.value) || 0;
+    if(km <= 0) return;
+    if(km < (Number(i.dataset.dernier) || 0)) tropPetits.push(nomCamion(i.dataset.c));
+    else releves.push({ camionId:i.dataset.c, km });
+  });
+  if(tropPetits.length) return toast(`Compteur plus petit que le dernier relevé : ${tropPetits.join(", ")}. Vérifie le chiffre.`);
+  if(!nouvelles.length && !corrections.length && !releves.length) return toast("Aucun montant saisi.");
 
   if(nouvelles.length){
     const {error} = await sb.from("sb2_mouvements").insert(nouvelles);
@@ -2187,8 +2238,20 @@ window.validerCollecte = async (lundi) => {
     if(error) return toast("Échec : "+error.message);
   }
 
-  const n = nouvelles.length + corrections.length;
-  toast(`${n} recette${n>1?"s":""} enregistrée${n>1?"s":""}.`);
+  /* Les relevés passent par sb2_maj_km, comme « Relever le km » de la
+     fiche camion. Un échec n'annule pas les recettes déjà enregistrées :
+     on le dit, camion par camion. */
+  const echecsKm = [];
+  for(const r of releves){
+    const {error} = await sb.rpc("sb2_maj_km", { p_camion:r.camionId, p_km:r.km, p_date:auj() });
+    if(error) echecsKm.push(nomCamion(r.camionId));
+  }
+  const n = nouvelles.length + corrections.length, k = releves.length - echecsKm.length;
+  const morceaux = [];
+  if(n) morceaux.push(`${n} recette${n>1?"s":""} enregistrée${n>1?"s":""}`);
+  if(k) morceaux.push(`${k} compteur${k>1?"s":""} relevé${k>1?"s":""}`);
+  if(echecsKm.length) morceaux.push(`compteur non enregistré : ${echecsKm.join(", ")}`);
+  toast(morceaux.join(" · ") + ".");
   await recharger(); aller("bord");
 };
 
@@ -3072,15 +3135,33 @@ function detailCamion(id){
     depuis une dépense pour la déclarer payée. La vidange et les pneus se suivent au kilométrage :
     relève le compteur régulièrement pour que les alertes restent fiables.</p></div>`;
 
-  const ps=D.pannes.filter(p=>p.camion_id===id);
+  /* Historique : pannes ET dépenses rattachées au camion, dans un seul
+     fil, la plus récente en tête. Sans les dépenses, on voyait leur total
+     dans « Dépenses externes » sans pouvoir les retrouver une à une.
+     Une panne s'ouvre ; une dépense se corrige (admin seul). */
+  const ETAT_HISTO = { signalee:"à affecter", affectee:"au garage", terminee:"à régler", payee:"payée" };
+  const fil = [
+    ...D.pannes.filter(p=>p.camion_id===id).map(p=>({ p, date:String(p.date_paiement||p.date_signalement||"").slice(0,10) })),
+    ...D.mouvements.filter(m=>m.camion_id===id && m.sens==="sortie" && m.nature==="externe")
+      .map(m=>({ m, date:String(m.date).slice(0,10) }))
+  ].sort((a,b)=>b.date.localeCompare(a.date));
   h+=`<div class="titre-sec">Historique</div><div class="carte">`;
-  if(!ps.length) h+=`<div class="vide"><b>Aucune panne</b></div>`;
-  else for(const p of ps){
-    const r=aLache(p);
-    h+=`<div class="ligne" style="cursor:pointer" onclick="ouvrirPanne('${p.id}')">
-      <div class="lib"><b>${esc(p.piece||p.description||p.type||"panne")}${r?' <span class="tag t-rouge">a lâché</span>':""}</b>
-      <small>${esc(p.statut)} · ${esc(nomGarage(p.garage_id))} · ${dateCourte(p.date_paiement||p.date_signalement)}</small></div>
-      <span class="num">${p.statut==="payee"?fmt(coutPanne(p)):"—"}</span></div>`;
+  if(!fil.length) h+=`<div class="vide"><b>Aucune panne ni dépense</b></div>`;
+  else h+=`<p class="mt" style="margin:0 0 4px">Pannes et dépenses du camion, de la plus récente à la plus ancienne.</p>`;
+  for(const x of fil){
+    if(x.p){
+      const p=x.p, r=aLache(p);
+      h+=`<div class="ligne" style="cursor:pointer" onclick="ouvrirPanne('${p.id}')">
+        <div class="lib"><b>${esc(p.piece||p.description||p.type||"panne")}${r?' <span class="tag t-rouge">a lâché</span>':""}</b>
+        <small><span class="tag t-gris">panne</span> ${esc(ETAT_HISTO[p.statut]||p.statut)} · ${esc(nomGarage(p.garage_id))} · ${dateCourte(x.date)}</small></div>
+        <span class="num">${p.statut==="payee"?fmt(coutPanne(p)):"—"}</span></div>`;
+    } else {
+      const m=x.m;
+      h+=`<div class="ligne"${admin()?` style="cursor:pointer" onclick="corrigerDepense('${m.id}')"`:""}>
+        <div class="lib"><b>${esc(m.libelle)}</b>
+        <small><span class="tag t-ocre">dépense</span> ${esc(m.categorie||"externe")} · ${dateCourte(x.date)}</small></div>
+        <span class="num">${fmt(m.montant)}</span></div>`;
+    }
   }
   h+=`</div>`;
   return h;
